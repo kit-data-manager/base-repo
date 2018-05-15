@@ -14,4 +14,4 @@ Detailed build and deployment information will follow.
 
 ## License
 
-The IDRP is licensed under the Apache License, Version 2.0.
+The KIT Data Manager is licensed under the Apache License, Version 2.0.

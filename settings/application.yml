@@ -1,0 +1,12 @@
+repo:
+  jwtSecret: test123
+  basepath: file:///Users/jejkal/tmp 
+
+management:
+   endpoint:
+      health:
+        show-details: "ALWAYS"
+
+server:
+   port:
+      8090

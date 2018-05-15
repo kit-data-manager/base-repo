@@ -1,0 +1,67 @@
+buildscript {
+   repositories { 
+      mavenLocal() 
+      jcenter()
+      mavenCentral()
+   }
+   dependencies {
+      classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.0.RELEASE")
+   }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: "jacoco"
+
+
+jar {
+   baseName = 'base-repo'
+   version =  '0.1'
+}
+
+repositories {
+   mavenLocal() 
+   jcenter()
+   mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+ 
+configurations {
+   all*.exclude module : 'spring-boot-starter-logging'
+}
+
+dependencies {
+   compile("org.springframework.boot:spring-boot-starter")
+   compile("org.springframework.boot:spring-boot-starter-data-rest")
+   compile("org.springframework.boot:spring-boot-starter-web")
+   compile("org.springframework.boot:spring-boot-starter-security")
+   compile("org.springframework.boot:spring-boot-starter-actuator")
+   compile("org.springframework.boot:spring-boot-starter-data-jpa")
+   compile("org.springframework.security:spring-security-config")
+   compile("org.springframework.security:spring-security-acl")
+   compile("org.springframework:spring-context-support")
+   compile("org.springframework.boot:spring-boot-starter-amqp")
+   compile("org.javers:javers-spring-boot-starter-sql:3.9.0")
+
+   compile("io.springfox:springfox-swagger2:2.9.0")
+   compile("io.springfox:springfox-swagger-ui:2.9.0")
+   
+   compile("edu.kit.datamanager:service-base:0.1")
+   
+   compile("com.monitorjbl:spring-json-view:0.16")
+   compile("org.postgresql:postgresql:42.2.1")
+   compile("org.apache.tika:tika-core:1.18") 
+    
+   compileOnly('org.projectlombok:lombok')
+
+   testCompile("com.h2database:h2:1.4.194") 
+   testCompile("org.springframework.restdocs:spring-restdocs-mockmvc")
+   testCompile("org.springframework.boot:spring-boot-starter-test")
+   testCompile("org.springframework:spring-test")
+   testCompile 'org.springframework.security:spring-security-test'   
+}

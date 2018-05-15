@@ -1,0 +1,6 @@
+secret:
+ key: testOnly
+management:
+   endpoint:
+      health:
+        show-details: "ALWAYS"

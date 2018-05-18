@@ -1,5 +1,7 @@
-secret:
- key: testOnly
+repo:
+  jwtSecret: test123
+  basepath: file:///tmp/
+    
 management:
    endpoint:
       health:

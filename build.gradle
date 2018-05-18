@@ -9,12 +9,23 @@ buildscript {
    }
 }
 
+plugins { 
+   id "io.spring.dependency-management" version "1.0.4.RELEASE" 
+   id "com.github.kt3k.coveralls" version "2.8.1" 
+   // id "de.aaschmid.cpd" version "1.0"
+   id "org.owasp.dependencycheck" version "3.1.2"
+   id "com.dorongold.task-tree" version "1.3"
+   id "org.ajoberstar.grgit" version "2.0.1"
+   // id "com.github.spotbugs" version "1.6.1"
+   id "com.jfrog.bintray" version "1.7.3"
+}
+
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
-apply plugin: "jacoco"
+apply plugin: 'jacoco'
 
 
 jar {
@@ -63,5 +74,13 @@ dependencies {
    testCompile("org.springframework.restdocs:spring-restdocs-mockmvc")
    testCompile("org.springframework.boot:spring-boot-starter-test")
    testCompile("org.springframework:spring-test")
-   testCompile 'org.springframework.security:spring-security-test'   
+   testCompile("org.springframework.security:spring-security-test")
+}
+
+
+jacocoTestReport {
+   reports {
+      xml.enabled true
+      html.enabled true
+   }
 }

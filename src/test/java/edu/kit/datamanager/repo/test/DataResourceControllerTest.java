@@ -60,6 +60,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithSecurityContextTestExecutionListener;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
@@ -91,6 +92,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
   DirtiesContextTestExecutionListener.class,
   TransactionalTestExecutionListener.class,
   WithSecurityContextTestExecutionListener.class})
+@ActiveProfiles("test")
 public class DataResourceControllerTest{
 
   @Autowired

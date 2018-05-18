@@ -957,7 +957,8 @@ public class DataResourceControllerTest{
     cinfo.setParentResource(sampleResource);
     cinfo.setRelativePath("withMediaType");
     cinfo.setMediaType("text/plain");
-    cinfo.setContentUri("file:///Users/jejkal/Documents/bibtex.txt");
+    temp = Files.createTempFile("testVariousContentDownload2", "txt");
+    cinfo.setContentUri(temp.toUri().toString());
     contentInformationDao.save(cinfo);
 
     cinfo = new ContentInformation();
@@ -974,8 +975,10 @@ public class DataResourceControllerTest{
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(header().string("Content-Disposition", equalTo("attachment; filename=\"validFile\"")));
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/invalidRemoteUri").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable()).andExpect(header().string("Content-Location", equalTo("http://somedomain.new/myFileWhichDoesNotExist")));
+
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/withMediaType").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(header().string("Content-Type", equalTo("text/plain")));
+
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/withRedirect").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(header().string("Location", equalTo("http://www.heise.de")));
 

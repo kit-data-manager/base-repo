@@ -36,11 +36,8 @@ import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,7 +65,6 @@ import org.springframework.test.context.support.DirtiesContextTestExecutionListe
 import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
 import org.springframework.test.context.web.ServletTestExecutionListener;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -77,7 +73,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 
 /**
@@ -808,7 +803,9 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
 
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex3.txt", "application/json", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    Path temp = Files.createTempFile("testUploadExistingWithForceAndMetadataUpdate", "test");
+
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex3.txt", "application/json", Files.newInputStream(temp));
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
@@ -834,7 +831,6 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
 
-    //  MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex3.txt", "application/json", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/google.de").file(secmp).header(HttpHeaders.AUTHORIZATION,
@@ -854,7 +850,6 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
 
-    //  MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex3.txt", "application/json", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/file.txt").file(secmp).header(HttpHeaders.AUTHORIZATION,
@@ -1001,7 +996,8 @@ public class DataResourceControllerTest{
     Set<String> tags = new HashSet<>();
     tags.add("testing");
     cinfo.setTags(tags);
-    cinfo.setContentUri("file:///Users/jejkal/Documents/bibtex.txt");
+    Path temp = Files.createTempFile("testPatchContentInformation", "txt");
+    cinfo.setContentUri(temp.toUri().toString());
     contentInformationDao.save(cinfo);
 
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
@@ -1024,7 +1020,8 @@ public class DataResourceControllerTest{
     Set<String> tags = new HashSet<>();
     tags.add("testing");
     cinfo.setTags(tags);
-    cinfo.setContentUri("file:///Users/jejkal/Documents/bibtex.txt");
+    Path temp = Files.createTempFile("testPatchInvalidContentInformationField", "txt");
+    cinfo.setContentUri(temp.toUri().toString());
     contentInformationDao.save(cinfo);
 
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
@@ -1044,7 +1041,8 @@ public class DataResourceControllerTest{
     Set<String> tags = new HashSet<>();
     tags.add("testing");
     cinfo.setTags(tags);
-    cinfo.setContentUri("file:///Users/jejkal/Documents/bibtex.txt");
+    Path temp = Files.createTempFile("testPatchWithoutPermissions", "txt");
+    cinfo.setContentUri(temp.toUri().toString());
     contentInformationDao.save(cinfo);
 
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
@@ -1080,7 +1078,8 @@ public class DataResourceControllerTest{
     Set<String> tags = new HashSet<>();
     tags.add("testing");
     cinfo.setTags(tags);
-    cinfo.setContentUri("file:///Users/jejkal/Documents/bibtex.txt");
+    Path temp = Files.createTempFile("testPatchWithInvalidEtag", "txt");
+    cinfo.setContentUri(temp.toUri().toString());
     contentInformationDao.save(cinfo);
 
     String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
@@ -1097,7 +1096,8 @@ public class DataResourceControllerTest{
     Set<String> tags = new HashSet<>();
     tags.add("testing");
     cinfo.setTags(tags);
-    cinfo.setContentUri("file:///Users/jejkal/Documents/bibtex.txt");
+    Path temp = Files.createTempFile("testPatchWithAdminPermission", "txt");
+    cinfo.setContentUri(temp.toUri().toString());
     contentInformationDao.save(cinfo);
 
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
@@ -1120,7 +1120,8 @@ public class DataResourceControllerTest{
     Set<String> tags = new HashSet<>();
     tags.add("testing");
     cinfo.setTags(tags);
-    cinfo.setContentUri("file:///Users/jejkal/Documents/bibtex.txt");
+    Path temp = Files.createTempFile("testPatchAnonymous", "txt");
+    cinfo.setContentUri(temp.toUri().toString());
     contentInformationDao.save(cinfo);
 
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,

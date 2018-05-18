@@ -1,8 +1,6 @@
-# Information and Data Repository Platform - Service
+# KIT Data Manager - Base Repository Service
 
-This project contains the RESTful endpoint implementations for the NFFA Information and Data Repository Platform. 
-These endpoints are serving as interfaces for external tools planning to access the IDRP, e.g. for registering data assets,
-retrieving metadata and accessing data. 
+Tbd
 
 ## How to build
 
@@ -14,4 +12,4 @@ Detailed build and deployment information will follow.
 
 ## License
 
-The IDRP is licensed under the Apache License, Version 2.0.
+The KIT Data Manager is licensed under the Apache License, Version 2.0.

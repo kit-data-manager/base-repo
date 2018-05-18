@@ -740,7 +740,8 @@ public class DataResourceControllerTest{
    */
   @Test
   public void testUploadFile() throws Exception{
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    Path temp = Files.createTempFile("testUploadFile", "test");
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
@@ -751,7 +752,8 @@ public class DataResourceControllerTest{
 
   @Test
   public void testUploadFileWithoutPermissions() throws Exception{
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    Path temp = Files.createTempFile("testUploadFileWithoutPermissions", "test");
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isForbidden());
@@ -759,13 +761,15 @@ public class DataResourceControllerTest{
 
   @Test
   public void testUploadFileAnonymous() throws Exception{
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    Path temp = Files.createTempFile("testUploadFileAnonymous", "test");
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp)).andDo(print()).andExpect(status().isUnauthorized());
   }
 
   @Test
   public void testUploadFileForInvalidResource() throws Exception{
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    Path temp = Files.createTempFile("testUploadFileForInvalidResource", "test");
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/0/data/bibtex.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isNotFound());
@@ -773,7 +777,8 @@ public class DataResourceControllerTest{
 
   @Test
   public void testUploadExistingWithoutForce() throws Exception{
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex1.txt", "multipart/form-data", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    Path temp = Files.createTempFile("testUploadExistingWithoutForce", "test");
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex1.txt", "multipart/form-data", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex1.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
@@ -784,7 +789,8 @@ public class DataResourceControllerTest{
 
   @Test
   public void testUploadExistingWithForce() throws Exception{
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex2.txt", "multipart/form-data", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    Path temp = Files.createTempFile("testUploadExistingWithForce", "test");
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex2.txt", "multipart/form-data", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex2.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
@@ -873,8 +879,9 @@ public class DataResourceControllerTest{
 
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
+    Path temp = Files.createTempFile("testQueryByTag", "test");
 
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex4.txt", "application/json", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex4.txt", "application/json", Files.newInputStream(temp));
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
@@ -906,7 +913,8 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
 
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex5.txt", "application/json", Files.newInputStream(Paths.get(URI.create("file:///Users/jejkal/Documents/bibtex.txt"))));
+    Path temp = Files.createTempFile("testRemoveLeadingSlashFromPath", "test");
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex5.txt", "application/json", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex5.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
@@ -932,10 +940,11 @@ public class DataResourceControllerTest{
     cinfo.setContentUri("/invalidlocation/missingFile");
     contentInformationDao.save(cinfo);
 
+    Path temp = Files.createTempFile("testVariousContentDownload", "test");
     cinfo = new ContentInformation();
     cinfo.setParentResource(sampleResource);
     cinfo.setRelativePath("validFile");
-    cinfo.setContentUri("file:///Users/jejkal/Documents/bibtex.txt");
+    cinfo.setContentUri(temp.toUri().toString());
     contentInformationDao.save(cinfo);
 
     cinfo = new ContentInformation();

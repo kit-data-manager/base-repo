@@ -34,6 +34,7 @@ import edu.kit.datamanager.repo.domain.ResourceType;
 import edu.kit.datamanager.repo.domain.Scheme;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
+import edu.kit.datamanager.repo.service.IDataResourceService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import java.nio.file.Files;
@@ -53,6 +54,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -95,6 +97,8 @@ public class DataResourceControllerTest{
 
   @Autowired
   private IDataResourceDao dataResourceDao;
+  @Autowired
+  private IDataResourceService dataResourceService;
   @Autowired
   private IContentInformationDao contentInformationDao;
 
@@ -637,6 +641,65 @@ public class DataResourceControllerTest{
   public void testDeleteResourceAsAdminWithWrongEtag() throws Exception{
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-None-Match", "0").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken).contentType("application/json")).andExpect(status().isPreconditionFailed());
+  }
+
+  @Test
+  public void testDeleteViaService() throws Exception{
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+
+    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-None-Match", etag).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+
+    dataResourceService.delete(sampleResource);
+
+    this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isNotFound());
+
+    Assert.assertFalse(dataResourceDao.findById(sampleResource.getId()).isPresent());
+  }
+
+  @Test
+  public void testFindAllByExampleViaServiceAfterRevokation() throws Exception{
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+    DataResource example = new DataResource();
+    example.setState(null);
+    example.setLanguage("en");
+    example.setPublicationYear("2018");
+
+    int resourcesBeforeWithRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), true).getNumberOfElements();
+    int resourcesBeforeWithoutRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), false).getNumberOfElements();
+
+    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-None-Match", etag).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+
+    int resourcesAfterWithRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), true).getNumberOfElements();
+    int resourcesAfterWithoutRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), false).getNumberOfElements();
+
+    Assert.assertEquals(resourcesBeforeWithRevoked, resourcesBeforeWithoutRevoked);
+    Assert.assertNotEquals(resourcesAfterWithRevoked, resourcesAfterWithoutRevoked);
+  }
+
+  @Test
+  public void testFindAllViaServiceAfterRevokation() throws Exception{
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+
+    int resourcesBeforeWithRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), true).getNumberOfElements();
+    int resourcesBeforeWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
+
+    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-None-Match", etag).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+
+    int resourcesAfterWithRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), true).getNumberOfElements();
+    int resourcesAfterWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
+
+    Assert.assertEquals(3, resourcesBeforeWithRevoked);
+    Assert.assertEquals(1, resourcesBeforeWithoutRevoked);
+
+    Assert.assertEquals(3, resourcesAfterWithRevoked);
+    Assert.assertEquals(0, resourcesAfterWithoutRevoked);
   }
 
   /**

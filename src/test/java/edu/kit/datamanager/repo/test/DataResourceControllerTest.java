@@ -113,6 +113,7 @@ public class DataResourceControllerTest{
   private DataResource sampleResource;
   private DataResource otherResource;
   private DataResource revokedResource;
+  private DataResource fixedResource;
 
   @Before
   public void setUp(){
@@ -229,6 +230,19 @@ public class DataResourceControllerTest{
     revokedResource.setState(DataResource.State.REVOKED);
 
     revokedResource = dataResourceDao.save(revokedResource);
+
+    fixedResource = DataResource.factoryNewDataResource("fixedResource");
+    fixedResource.getDescriptions().add(Description.factoryDescription("This is a description", Description.TYPE.OTHER, "en"));
+    fixedResource.getTitles().add(Title.createTitle("Title", Title.TYPE.OTHER));
+    fixedResource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"KIT"}));
+    fixedResource.getDates().add(Date.factoryDate(Instant.now(), Date.DATE_TYPE.CREATED));
+    fixedResource.setPublisher("me");
+    fixedResource.setPublicationYear("2018");
+    fixedResource.getAcls().add(new AclEntry("admin", AclEntry.PERMISSION.ADMINISTRATE));
+    fixedResource.getAcls().add(new AclEntry("user", AclEntry.PERMISSION.WRITE));
+    fixedResource.setState(DataResource.State.FIXED);
+
+    fixedResource = dataResourceDao.save(fixedResource);
   }
 
   /**
@@ -730,6 +744,13 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + revokedResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
+  }
+
+  @Test
+  public void testPatchFixedResourceWithoutPermission() throws Exception{
+    String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
+    this.mockMvc.perform(patch("/api/v1/dataresources/" + fixedResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
   }
 
   @Test

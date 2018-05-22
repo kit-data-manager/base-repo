@@ -53,6 +53,7 @@ public class DataResourceUtils{
           //no access, return 404 as resource has been revoked
           throw new AccessForbiddenException("Resource has been fixed. Modifications to this resource are no longer permitted.");
         }
+        break;
       case REVOKED:
         //resource is revoked, check ADMINISTRATE or ADMINISTRATOR permissions
         if(!callerPermission.atLeast(AclEntry.PERMISSION.ADMINISTRATE)){

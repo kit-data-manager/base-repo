@@ -43,8 +43,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
   @Autowired
   private Logger logger;
 
-  // @Value("${secret.key}")
-  // private String secretKey;
   @Autowired
   private ApplicationProperties applicationProperties;
 

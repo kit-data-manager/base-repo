@@ -56,24 +56,23 @@ public class DataResourceService implements IDataResourceService{
     return getDao().findById(id);
   }
 
-  @Override
-  @Transactional(readOnly = true)
-  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, AclEntry.PERMISSION permission){
-    return getDao().findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(state, sids, permission);
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl){
-    return getDao().findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(state, sids, permission, pgbl);
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, AclEntry.PERMISSION permission){
-    return getDao().findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(id, sids, permission);
-  }
-
+//  @Override
+//  @Transactional(readOnly = true)
+//  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, AclEntry.PERMISSION permission){
+//    return getDao().findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(state, sids, permission);
+//  }
+//
+//  @Override
+//  @Transactional(readOnly = true)
+//  public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl){
+//    return getDao().findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(state, sids, permission, pgbl);
+//  }
+//
+//  @Override
+//  @Transactional(readOnly = true)
+//  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, AclEntry.PERMISSION permission){
+//    return getDao().findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(id, sids, permission);
+//  }
   @Override
   @Transactional(readOnly = true)
   public Page<DataResource> findAll(DataResource example, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl, boolean includeRevoked){
@@ -109,12 +108,7 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  public DataResource create(DataResource entity){
-    return getDao().save(entity);
-  }
-
-  @Override
-  public DataResource update(DataResource entity){
+  public DataResource createOrUpdate(DataResource entity){
     return getDao().save(entity);
   }
 

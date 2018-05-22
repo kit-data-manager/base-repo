@@ -29,21 +29,19 @@ import org.springframework.data.domain.Pageable;
  */
 public interface IDataResourceService extends HealthIndicator{
 
-  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(DataResource.State state, List<String> sids, AclEntry.PERMISSION permission);
-
-  public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(DataResource.State state, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl);
-
-  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, AclEntry.PERMISSION permission);
+//  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(DataResource.State state, List<String> sids, AclEntry.PERMISSION permission);
+//
+//  public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(DataResource.State state, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl);
+//
+//  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, AclEntry.PERMISSION permission);
 
   public Page<DataResource> findAll(DataResource example, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl, boolean IncludeRevoked);
 
   public Page<DataResource> findAll(DataResource example, Pageable pgbl, boolean IncludeRevoked);
 
-  DataResource create(final DataResource entity);
+  DataResource createOrUpdate(final DataResource entity);
 
   Optional<DataResource> findById(final Long id);
-
-  DataResource update(final DataResource entity);
 
   void delete(final DataResource entity);
 }

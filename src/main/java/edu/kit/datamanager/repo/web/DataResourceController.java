@@ -241,7 +241,7 @@ public class DataResourceController implements IDataResourceController{
       resource.setState(DataResource.State.VOLATILE);
     }
 
-    DataResource newResource = dataResourceService.create(resource);
+    DataResource newResource = dataResourceService.createOrUpdate(resource);
 
     String etag = Integer.toString(resource.hashCode());
     return ResponseEntity.created(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(newResource.getId(), request, response)).toUri()).eTag("\"" + etag + "\"").body(newResource);
@@ -358,7 +358,7 @@ public class DataResourceController implements IDataResourceController{
     DataResource updated = PatchUtil.applyPatch(resource, patch, DataResource.class, userGrants);
 
     LOGGER.info("Persisting patched resource.");
-    dataResourceService.update(updated);
+    dataResourceService.createOrUpdate(updated);
     LOGGER.info("Resource successfully persisted.");
     return ResponseEntity.noContent().build();
   }
@@ -377,7 +377,7 @@ public class DataResourceController implements IDataResourceController{
           throw new EtagMismatchException("ETag not matching, resource has changed.");
         }
         resource.setState(DataResource.State.REVOKED);
-        dataResourceService.update(resource);
+        dataResourceService.createOrUpdate(resource);
       } else{
         throw new UpdateForbiddenException("Insufficient role. ADMINISTRATE permission or ROLE_ADMINISTRATOR required.");
       }
@@ -518,7 +518,7 @@ public class DataResourceController implements IDataResourceController{
     URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(id, PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
 
     try{
-      contentInformationService.update(contentInfo);
+      contentInformationService.createOrUpdate(contentInfo);
       URIBuilder builder = new URIBuilder(link);
       builder.setPath(builder.getPath().replace("**", path));
       return ResponseEntity.created(builder.build()).build();
@@ -764,7 +764,7 @@ public class DataResourceController implements IDataResourceController{
 
       ContentInformation updated = PatchUtil.applyPatch(toUpdate, patch, ContentInformation.class, userGrants);
       LOGGER.info("Persisting patched content information.");
-      contentInformationService.update(updated);
+      contentInformationService.createOrUpdate(updated);
       LOGGER.info("Content information successfully persisted.");
       return ResponseEntity.noContent().build();
     } else{

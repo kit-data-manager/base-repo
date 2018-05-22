@@ -31,11 +31,9 @@ public interface IContentInformationService extends HealthIndicator{
 
   public Page<ContentInformation> findByParentResourceIdEqualsAndRelativePathLikeAndHasTag(Long id, String relativePath, String tag, Pageable pgbl);
 
-  public Page<ContentInformation> findAll(ContentInformation example, Pageable pgbl);
+  //public Page<ContentInformation> findAll(ContentInformation example, Pageable pgbl);
 
-  ContentInformation create(final ContentInformation entity);
-
-  ContentInformation update(final ContentInformation entity);
+  ContentInformation createOrUpdate(final ContentInformation entity);
 
   void delete(final ContentInformation entity);
 }

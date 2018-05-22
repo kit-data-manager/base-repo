@@ -65,23 +65,18 @@ public class ContentInformationService implements IContentInformationService{
     return dao.findAll(spec, pgbl);
   }
 
-  @Override
-  @Transactional(readOnly = true)
-  public Page<ContentInformation> findAll(ContentInformation example, Pageable pgbl){
-    if(example != null){
-      Specification<ContentInformation> spec = Specification.where(new ByExampleSpecification(em).byExample(example));
-      return getDao().findAll(spec, pgbl);
-    }
-    return getDao().findAll(pgbl);
-  }
+//  @Override
+//  @Transactional(readOnly = true)
+//  public Page<ContentInformation> findAll(ContentInformation example, Pageable pgbl){
+//    if(example != null){
+//      Specification<ContentInformation> spec = Specification.where(new ByExampleSpecification(em).byExample(example));
+//      return getDao().findAll(spec, pgbl);
+//    }
+//    return getDao().findAll(pgbl);
+//  }
 
   @Override
-  public ContentInformation create(ContentInformation entity){
-    return getDao().save(entity);
-  }
-
-  @Override
-  public ContentInformation update(ContentInformation entity){
+  public ContentInformation createOrUpdate(ContentInformation entity){
     return getDao().save(entity);
   }
 

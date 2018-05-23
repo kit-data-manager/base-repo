@@ -50,7 +50,7 @@ import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.repo.util.AclUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.repo.util.PathUtils;
-import edu.kit.datamanager.service.exceptions.CustomInternalServerError;
+import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.PatchUtil;
 import java.io.BufferedInputStream;

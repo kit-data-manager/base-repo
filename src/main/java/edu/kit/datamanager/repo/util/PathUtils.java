@@ -18,7 +18,7 @@ package edu.kit.datamanager.repo.util;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
-import edu.kit.datamanager.service.exceptions.CustomInternalServerError;
+import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Calendar;

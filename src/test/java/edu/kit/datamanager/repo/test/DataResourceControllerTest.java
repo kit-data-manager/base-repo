@@ -251,13 +251,13 @@ public class DataResourceControllerTest{
   @Test
   public void testGetDataResources() throws Exception{
     this.mockMvc.perform(get("/api/v1/dataresources/").param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(3)));
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(4)));
   }
 
   @Test
   public void testGetDataResourcesWithInvalidPageSize() throws Exception{
     this.mockMvc.perform(get("/api/v1/dataresources/").param("page", "0").param("size", "1000").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(3)));
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(4)));
   }
 
   @Test
@@ -274,7 +274,7 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = new ObjectMapper();
 
     this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(2)));
   }
 
   @Test
@@ -709,11 +709,11 @@ public class DataResourceControllerTest{
     int resourcesAfterWithRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), true).getNumberOfElements();
     int resourcesAfterWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
 
-    Assert.assertEquals(3, resourcesBeforeWithRevoked);
-    Assert.assertEquals(1, resourcesBeforeWithoutRevoked);
+    Assert.assertEquals(4, resourcesBeforeWithRevoked);
+    Assert.assertEquals(2, resourcesBeforeWithoutRevoked);
 
-    Assert.assertEquals(3, resourcesAfterWithRevoked);
-    Assert.assertEquals(0, resourcesAfterWithoutRevoked);
+    Assert.assertEquals(4, resourcesAfterWithRevoked);
+    Assert.assertEquals(1, resourcesAfterWithoutRevoked);
   }
 
   /**

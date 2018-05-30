@@ -251,6 +251,7 @@ public class DataResourceController implements IDataResourceController{
   public ResponseEntity<DataResource> getById(@PathVariable("id") final Long id, WebRequest request, final HttpServletResponse response){
     Optional<DataResource> result = dataResourceService.findById(id);
     if(!result.isPresent()){
+      LOGGER.debug("No data resource found for identifier {}. Returning HTTP 404.", id);
       return ResponseEntity.notFound().build();
     }
 
@@ -258,24 +259,33 @@ public class DataResourceController implements IDataResourceController{
 
     //check revokation state and access permissions
     if(!resource.getState().equals(DataResource.State.REVOKED)){
+      LOGGER.debug("Resource is not revoked. Checking for READ permissions for principal identifiers {}.", AuthenticationHelper.getPrincipalIdentifiers());
       //resource is not revoked, check READ permissions
       if(!AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.READ)){
         throw new AccessForbiddenException("Resource access restricted by acl.");
+      } else{
+        LOGGER.debug("READ access granted.");
       }
     } else{
       //resource is revoked, check ADMINISTRATE or ADMINISTRATOR permissions
+      LOGGER.debug("Resource has been revoked. Checking for ADMINISTRATE permissions for principal identifiers {}.", AuthenticationHelper.getPrincipalIdentifiers());
       if(!AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
         //no access, return 404 as resource has been revoked
         return ResponseEntity.notFound().build();
+      } else{
+        LOGGER.debug("READ access to revoked resource granted.");
       }
     }
 
     DataResource modResource = resource;
     if(!AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+      LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
       //exclude ACLs if not administrate or administrator permissions are set
       modResource = json.use(JsonView.with(resource)
               .onClass(DataResource.class, match().exclude("acls")))
               .returnValue();
+    } else{
+      LOGGER.debug("Administrator access detected, keepting ACL information in resources.");
     }
     String etag = Integer.toString(resource.hashCode());
     return ResponseEntity.ok().eTag("\"" + etag + "\"").body(modResource);
@@ -304,9 +314,11 @@ public class DataResourceController implements IDataResourceController{
 
     if(AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
       //do find all
+      LOGGER.debug("Administrator access detected. Calling findAll() with example {} and page request {}.", example, request);
       page = dataResourceService.findAll(example, request, true);
     } else{
       //query based on membership
+      LOGGER.debug("Non-Administrator access detected. Calling findAll() with READ permissions, example {}, principal identifiers {} and page request {}.", example, AuthenticationHelper.getPrincipalIdentifiers(), request);
       page = dataResourceService.findAll(example, AuthenticationHelper.getPrincipalIdentifiers(), AclEntry.PERMISSION.READ, request, false);
     }
 
@@ -317,11 +329,17 @@ public class DataResourceController implements IDataResourceController{
     eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), pageSize));
     //publish listing event??
     List<DataResource> modResources = page.getContent();
+    if(modResources.isEmpty()){
+      LOGGER.debug("No data resource found for example {} and principal identifiers {}. Returning empty result.", example, AuthenticationHelper.getPrincipalIdentifiers());
+    }
     if(!AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+      LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
       //exclude ACLs if no administrator permissions are set
       modResources = json.use(JsonView.with(page.getContent())
               .onClass(DataResource.class, match().exclude("acls")))
               .returnValue();
+    } else{
+      LOGGER.debug("Administrator access detected, keepting ACL information in resources.");
     }
     return ResponseEntity.ok(modResources);
   }
@@ -334,6 +352,7 @@ public class DataResourceController implements IDataResourceController{
 
     Optional<DataResource> result = dataResourceService.findById(id);
     if(!result.isPresent()){
+      LOGGER.debug("No data resource found for identifier {}. Returning HTTP 404.", id);
       return ResponseEntity.notFound().build();
     }
 
@@ -342,6 +361,7 @@ public class DataResourceController implements IDataResourceController{
     DataResourceUtils.performPermissionCheck(resource, AclEntry.PERMISSION.WRITE);
 
     if(!request.checkNotModified(Integer.toString(resource.hashCode()))){
+      LOGGER.debug("Provided etag is not matching resource etag {}. Returning HTTP 412.", Integer.toString(resource.hashCode()));
       throw new EtagMismatchException("ETag not matching, resource has changed.");
     }
 
@@ -352,7 +372,7 @@ public class DataResourceController implements IDataResourceController{
     userGrants.add(new SimpleGrantedAuthority(callerPermission.getValue()));
 
     if(callerIsAdmin){
-      LOGGER.debug("Admin access detected. Adding ADMINISTRATOR role to granted authorities.");
+      LOGGER.debug("Administrator access detected. Adding ADMINISTRATOR role to granted authorities.");
       userGrants.add(new SimpleGrantedAuthority(RepoUserRole.ADMINISTRATOR.getValue()));
     }
     DataResource updated = PatchUtil.applyPatch(resource, patch, DataResource.class, userGrants);
@@ -366,6 +386,7 @@ public class DataResourceController implements IDataResourceController{
   @Override
   public ResponseEntity delete(@PathVariable("id") final Long id, WebRequest request, final HttpServletResponse response){
     if(AuthenticationHelper.isAnonymous()){
+      LOGGER.debug("Anonymous access to DELETE permitted. Returning HTTP 401.");
       throw new UnauthorizedAccessException("Please login in order to be able to modify resources.");
     }
 
@@ -374,13 +395,18 @@ public class DataResourceController implements IDataResourceController{
       DataResource resource = result.get();
       if(AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.ADMINISTRATE) || AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
         if(!request.checkNotModified(Integer.toString(resource.hashCode()))){
+          LOGGER.debug("Provided etag is not matching resource etag {}. Returning HTTP 412.", Integer.toString(resource.hashCode()));
           throw new EtagMismatchException("ETag not matching, resource has changed.");
         }
+        LOGGER.debug("Setting resource state to REVOKED.");
         resource.setState(DataResource.State.REVOKED);
+        LOGGER.debug("Persisting revoked resource.");
         dataResourceService.createOrUpdate(resource);
       } else{
         throw new UpdateForbiddenException("Insufficient role. ADMINISTRATE permission or ROLE_ADMINISTRATOR required.");
       }
+    } else{
+      LOGGER.debug("No data resource found for identifier {}. Returning HTTP 204.", id);
     }
     return ResponseEntity.noContent().build();
   }

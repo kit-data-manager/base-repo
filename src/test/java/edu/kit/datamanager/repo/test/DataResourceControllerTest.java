@@ -18,6 +18,7 @@ package edu.kit.datamanager.repo.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.Identifier;
+import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -35,16 +36,21 @@ import edu.kit.datamanager.repo.domain.Scheme;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.impl.DefaultClaims;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.time.DateUtils;
+import org.assertj.core.util.Arrays;
 import org.hamcrest.Matchers;
 import static org.hamcrest.Matchers.equalTo;
 import org.junit.Assert;
@@ -120,69 +126,107 @@ public class DataResourceControllerTest{
     contentInformationDao.deleteAll();
     dataResourceDao.deleteAll();
 
-    String payload = "{\n"
-            + "    \"id\": 1,\n"
-            + "    \"username\": \"admin\",\n"
-            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
-            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
-            + "    \"loginFailures\": 0,\n"
-            + "    \"active\": true,\n"
-            + "    \"locked\": false,\n"
-            + "    \"rolesAsEnum\": [\n"
-            + "        \"ADMINISTRATOR\"\n"
-            + "    ],\n"
-            + "    \"roles\": \"[\\\"ROLE_ADMINISTRATOR\\\"]\"\n"
-            + "}";
+    Claims claims = new DefaultClaims();
+    claims.put("username", "admin");
+    claims.put("email", "thomas.jejkal@kit.edu");
+    claims.put("orcid", "0000-0003-2804-688X");
+    claims.put("loginFailures", 0);
+    claims.put("active", true);
+    claims.put("locked", false);
+    Collection<String> roles = new ArrayList<>();
+    roles.add(RepoUserRole.ADMINISTRATOR.toString());
+    claims.put("roles", roles);
+//    String payload = "{\n"
+//            + "    \"id\": 1,\n"
+//            + "    \"username\": \"admin\",\n"
+//            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
+//            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
+//            + "    \"loginFailures\": 0,\n"
+//            + "    \"active\": true,\n"
+//            + "    \"locked\": false,\n"
+//            + "    \"rolesAsEnum\": [\n"
+//            + "        \"ADMINISTRATOR\"\n"
+//            + "    ],\n"
+//            + "    \"roles\": \"[\\\"ROLE_ADMINISTRATOR\\\"]\"\n"
+//            + "}";
 
-    adminToken = Jwts.builder().setPayload(payload).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
+    adminToken = Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
 
-    payload = "{\n"
-            + "    \"id\": 1,\n"
-            + "    \"username\": \"user\",\n"
-            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
-            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
-            + "    \"loginFailures\": 0,\n"
-            + "    \"active\": true,\n"
-            + "    \"locked\": false,\n"
-            + "    \"rolesAsEnum\": [\n"
-            + "        \"USERS\"\n"
-            + "    ],\n"
-            + "    \"roles\": \"[\\\"ROLE_USERS\\\"]\"\n"
-            + "}";
+    claims = new DefaultClaims();
+    claims.put("username", "user");
+    claims.put("email", "thomas.jejkal@kit.edu");
+    claims.put("orcid", "0000-0003-2804-688X");
+    claims.put("loginFailures", 0);
+    claims.put("active", true);
+    claims.put("locked", false);
+    roles = new ArrayList<>();
+    roles.add(RepoUserRole.USER.toString());
+    claims.put("roles", roles);
+//    payload = "{\n"
+//            + "    \"id\": 1,\n"
+//            + "    \"username\": \"user\",\n"
+//            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
+//            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
+//            + "    \"loginFailures\": 0,\n"
+//            + "    \"active\": true,\n"
+//            + "    \"locked\": false,\n"
+//            + "    \"rolesAsEnum\": [\n"
+//            + "        \"USERS\"\n"
+//            + "    ],\n"
+//            + "    \"roles\": \"[\\\"ROLE_USERS\\\"]\"\n"
+//            + "}";
 
-    userToken = Jwts.builder().setPayload(payload).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
+    userToken = Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
 
-    payload = "{\n"
-            + "    \"id\": 1,\n"
-            + "    \"username\": \"otheruser\",\n"
-            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
-            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
-            + "    \"loginFailures\": 0,\n"
-            + "    \"active\": true,\n"
-            + "    \"locked\": false,\n"
-            + "    \"rolesAsEnum\": [\n"
-            + "        \"USERS\"\n"
-            + "    ],\n"
-            + "    \"roles\": \"[\\\"ROLE_USERS\\\"]\"\n"
-            + "}";
+//    payload = "{\n"
+//            + "    \"id\": 1,\n"
+//            + "    \"username\": \"otheruser\",\n"
+//            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
+//            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
+//            + "    \"loginFailures\": 0,\n"
+//            + "    \"active\": true,\n"
+//            + "    \"locked\": false,\n"
+//            + "    \"rolesAsEnum\": [\n"
+//            + "        \"USERS\"\n"
+//            + "    ],\n"
+//            + "    \"roles\": \"[\\\"ROLE_USERS\\\"]\"\n"
+//            + "}";
+    claims = new DefaultClaims();
+    claims.put("username", "otheruser");
+    claims.put("email", "thomas.jejkal@kit.edu");
+    claims.put("orcid", "0000-0003-2804-688X");
+    claims.put("loginFailures", 0);
+    claims.put("active", true);
+    claims.put("locked", false);
+    roles = new ArrayList<>();
+    roles.add(RepoUserRole.USER.toString());
+    claims.put("roles", roles);
+    otherUserToken = Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
 
-    otherUserToken = Jwts.builder().setPayload(payload).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
-
-    payload = "{\n"
-            + "    \"id\": 1,\n"
-            + "    \"username\": \"guest\",\n"
-            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
-            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
-            + "    \"loginFailures\": 0,\n"
-            + "    \"active\": true,\n"
-            + "    \"locked\": false,\n"
-            + "    \"rolesAsEnum\": [\n"
-            + "        \"GUEST\"\n"
-            + "    ],\n"
-            + "    \"roles\": \"[\\\"ROLE_GUEST\\\"]\"\n"
-            + "}";
-
-    guestToken = Jwts.builder().setPayload(payload).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
+//    payload = "{\n"
+//            + "    \"id\": 1,\n"
+//            + "    \"username\": \"guest\",\n"
+//            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
+//            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
+//            + "    \"loginFailures\": 0,\n"
+//            + "    \"active\": true,\n"
+//            + "    \"locked\": false,\n"
+//            + "    \"rolesAsEnum\": [\n"
+//            + "        \"GUEST\"\n"
+//            + "    ],\n"
+//            + "    \"roles\": \"[\\\"ROLE_GUEST\\\"]\"\n"
+//            + "}";
+    claims = new DefaultClaims();
+    claims.put("username", "guest");
+    claims.put("email", "thomas.jejkal@kit.edu");
+    claims.put("orcid", "0000-0003-2804-688X");
+    claims.put("loginFailures", 0);
+    claims.put("active", true);
+    claims.put("locked", false);
+    roles = new ArrayList<>();
+    roles.add(RepoUserRole.GUEST.toString());
+    claims.put("roles", roles);
+    guestToken = Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
 
     sampleResource = DataResource.factoryNewDataResource("altIdentifier");
     sampleResource.setState(DataResource.State.VOLATILE);
@@ -251,7 +295,7 @@ public class DataResourceControllerTest{
   @Test
   public void testGetDataResources() throws Exception{
     this.mockMvc.perform(get("/api/v1/dataresources/").param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(4)));
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(4))).andReturn();
   }
 
   @Test

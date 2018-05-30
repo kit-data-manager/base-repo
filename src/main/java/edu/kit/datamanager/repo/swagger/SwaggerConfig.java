@@ -65,11 +65,11 @@ public class SwaggerConfig{
 
   private ApiInfo apiInfo(){
     return new ApiInfo(
-            "Repository Service - RESTful API",
-            "This webpage describes the RESTful interface of the KIT Data Manager Repository Service.",
+            "Repository Microservice - RESTful API",
+            "This webpage describes the RESTful interface of the KIT Data Manager Repository Microservice.",
             "0.1",
             null,
-            new Contact("Thomas Jejkal", "datamanager.kit.edu", "thomas.jejkal@kit.edu"),
+            new Contact("KIT Data Manager Support", "datamanager.kit.edu", "support@datamanager.kit.edu"),
             "Apache 2.0",
             "http://www.apache.org/licenses/LICENSE-2.0.html",
             Collections.emptyList());

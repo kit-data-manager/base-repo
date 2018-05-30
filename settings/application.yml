@@ -1,12 +1,40 @@
+spring:
+    datasource:
+       url: jdbc:postgresql://localhost:5432/kitdm20
+       username: jejkal
+       password:
+       driverClassName: org.postgresql.Driver
+    jpa:
+      database: POSTGRESQL
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+      properties:
+        hibernate:
+          show_sql: true
+          use_sql_comments: true
+          format_sql: true
 repo:
-  jwtSecret: test123
-  basepath: file:///Users/jejkal/tmp 
-
+   auth:
+      jwtSecret: test123
+   basepath:  file:///Users/jejkal/tmp 
+   
 management:
    endpoint:
       health:
-        show-details: "ALWAYS"
-
+         show-details: "ALWAYS"
+         sensitive: false
+      web:
+      exposure:
+          include: "*"
+   security:
+   enabled: false
+logging:
+   level:
+      edu.kit: WARN
+      org.springframework.web.servlet.mvc: WARN
 server:
-   port:
-      8090
+   port: 8090
+      
+      
+      

@@ -53,6 +53,7 @@ Finally, the actual microservice can be built. As a result, a fat jar containing
 
 * PostgreSQL 9.1 or higher
 
+### Setup
 Before you are able to start the repository microservice, you have to modify the application properties according to your local setup. 
 Therefor, copy the file 'settings/application.yml' to your project folder and customize it. Special attentioned should be payed to the
 properties in the 'datasource' section as well as the 'jwtSecret', which has to match the 'jwtSecret' provided in the configuration of 

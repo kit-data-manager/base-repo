@@ -12,6 +12,8 @@ In order to build this microservice you'll need:
 After obtaining the sources change to the folder where the sources are located perform the following steps:
 
 ```
+user@localhost:/home/user$ git clone --recursive git clone --recursive https://github.com/kit-data-manager/base-repo.git
+user@localhost:/home/user$ cd base-repo
 user@localhost:/home/user/base-repo$ git submodule foreach git pull origin master
 Entering 'libraries/service-base'
 From git://github.com/kit-data-manager/service-base
@@ -35,7 +37,7 @@ In the second step, all submodules have to be built and installed into the local
 done before for the most recent version of all submodules, it can be skipped. 
 
 ```
-user@localhost:/home/user/base-repo$ cd ../../
+user@localhost:/home/user/base-repo/libraries/service-base$ cd ../../
 user@localhost:/home/user/base-repo$ ./gradlew build
 BUILD SUCCESSFUL in 1s
 6 actionable tasks: 1 executed, 5 up-to-date
@@ -46,6 +48,10 @@ Finally, the actual microservice can be built. As a result, a fat jar containing
 
 
 ## How to start
+
+### Prerequisites
+
+* PostgreSQL 9.1 or higher
 
 Before you are able to start the repository microservice, you have to modify the application properties according to your local setup. 
 Therefor, copy the file 'settings/application.yml' to your project folder and customize it. Special attentioned should be payed to the

@@ -16,7 +16,6 @@
 package edu.kit.datamanager.repo.util;
 
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
-import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import java.net.URI;
@@ -29,6 +28,9 @@ import org.apache.http.client.utils.URIBuilder;
  * @author jejkal
  */
 public class PathUtils{
+
+  private PathUtils(){
+  }
 
   /**
    * Obtain the absolute data uri for the provided data resource and relative
@@ -51,11 +53,32 @@ public class PathUtils{
       if(internalIdentifier == null){
         throw new CustomInternalServerError("Data integrity error. No internal identifier assigned to resource.");
       }
+
       URIBuilder uriBuilder = new URIBuilder(properties.getBasepath().toURI());
-      uriBuilder.setPath(uriBuilder.getPath() + "/" + Calendar.getInstance().get(Calendar.YEAR) + "/" + internalIdentifier + "/" + relativeDataPath + "_" + System.currentTimeMillis());
+      uriBuilder.setPath(uriBuilder.getPath() + (!properties.getBasepath().toString().endsWith("/") ? "/" : "") + Calendar.getInstance().get(Calendar.YEAR) + "/" + internalIdentifier + "/" + relativeDataPath + "_" + System.currentTimeMillis());
       return uriBuilder.build();
     } catch(URISyntaxException ex){
       throw new CustomInternalServerError("Failed to transform configured basepath to URI.");
     }
+  }
+
+  public static String normalizePath(String path){
+    return normalizePath(path, true);
+  }
+
+  public static String normalizePath(String path, boolean removeOuterSlashes){
+    String normalizedPath = path.replaceAll("/+", "/");
+    if(removeOuterSlashes){
+      //remove leading slash
+      normalizedPath = normalizedPath.startsWith("/") ? normalizedPath.substring(1) : normalizedPath;
+      //remove trailing slash
+      normalizedPath = normalizedPath.endsWith("/") ? normalizedPath.substring(0, normalizedPath.length() - 1) : normalizedPath;
+    }
+    return normalizedPath;
+  }
+  
+    public static int getDepth(String relativePath){
+    String normalizedPath = PathUtils.normalizePath(relativePath);
+    return normalizedPath.split("/").length;
   }
 }

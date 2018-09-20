@@ -17,10 +17,8 @@ package edu.kit.datamanager.repo.domain.acl;
 
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
-import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.util.EnumUtils;
 import java.util.Objects;
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -49,6 +47,7 @@ public class AclEntry{
       this.value = value;
     }
 
+    @Override
     public String getValue(){
       return value;
     }

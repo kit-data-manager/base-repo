@@ -40,7 +40,6 @@ import lombok.EqualsAndHashCode;
 @Data
 @ApiModel(description = "A related identifier for a resource.")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@EqualsAndHashCode(callSuper = false)
 public class RelatedIdentifier extends Identifier{
 
   public enum RELATION_TYPES implements BaseEnum{
@@ -91,6 +90,25 @@ public class RelatedIdentifier extends Identifier{
   private Scheme scheme;
   @ApiModelProperty(value = "Related metadata scheme.", required = false)
   private String relatedMetadataScheme;
+
+  /**
+   * Basic factory method.
+   *
+   * @param type The relation type
+   * @param value The identifier value
+   * @param scheme The relation scheme
+   * @param metadataScheme The relation metadata scheme
+   *
+   * @return A new instance of RelatedIdentifier
+   */
+  public static RelatedIdentifier factoryRelatedIdentifier(RELATION_TYPES type, String value, Scheme scheme, String metadataScheme){
+    RelatedIdentifier result = new RelatedIdentifier();
+    result.setRelationType(type);
+    result.setValue(value);
+    result.setScheme(scheme);
+    result.setRelatedMetadataScheme(metadataScheme);
+    return result;
+  }
 
   @Override
   public boolean equals(Object obj){

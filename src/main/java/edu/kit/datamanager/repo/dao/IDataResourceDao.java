@@ -36,4 +36,5 @@ public interface IDataResourceDao extends JpaRepository<DataResource, Long>, Jpa
   public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl);
 
   public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, AclEntry.PERMISSION permission);
+  
 }

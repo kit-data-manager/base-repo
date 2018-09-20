@@ -42,7 +42,7 @@ public class Subject{
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "keyword", dataType = "String", required = false)
+  @ApiModelProperty(value = "The subject", dataType = "String", required = false)
   private String value;
   @ApiModelProperty(required = false)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
@@ -51,4 +51,23 @@ public class Subject{
   private String valueUri;
   @ApiModelProperty(value = "en", dataType = "String", required = false)
   private String lang;
+
+  /**
+   * Basic factory method.
+   *
+   * @param value The subject value
+   * @param valueUri The subject value uri
+   * @param lang The subject value language
+   * @param scheme The relation scheme
+   *
+   * @return A new instance of RelatedIdentifier
+   */
+  public static Subject factorySubject(String value, String valueUri, String lang, Scheme scheme){
+    Subject result = new Subject();
+    result.setValue(value);
+    result.setValueUri(valueUri);
+    result.setLang(lang);
+    result.setScheme(scheme);
+    return result;
+  }
 }

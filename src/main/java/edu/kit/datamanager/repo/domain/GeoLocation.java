@@ -51,8 +51,60 @@ public class GeoLocation{
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Box box;
   @ApiModelProperty(required = false)
-  @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  private Set<Point> polygon;
+  @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
+  private Polygon polygon;
   @ApiModelProperty(required = false)
   private String place;
+
+  /**
+   * Basic factory method.
+   *
+   * @param point A point location
+   *
+   * @return A new instance of GeoLocation
+   */
+  public static GeoLocation factoryGeoLocation(Point point){
+    GeoLocation result = new GeoLocation();
+    result.setPoint(point);
+    return result;
+  }
+
+  /**
+   * Basic factory method.
+   *
+   * @param box A box location
+   *
+   * @return A new instance of GeoLocation
+   */
+  public static GeoLocation factoryGeoLocation(Box box){
+    GeoLocation result = new GeoLocation();
+    result.setBox(box);
+    return result;
+  }
+
+  /**
+   * Basic factory method.
+   *
+   * @param polygon A polygon location
+   *
+   * @return A new instance of GeoLocation
+   */
+  public static GeoLocation factoryGeoLocation(Polygon polygon){
+    GeoLocation result = new GeoLocation();
+    result.setPolygon(polygon);
+    return result;
+  }
+
+  /**
+   * Basic factory method.
+   *
+   * @param place A place location
+   *
+   * @return A new instance of GeoLocation
+   */
+  public static GeoLocation factoryGeoLocation(String place){
+    GeoLocation result = new GeoLocation();
+    result.setPlace(place);
+    return result;
+  }
 }

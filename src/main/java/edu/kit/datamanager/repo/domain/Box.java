@@ -49,4 +49,41 @@ public class Box{
   private float southLatitude;
   @ApiModelProperty(value = "31.233", notes = "-90 <= northLatitude <= 90", required = true)
   private float northLatitude;
+
+  /**
+   * Basic factory method.
+   *
+   * @param westLongitude The west longitude
+   * @param eastLongitude The east longitude
+   * @param southLatitude The east latitude
+   * @param northLatitude The east latitude
+   *
+   * @return A new instance of Box
+   */
+  public static Box factoryBox(float westLongitude, float eastLongitude, float southLatitude, float northLatitude){
+    Box result = new Box();
+    result.setWestLongitude(westLongitude);
+    result.setEastLongitude(eastLongitude);
+    result.setNorthLatitude(northLatitude);
+    result.setSouthLatitude(southLatitude);
+    return result;
+  }
+
+  /**
+   * Basic factory method.
+   *
+   * @param upperLeftCoordinate The upper left coordinate
+   * @param lowerRightCoordinate The lower right coordinate
+   *
+   * @return A new instance of Box
+   */
+  public static Box factoryBox(Point upperLeftCoordinate, Point lowerRightCoordinate){
+    Box result = new Box();
+    result.setWestLongitude(upperLeftCoordinate.getLongitude());
+    result.setEastLongitude(lowerRightCoordinate.getLongitude());
+    result.setNorthLatitude(upperLeftCoordinate.getLatitude());
+    result.setSouthLatitude(lowerRightCoordinate.getLatitude());
+    return result;
+  }
+
 }

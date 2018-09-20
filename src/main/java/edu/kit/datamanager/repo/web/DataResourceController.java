@@ -31,7 +31,6 @@ import org.springframework.web.context.request.WebRequest;
 import edu.kit.datamanager.controller.hateoas.event.PaginatedResultsRetrievedEvent;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.RepoUserRole;
-import edu.kit.datamanager.exceptions.AccessForbiddenException;
 import edu.kit.datamanager.exceptions.FeatureNotImplementedException;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.EtagMismatchException;
@@ -47,7 +46,6 @@ import edu.kit.datamanager.repo.domain.UnknownInformationConstants;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.service.IDataResourceService;
-import edu.kit.datamanager.repo.util.AclUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.repo.util.PathUtils;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
@@ -257,28 +255,30 @@ public class DataResourceController implements IDataResourceController{
 
     DataResource resource = result.get();
 
-    //check revokation state and access permissions
-    if(!resource.getState().equals(DataResource.State.REVOKED)){
-      LOGGER.debug("Resource is not revoked. Checking for READ permissions for principal identifiers {}.", AuthenticationHelper.getPrincipalIdentifiers());
-      //resource is not revoked, check READ permissions
-      if(!AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.READ)){
-        throw new AccessForbiddenException("Resource access restricted by acl.");
-      } else{
-        LOGGER.debug("READ access granted.");
-      }
-    } else{
-      //resource is revoked, check ADMINISTRATE or ADMINISTRATOR permissions
-      LOGGER.debug("Resource has been revoked. Checking for ADMINISTRATE permissions for principal identifiers {}.", AuthenticationHelper.getPrincipalIdentifiers());
-      if(!AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
-        //no access, return 404 as resource has been revoked
-        return ResponseEntity.notFound().build();
-      } else{
-        LOGGER.debug("READ access to revoked resource granted.");
-      }
-    }
+    DataResourceUtils.performPermissionCheck(resource, AclEntry.PERMISSION.READ);
 
+//    //check revokation state and access permissions
+//    if(!resource.getState().equals(DataResource.State.REVOKED)){
+//      LOGGER.debug("Resource is not revoked. Checking for READ permissions for principal identifiers {}.", AuthenticationHelper.getPrincipalIdentifiers());
+//      //resource is not revoked, check READ permissions
+//      if(!AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.READ)){
+//        throw new AccessForbiddenException("Resource access restricted by acl.");
+//      } else{
+//        LOGGER.debug("READ access granted.");
+//      }
+//    } else{
+//      //resource is revoked, check ADMINISTRATE or ADMINISTRATOR permissions
+//      LOGGER.debug("Resource has been revoked. Checking for ADMINISTRATE permissions for principal identifiers {}.", AuthenticationHelper.getPrincipalIdentifiers());
+//      if(!AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+//        //no access, return 404 as resource has been revoked
+//        return ResponseEntity.notFound().build();
+//      } else{
+//        LOGGER.debug("READ access to revoked resource granted.");
+//      }
+//    }
     DataResource modResource = resource;
-    if(!AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+
+    if(!DataResourceUtils.hasPermission(resource, AclEntry.PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
       LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
       //exclude ACLs if not administrate or administrator permissions are set
       modResource = json.use(JsonView.with(resource)
@@ -365,7 +365,7 @@ public class DataResourceController implements IDataResourceController{
       throw new EtagMismatchException("ETag not matching, resource has changed.");
     }
 
-    AclEntry.PERMISSION callerPermission = AclUtils.getPrincipalPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource);
+    AclEntry.PERMISSION callerPermission = DataResourceUtils.getAccessPermission(resource);
     boolean callerIsAdmin = AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString());
 
     Collection<GrantedAuthority> userGrants = new ArrayList<>();
@@ -393,7 +393,7 @@ public class DataResourceController implements IDataResourceController{
     Optional<DataResource> result = dataResourceService.findById(id);
     if(result.isPresent()){
       DataResource resource = result.get();
-      if(AclUtils.hasPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource, AclEntry.PERMISSION.ADMINISTRATE) || AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+      if(DataResourceUtils.hasPermission(resource, AclEntry.PERMISSION.ADMINISTRATE) || AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
         if(!request.checkNotModified(Integer.toString(resource.hashCode()))){
           LOGGER.debug("Provided etag is not matching resource etag {}. Returning HTTP 412.", Integer.toString(resource.hashCode()));
           throw new EtagMismatchException("ETag not matching, resource has changed.");
@@ -427,6 +427,8 @@ public class DataResourceController implements IDataResourceController{
     if(requestedUri == null){
       throw new CustomInternalServerError("Unable to obtain request URI.");
     }
+
+    //@TODO Escape path for file system access
     String path = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
     if(path == null || path.endsWith("/")){
       throw new BadArgumentException("Provided path is invalid. Path must not be empty and must not end with a slash.");
@@ -569,7 +571,8 @@ public class DataResourceController implements IDataResourceController{
   @Override
   public ResponseEntity handleMetadataAccess(@PathVariable(value = "id") final Long id,
           @RequestParam(name = "tag", required = false) String tag,
-          final Pageable pgbl, WebRequest request,
+          final Pageable pgbl,
+          WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
     //obtain accessed path
@@ -577,7 +580,7 @@ public class DataResourceController implements IDataResourceController{
     if(requestedUri == null){
       throw new CustomInternalServerError("Unable to obtain request URI.");
     }
-    String path = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
+    String relPath = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
     //check resource and permission
     Optional<DataResource> result = dataResourceService.findById(id);
     if(!result.isPresent()){
@@ -586,14 +589,14 @@ public class DataResourceController implements IDataResourceController{
     DataResource resource = result.get();
     DataResourceUtils.performPermissionCheck(resource, AclEntry.PERMISSION.READ);
 
-    if(path.startsWith("/")){
+    if(relPath.startsWith("/")){
       //remove leading slash if present, e.g. if path was empty
-      path = path.substring(1);
+      relPath = relPath.substring(1);
     }
 
-    if(path.endsWith("/") || path.length() == 0){
+    if(relPath.endsWith("/") || relPath.length() == 0){
       //collection listing
-      path += "%";
+      relPath += "%";
       //sanitize page request
       int pageSize = pgbl.getPageSize();
       if(pageSize > 100){
@@ -610,7 +613,7 @@ public class DataResourceController implements IDataResourceController{
       PageRequest pageRequest = PageRequest.of(pgbl.getPageNumber(), pageSize, pgblSort);
 
       //obtain page according to request
-      Page<ContentInformation> page = contentInformationService.findByParentResourceIdEqualsAndRelativePathLikeAndHasTag(id, path, tag, pageRequest);
+      Page<ContentInformation> page = contentInformationService.findByParentResourceIdEqualsAndRelativePathLikeAndHasTag(id, relPath, tag, pageRequest);
 
       //wrong header added!
       // eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(ContentInformation.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), pageSize));
@@ -621,7 +624,7 @@ public class DataResourceController implements IDataResourceController{
       return ResponseEntity.ok(resultList);
     } else{
       //try to obtain single content element matching path exactly
-      Optional<ContentInformation> existingContentInformation = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, tag);
+      Optional<ContentInformation> existingContentInformation = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, relPath, tag);
 
       if(existingContentInformation.isPresent()){
         //single entry found, remove data resource information except id and return
@@ -778,7 +781,7 @@ public class DataResourceController implements IDataResourceController{
         throw new EtagMismatchException("ETag not matching, resource has changed.");
       }
 
-      AclEntry.PERMISSION callerPermission = AclUtils.getPrincipalPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource);
+      AclEntry.PERMISSION callerPermission = DataResourceUtils.getAccessPermission(resource);
       boolean callerIsAdmin = AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString());
       Collection<GrantedAuthority> userGrants = new ArrayList<>();
       userGrants.add(new SimpleGrantedAuthority(callerPermission.getValue()));

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
+import edu.kit.datamanager.repo.util.PathUtils;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -89,6 +90,9 @@ public class ContentInformation implements Serializable{
 
   @JsonIgnore
   public void setMediaTypeAsObject(MediaType mediaType){
+    if(mediaType == null){
+      throw new IllegalArgumentException("Argument must not be null.");
+    }
     this.mediaType = mediaType.toString();
   }
 
@@ -105,15 +109,9 @@ public class ContentInformation implements Serializable{
     if(path == null){
       throw new IllegalArgumentException("Argument must not be null.");
     }
-    relativePath = path;
-    depth = getDepth(relativePath);
-  }
 
-  public static int getDepth(String relativePath){
-    if(relativePath == null){
-      throw new IllegalArgumentException("Argument must not be null.");
-    }
-    return relativePath.split("/").length;
+    //remove multiple slashes
+    relativePath = PathUtils.normalizePath(path);
+    depth = PathUtils.getDepth(relativePath);
   }
-
 }

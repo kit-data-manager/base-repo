@@ -16,13 +16,15 @@
 package edu.kit.datamanager.repo.util;
 
 import edu.kit.datamanager.entities.Identifier;
+import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.AccessForbiddenException;
+import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.util.AuthenticationHelper;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 
 /**
  *
@@ -31,6 +33,9 @@ import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 public class DataResourceUtils{
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DataResourceUtils.class);
+
+  private DataResourceUtils(){
+  }
 
   public static String getInternalIdentifier(DataResource resource){
     for(Identifier alt : resource.getAlternateIdentifiers()){
@@ -41,38 +46,114 @@ public class DataResourceUtils{
     return null;
   }
 
+  /**
+   * Check for sufficient permissions to access the provided resource with the
+   * provided required permission. Permission evaluation is done in three steps:
+   *
+   * At first, access permissions are obtained via {@link #getAccessPermission(edu.kit.datamanager.repo.domain.DataResource)
+   * }.
+   *
+   * The second step depends on the state of the resource. If the resource is
+   * FIXED and WRITE permissions are requested, the caller permission must be
+   * ADMINISTRATE, which is the case for the owner and administrators.
+   * Otherwise, write access is forbidden. The same applies if the resource if
+   * REVOKED. In that case, for all access types (READ, WRITE, ADMINISTRATE) the
+   * caller must have ADMINISTRATE permissions.
+   *
+   * In a final step it is checked, if the caller permission is matching at
+   * least the requested permission. If this is the case, this method will
+   * return silently.
+   *
+   * In all other cases where requirements are not met, an
+   * AccessForbiddenException or ResourceNotFoundException will be thrown.
+   *
+   *
+   * @param resource The resource to check.
+   * @param requiredPermission The required permission to access the resource.
+   */
   public static void performPermissionCheck(DataResource resource, AclEntry.PERMISSION requiredPermission){
     LOGGER.debug("Performing permission check for {} permission to resource {}.", requiredPermission, resource);
-    AclEntry.PERMISSION callerPermission = AclUtils.getPrincipalPermission(AuthenticationHelper.getPrincipalIdentifiers(), resource);
+    AclEntry.PERMISSION callerPermission = getAccessPermission(resource);
 
-    switch(resource.getState()){
-      case FIXED:
-        LOGGER.debug("Performing special access check for FIXED resource and {} permission.", requiredPermission);
-        //resource is fixed, only check if WRITE permissions are required
-        if(requiredPermission.atLeast(AclEntry.PERMISSION.WRITE) && !callerPermission.atLeast(AclEntry.PERMISSION.ADMINISTRATE)){
-          //no access, return 404 as resource has been revoked
-          LOGGER.debug("{} permission to fixed resource NOT granted to principal with identifiers {}. ADMINISTRATE permissions missing.", requiredPermission, AuthenticationHelper.getPrincipalIdentifiers());
-          throw new AccessForbiddenException("Resource has been fixed. Modifications to this resource are no longer permitted.");
-        }
-        break;
-      case REVOKED:
-        LOGGER.debug("Performing special access check for REVOKED resource.");
-        //resource is revoked, check ADMINISTRATE or ADMINISTRATOR permissions
-        if(!callerPermission.atLeast(AclEntry.PERMISSION.ADMINISTRATE)){
-          //no access, return 404 as resource has been revoked
-          LOGGER.debug("Access to revoked resource NOT granted to principal with identifiers {}. ADMINISTRATE permission missing.", requiredPermission, AuthenticationHelper.getPrincipalIdentifiers());
-          throw new ResourceNotFoundException("The resource never was or is not longer available.");
-        }
-        break;
+    LOGGER.debug("Obtained caller permission {}. Checking resource state for special handling.", callerPermission);
+    if(resource.getState() != null){
+      switch(resource.getState()){
+        case FIXED:
+          LOGGER.debug("Performing special access check for FIXED resource and {} permission.", requiredPermission);
+          //resource is fixed, only check if WRITE permissions are required
+          if(requiredPermission.atLeast(AclEntry.PERMISSION.WRITE) && !callerPermission.atLeast(AclEntry.PERMISSION.ADMINISTRATE)){
+            //no access, return 403 as resource has been revoked
+            LOGGER.debug("{} permission to fixed resource NOT granted to principal with identifiers {}. ADMINISTRATE permissions required.", requiredPermission, AuthenticationHelper.getPrincipalIdentifiers());
+            throw new AccessForbiddenException("Resource has been fixed. Modifications to this resource are no longer permitted.");
+          }
+          break;
+        case REVOKED:
+          LOGGER.debug("Performing special access check for REVOKED resource and {} permission.", requiredPermission);
+          //resource is revoked, check ADMINISTRATE or ADMINISTRATOR permissions
+          if(!callerPermission.atLeast(AclEntry.PERMISSION.ADMINISTRATE)){
+            //no access, return 404 as resource has been revoked
+            LOGGER.debug("Access to revoked resource NOT granted to principal with identifiers {}. ADMINISTRATE permissions required.", requiredPermission, AuthenticationHelper.getPrincipalIdentifiers());
+            throw new ResourceNotFoundException("The resource never was or is not longer available.");
+          }
+          break;
+        case VOLATILE:
+          LOGGER.trace("Resource state is {}. No special access check necessary.", resource.getState());
+          break;
+        default:
+          LOGGER.warn("Unhandled resource state {} detected. Not applying any special access checks.", resource.getState());
+      }
     }
 
-    LOGGER.debug("Checking if caller permission {} are at least required permission {}.", callerPermission, requiredPermission);
+    LOGGER.debug("Checking if caller permission {} mets required permission {}.", callerPermission, requiredPermission);
     if(!callerPermission.atLeast(requiredPermission)){
-      LOGGER.debug("Caller permission {} is not at least required permission {}. Resource access NOT granted.", requiredPermission);
+      LOGGER.debug("Caller permission {} does not met required permission {}. Resource access NOT granted.", requiredPermission);
       throw new AccessForbiddenException("Resource access restricted by acl.");
     } else{
       LOGGER.debug("{} permission to resource granted to principal with identifiers {}.", requiredPermission, AuthenticationHelper.getPrincipalIdentifiers());
     }
 
   }
+
+  /**
+   * Determine the maximum permission for the resource being accessed using the
+   * internal authorization object. This method will go through all permissions
+   * and principals to determine the maximum permission.
+   *
+   * @param resource The resource for which the permission should be determined.
+   *
+   * @return The maximum permission. PERMISSION.NONE is returned if no
+   * permission was found.
+   */
+  public static AclEntry.PERMISSION getAccessPermission(DataResource resource){
+    if(AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+      //quick check for admin permission
+      return AclEntry.PERMISSION.ADMINISTRATE;
+    }
+    List<String> principalIds = AuthenticationHelper.getPrincipalIdentifiers();
+    AclEntry.PERMISSION maxPermission = AclEntry.PERMISSION.NONE;
+    for(AclEntry entry : resource.getAcls()){
+      if(principalIds.contains(entry.getSid())){
+        if(entry.getPermission().ordinal() > maxPermission.ordinal()){
+          maxPermission = entry.getPermission();
+        }
+      }
+    }
+    return maxPermission;
+  }
+
+  /**
+   * Check if the internal authorization object has the provided permission.
+   * This method will stop after a principal was found posessing the provided
+   * permission.
+   *
+   * @param resource The resource for which the permission should be determined.
+   * @param permission The permission to check for.
+   *
+   * @return TRUE if any sid has the requested permission or if the caller has
+   * administrator permissions.
+   */
+  public static boolean hasPermission(DataResource resource, AclEntry.PERMISSION permission){
+    return getAccessPermission(resource).atLeast(permission);
+  }
+
 }

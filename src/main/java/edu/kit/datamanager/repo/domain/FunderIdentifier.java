@@ -71,35 +71,35 @@ public class FunderIdentifier extends Identifier{
   public FunderIdentifier(FUNDER_TYPE type){
     this.type = type;
   }
-
-  @Override
-  public boolean equals(Object obj){
-    if(this == obj){
-      return true;
-    }
-    if(obj == null){
-      return false;
-    }
-    if(getClass() != obj.getClass()){
-      return false;
-    }
-    final FunderIdentifier other = (FunderIdentifier) obj;
-    if(!Objects.equals(this.getId(), other.getId())){
-      return false;
-    }
-
-    if(!Objects.equals(this.getValue(), other.getValue())){
-      return false;
-    }
-    return EnumUtils.equals(this.type, other.type);
-  }
-
-  @Override
-  public int hashCode(){
-    int hash = 5;
-    hash = 67 * hash + Objects.hashCode(this.getId());
-    hash = 67 * hash + Objects.hashCode(this.getValue());
-    hash = 67 * hash + EnumUtils.hashCode(this.type);
-    return hash;
-  }
+//
+//  @Override
+//  public boolean equals(Object obj){
+//    if(this == obj){
+//      return true;
+//    }
+//    if(obj == null){
+//      return false;
+//    }
+//    if(getClass() != obj.getClass()){
+//      return false;
+//    }
+//    final FunderIdentifier other = (FunderIdentifier) obj;
+//    if(!Objects.equals(this.getId(), other.getId())){
+//      return false;
+//    }
+//
+//    if(!Objects.equals(this.getValue(), other.getValue())){
+//      return false;
+//    }
+//    return EnumUtils.equals(this.type, other.type);
+//  }
+//
+//  @Override
+//  public int hashCode(){
+//    int hash = 5;
+//    hash = 67 * hash + Objects.hashCode(this.getId());
+//    hash = 67 * hash + Objects.hashCode(this.getValue());
+//    hash = 67 * hash + EnumUtils.hashCode(this.type);
+//    return hash;
+//  }
 }

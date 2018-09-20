@@ -45,4 +45,19 @@ public class Point{
   private float longitude;
   @ApiModelProperty(value = "31.233", notes = "-90 <= latitude <= 90", required = true)
   private float latitude;
+
+  /**
+   * Basic factory method.
+   *
+   * @param longitute The longitude
+   * @param latitude The latitude
+   *
+   * @return A new instance of Point
+   */
+  public static Point factoryPoint(float longitute, float latitude){
+    Point result = new Point();
+    result.setLongitude(longitute);
+    result.setLatitude(latitude);
+    return result;
+  }
 }

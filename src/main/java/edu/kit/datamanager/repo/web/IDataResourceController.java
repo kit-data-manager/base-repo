@@ -70,12 +70,14 @@ public interface IDataResourceController extends IGenericResourceController<Data
   @ApiImplicitParams(value = {
     @ApiImplicitParam(name = "page", dataType = "integer", paramType = "query", value = "Results page you want to retrieve (0..N)")
     , @ApiImplicitParam(name = "size", dataType = "integer", paramType = "query", value = "Number of records per page.")
-    , @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query", value = "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.")})
+    , @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query", value = "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.")
+  })
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET, produces = "application/vnd.datamanager.content-information+json")
   @ResponseBody
   public ResponseEntity handleMetadataAccess(@ApiParam(value = "The numeric resource identifier.", required = true) @PathVariable(value = "id") final Long id,
           @ApiParam(value = "A single tag assigned to certain content elements. Tags allow easy structuring and filtering of content associated to a resource.", required = false) @RequestParam(name = "tag", required = false) String tag,
-          final Pageable pgbl, WebRequest request,
+          final Pageable pgbl,
+          final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);
 

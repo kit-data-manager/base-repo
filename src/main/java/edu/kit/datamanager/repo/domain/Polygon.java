@@ -20,6 +20,8 @@ import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -47,5 +49,21 @@ public class Polygon{
   @ApiModelProperty(required = true)
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<Point> points;
+
+  /**
+   * Basic factory method.
+   *
+   * @param points The points
+   *
+   * @return A new instance of Polygon
+   */
+  public static Polygon factoryPolygon(Point... points){
+    Polygon result = new Polygon();
+    if(points == null || points.length < 3){
+      throw new IllegalArgumentException("A polygon is formed by at least three points.");
+    }
+    result.setPoints(new HashSet<>(Arrays.asList(points)));
+    return result;
+  }
 
 }

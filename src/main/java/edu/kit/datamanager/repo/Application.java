@@ -118,20 +118,9 @@ public ObjectMapper jsonObjectMapper() {
 //  public Queue myQueue(){
 //    return new Queue("myqueue");
 //  }
-//  @Bean
-//  public Filter shallowETagHeaderFilter(){
-//    return new ShallowEtagHeaderFilter();
-//  }
+
   public static void main(String[] args){
     ApplicationContext ctx = SpringApplication.run(Application.class, args);
-    ApplicationProperties bean = ctx.getBean(ApplicationProperties.class);
-    System.out.println(bean);
-    /*  String[] beanNames = ctx.getBeanDefinitionNames();
-    Arrays.sort(beanNames);
-    for(String beanName : beanNames){
-      System.out.println(beanName);
-    }
-    System.out.println("Spring Boot started...");*/
   }
 
 }

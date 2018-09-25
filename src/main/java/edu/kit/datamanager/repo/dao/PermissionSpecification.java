@@ -17,6 +17,7 @@ package edu.kit.datamanager.repo.dao;
 
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
+import edu.kit.datamanager.entities.PERMISSION;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,18 +34,18 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class PermissionSpecification{
 
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final List<String> sids, AclEntry.PERMISSION permission){
+  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final List<String> sids, PERMISSION permission){
     specifications = specifications.and(toSpecification(sids, permission));
     return specifications;
   }
 
-  public static Specification<DataResource> toSpecification(final List<String> sids, final AclEntry.PERMISSION permission){
+  public static Specification<DataResource> toSpecification(final List<String> sids, final PERMISSION permission){
 
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
-      List<AclEntry.PERMISSION> permissions = new ArrayList<>(Arrays.asList(AclEntry.PERMISSION.values()));
-      permissions.removeIf((AclEntry.PERMISSION t) -> t.ordinal() < permission.ordinal());
+      List<PERMISSION> permissions = new ArrayList<>(Arrays.asList(PERMISSION.values()));
+      permissions.removeIf((PERMISSION t) -> t.ordinal() < permission.ordinal());
 
       Join<DataResource, AclEntry> joinOptions = root.join("acls", JoinType.INNER);
       return builder.and(joinOptions.get("sid").in(sids), joinOptions.get("permission").in(permissions));

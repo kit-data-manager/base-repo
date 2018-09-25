@@ -16,11 +16,11 @@
 package edu.kit.datamanager.repo.service.impl;
 
 import edu.kit.datamanager.dao.ByExampleSpecification;
+import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.PermissionSpecification;
 import edu.kit.datamanager.repo.dao.StateSpecification;
 import edu.kit.datamanager.repo.domain.DataResource;
-import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
 import java.util.List;
 import java.util.Optional;
@@ -74,7 +74,7 @@ public class DataResourceService implements IDataResourceService{
 //  }
   @Override
   @Transactional(readOnly = true)
-  public Page<DataResource> findAll(DataResource example, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl, boolean includeRevoked){
+  public Page<DataResource> findAll(DataResource example, List<String> sids, PERMISSION permission, Pageable pgbl, boolean includeRevoked){
     Specification<DataResource> spec;
     if(example != null){
       spec = Specification.where(PermissionSpecification.toSpecification(sids, permission)).and(new ByExampleSpecification(em).byExample(example));

@@ -17,8 +17,8 @@ package edu.kit.datamanager.repo.dao;
 
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.DataResource.State;
-import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import java.util.List;
+import edu.kit.datamanager.entities.PERMISSION;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,10 +31,10 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
  */
 public interface IDataResourceDao extends JpaRepository<DataResource, Long>, JpaSpecificationExecutor<DataResource>{
 
-  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, AclEntry.PERMISSION permission);
+  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, PERMISSION permission);
 
-  public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl);
+  public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, PERMISSION permission, Pageable pgbl);
 
-  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, AclEntry.PERMISSION permission);
-  
+  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, PERMISSION permission);
+
 }

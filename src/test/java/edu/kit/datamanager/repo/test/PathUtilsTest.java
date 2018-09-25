@@ -19,7 +19,6 @@ import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.util.PathUtils;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import org.junit.Assert;

@@ -16,8 +16,8 @@
 package edu.kit.datamanager.repo.domain.acl;
 
 import edu.kit.datamanager.annotations.SecureUpdate;
-import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.util.EnumUtils;
+import edu.kit.datamanager.entities.PERMISSION;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -34,34 +34,6 @@ import lombok.Data;
 @Entity
 @Data
 public class AclEntry{
-
-  public enum PERMISSION implements BaseEnum{
-    NONE("PERMISSION_NONE"),
-    READ("PERMISSION_READ"),
-    WRITE("PERMISSION_WRITE"),
-    ADMINISTRATE("PERMISSION_ADMINISTRATE");
-
-    private final String value;
-
-    private PERMISSION(String value){
-      this.value = value;
-    }
-
-    @Override
-    public String getValue(){
-      return value;
-    }
-
-    @Override
-    public String toString(){
-      return value;
-    }
-
-    public boolean atLeast(PERMISSION permission){
-      return this.ordinal() >= permission.ordinal();
-    }
-
-  }
 
   public AclEntry(){
   }

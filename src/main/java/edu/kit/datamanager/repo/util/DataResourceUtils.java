@@ -16,6 +16,8 @@
 package edu.kit.datamanager.repo.util;
 
 import edu.kit.datamanager.entities.Identifier;
+import edu.kit.datamanager.entities.PERMISSION;
+import edu.kit.datamanager.entities.RepoServiceRole;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.AccessForbiddenException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
@@ -71,9 +73,9 @@ public class DataResourceUtils{
    * @param resource The resource to check.
    * @param requiredPermission The required permission to access the resource.
    */
-  public static void performPermissionCheck(DataResource resource, AclEntry.PERMISSION requiredPermission){
+  public static void performPermissionCheck(DataResource resource, PERMISSION requiredPermission){
     LOGGER.debug("Performing permission check for {} permission to resource {}.", requiredPermission, resource);
-    AclEntry.PERMISSION callerPermission = getAccessPermission(resource);
+    PERMISSION callerPermission = getAccessPermission(resource);
 
     LOGGER.debug("Obtained caller permission {}. Checking resource state for special handling.", callerPermission);
     if(resource.getState() != null){
@@ -81,18 +83,18 @@ public class DataResourceUtils{
         case FIXED:
           LOGGER.debug("Performing special access check for FIXED resource and {} permission.", requiredPermission);
           //resource is fixed, only check if WRITE permissions are required
-          if(requiredPermission.atLeast(AclEntry.PERMISSION.WRITE) && !callerPermission.atLeast(AclEntry.PERMISSION.ADMINISTRATE)){
+          if(requiredPermission.atLeast(PERMISSION.WRITE) && !callerPermission.atLeast(PERMISSION.ADMINISTRATE)){
             //no access, return 403 as resource has been revoked
-            LOGGER.debug("{} permission to fixed resource NOT granted to principal with identifiers {}. ADMINISTRATE permissions required.", requiredPermission, AuthenticationHelper.getPrincipalIdentifiers());
+            LOGGER.debug("{} permission to fixed resource NOT granted to principal with identifiers {}. ADMINISTRATE permissions required.", requiredPermission, AuthenticationHelper.getAuthorizationIdentities());
             throw new AccessForbiddenException("Resource has been fixed. Modifications to this resource are no longer permitted.");
           }
           break;
         case REVOKED:
           LOGGER.debug("Performing special access check for REVOKED resource and {} permission.", requiredPermission);
           //resource is revoked, check ADMINISTRATE or ADMINISTRATOR permissions
-          if(!callerPermission.atLeast(AclEntry.PERMISSION.ADMINISTRATE)){
+          if(!callerPermission.atLeast(PERMISSION.ADMINISTRATE)){
             //no access, return 404 as resource has been revoked
-            LOGGER.debug("Access to revoked resource NOT granted to principal with identifiers {}. ADMINISTRATE permissions required.", requiredPermission, AuthenticationHelper.getPrincipalIdentifiers());
+            LOGGER.debug("Access to revoked resource NOT granted to principal with identifiers {}. ADMINISTRATE permissions required.", requiredPermission, AuthenticationHelper.getAuthorizationIdentities());
             throw new ResourceNotFoundException("The resource never was or is not longer available.");
           }
           break;
@@ -109,7 +111,7 @@ public class DataResourceUtils{
       LOGGER.debug("Caller permission {} does not met required permission {}. Resource access NOT granted.", requiredPermission);
       throw new AccessForbiddenException("Resource access restricted by acl.");
     } else{
-      LOGGER.debug("{} permission to resource granted to principal with identifiers {}.", requiredPermission, AuthenticationHelper.getPrincipalIdentifiers());
+      LOGGER.debug("{} permission to resource granted to principal with identifiers {}.", requiredPermission, AuthenticationHelper.getAuthorizationIdentities());
     }
 
   }
@@ -124,13 +126,29 @@ public class DataResourceUtils{
    * @return The maximum permission. PERMISSION.NONE is returned if no
    * permission was found.
    */
-  public static AclEntry.PERMISSION getAccessPermission(DataResource resource){
-    if(AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
-      //quick check for admin permission
-      return AclEntry.PERMISSION.ADMINISTRATE;
+  public static PERMISSION getAccessPermission(DataResource resource){
+    //quick check for admin permission
+    if(AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.getValue())){
+      return PERMISSION.ADMINISTRATE;
     }
-    List<String> principalIds = AuthenticationHelper.getPrincipalIdentifiers();
-    AclEntry.PERMISSION maxPermission = AclEntry.PERMISSION.NONE;
+
+    //quick check for service roles
+    if(AuthenticationHelper.hasAuthority(RepoServiceRole.SERVICE_ADMINISTRATOR.getValue())){
+      return PERMISSION.ADMINISTRATE;
+    } else if(AuthenticationHelper.hasAuthority(RepoServiceRole.SERVICE_WRITE.getValue())){
+      return PERMISSION.WRITE;
+    } else if(AuthenticationHelper.hasAuthority(RepoServiceRole.SERVICE_READ.getValue())){
+      return PERMISSION.READ;
+    }
+
+    //quick check for temporary roles
+    edu.kit.datamanager.entities.PERMISSION permission = AuthenticationHelper.getScopedPermission(DataResource.class.getSimpleName(), resource.getResourceIdentifier());
+    if(permission.atLeast(edu.kit.datamanager.entities.PERMISSION.READ)){
+      return permission;
+    }
+
+    List<String> principalIds = AuthenticationHelper.getAuthorizationIdentities();
+    PERMISSION maxPermission = PERMISSION.NONE;
     for(AclEntry entry : resource.getAcls()){
       if(principalIds.contains(entry.getSid())){
         if(entry.getPermission().ordinal() > maxPermission.ordinal()){
@@ -152,7 +170,7 @@ public class DataResourceUtils{
    * @return TRUE if any sid has the requested permission or if the caller has
    * administrator permissions.
    */
-  public static boolean hasPermission(DataResource resource, AclEntry.PERMISSION permission){
+  public static boolean hasPermission(DataResource resource, PERMISSION permission){
     return getAccessPermission(resource).atLeast(permission);
   }
 

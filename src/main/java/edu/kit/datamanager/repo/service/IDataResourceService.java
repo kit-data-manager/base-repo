@@ -16,7 +16,7 @@
 package edu.kit.datamanager.repo.service;
 
 import edu.kit.datamanager.repo.domain.DataResource;
-import edu.kit.datamanager.repo.domain.acl.AclEntry;
+import edu.kit.datamanager.entities.PERMISSION;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -34,8 +34,7 @@ public interface IDataResourceService extends HealthIndicator{
 //  public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(DataResource.State state, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl);
 //
 //  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, AclEntry.PERMISSION permission);
-
-  public Page<DataResource> findAll(DataResource example, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl, boolean IncludeRevoked);
+  public Page<DataResource> findAll(DataResource example, List<String> sids, PERMISSION permission, Pageable pgbl, boolean IncludeRevoked);
 
   public Page<DataResource> findAll(DataResource example, Pageable pgbl, boolean IncludeRevoked);
 

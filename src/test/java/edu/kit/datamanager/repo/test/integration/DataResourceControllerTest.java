@@ -15,6 +15,7 @@
  */
 package edu.kit.datamanager.repo.test.integration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.Identifier;
@@ -43,15 +44,17 @@ import edu.kit.datamanager.repo.domain.Subject;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
+import edu.kit.datamanager.security.filter.JwtAuthenticationToken;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.DefaultClaims;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -129,111 +132,40 @@ public class DataResourceControllerTest{
   private DataResource fixedResource;
 
   @Before
-  public void setUp(){
+  public void setUp() throws JsonProcessingException{
     contentInformationDao.deleteAll();
     dataResourceDao.deleteAll();
 
-    Claims claims = new DefaultClaims();
-    claims.put("username", "admin");
-    claims.put("email", "thomas.jejkal@kit.edu");
-    claims.put("orcid", "0000-0003-2804-688X");
-    claims.put("loginFailures", 0);
-    claims.put("active", true);
-    claims.put("locked", false);
-    Collection<String> roles = new ArrayList<>();
-    roles.add(RepoUserRole.ADMINISTRATOR.toString());
-    claims.put("roles", roles);
-//    String payload = "{\n"
-//            + "    \"id\": 1,\n"
-//            + "    \"username\": \"admin\",\n"
-//            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
-//            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
-//            + "    \"loginFailures\": 0,\n"
-//            + "    \"active\": true,\n"
-//            + "    \"locked\": false,\n"
-//            + "    \"rolesAsEnum\": [\n"
-//            + "        \"ADMINISTRATOR\"\n"
-//            + "    ],\n"
-//            + "    \"roles\": \"[\\\"ROLE_ADMINISTRATOR\\\"]\"\n"
-//            + "}";
+    adminToken = edu.kit.datamanager.util.JwtBuilder.createUserToken("admin", RepoUserRole.ADMINISTRATOR).
+            addSimpleClaim("email", "thomas.jejkal@kit.edu").
+            addSimpleClaim("orcid", "0000-0003-2804-688X").
+            addSimpleClaim("groupid", "USERS").
+            addSimpleClaim("loginFailures", 0).
+            addSimpleClaim("active", true).
+            addSimpleClaim("locked", false).
+            getCompactToken(applicationProperties.getJwtSecret());
 
-    adminToken = Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
+    userToken = edu.kit.datamanager.util.JwtBuilder.createUserToken("user", RepoUserRole.USER).
+            addSimpleClaim("email", "thomas.jejkal@kit.edu").
+            addSimpleClaim("orcid", "0000-0003-2804-688X").
+            addSimpleClaim("loginFailures", 0).
+            addSimpleClaim("active", true).
+            addSimpleClaim("locked", false).
+            getCompactToken(applicationProperties.getJwtSecret());
 
-    claims = new DefaultClaims();
-    claims.put("username", "user");
-    claims.put("email", "thomas.jejkal@kit.edu");
-    claims.put("orcid", "0000-0003-2804-688X");
-    claims.put("loginFailures", 0);
-    claims.put("active", true);
-    claims.put("locked", false);
-    roles = new ArrayList<>();
-    roles.add(RepoUserRole.USER.toString());
-    claims.put("roles", roles);
-//    payload = "{\n"
-//            + "    \"id\": 1,\n"
-//            + "    \"username\": \"user\",\n"
-//            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
-//            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
-//            + "    \"loginFailures\": 0,\n"
-//            + "    \"active\": true,\n"
-//            + "    \"locked\": false,\n"
-//            + "    \"rolesAsEnum\": [\n"
-//            + "        \"USERS\"\n"
-//            + "    ],\n"
-//            + "    \"roles\": \"[\\\"ROLE_USERS\\\"]\"\n"
-//            + "}";
+    otherUserToken = edu.kit.datamanager.util.JwtBuilder.createUserToken("otheruser", RepoUserRole.USER).
+            addSimpleClaim("email", "thomas.jejkal@kit.edu").
+            addSimpleClaim("orcid", "0000-0003-2804-688X").
+            addSimpleClaim("loginFailures", 0).
+            addSimpleClaim("active", true).
+            addSimpleClaim("locked", false).getCompactToken(applicationProperties.getJwtSecret());
 
-    userToken = Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
-
-//    payload = "{\n"
-//            + "    \"id\": 1,\n"
-//            + "    \"username\": \"otheruser\",\n"
-//            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
-//            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
-//            + "    \"loginFailures\": 0,\n"
-//            + "    \"active\": true,\n"
-//            + "    \"locked\": false,\n"
-//            + "    \"rolesAsEnum\": [\n"
-//            + "        \"USERS\"\n"
-//            + "    ],\n"
-//            + "    \"roles\": \"[\\\"ROLE_USERS\\\"]\"\n"
-//            + "}";
-    claims = new DefaultClaims();
-    claims.put("username", "otheruser");
-    claims.put("email", "thomas.jejkal@kit.edu");
-    claims.put("orcid", "0000-0003-2804-688X");
-    claims.put("loginFailures", 0);
-    claims.put("active", true);
-    claims.put("locked", false);
-    roles = new ArrayList<>();
-    roles.add(RepoUserRole.USER.toString());
-    claims.put("roles", roles);
-    otherUserToken = Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
-
-//    payload = "{\n"
-//            + "    \"id\": 1,\n"
-//            + "    \"username\": \"guest\",\n"
-//            + "    \"email\": \"thomas.jejkal@kit.edu\",\n"
-//            + "    \"orcid\": \"0000-0003-2804-688X\",\n"
-//            + "    \"loginFailures\": 0,\n"
-//            + "    \"active\": true,\n"
-//            + "    \"locked\": false,\n"
-//            + "    \"rolesAsEnum\": [\n"
-//            + "        \"GUEST\"\n"
-//            + "    ],\n"
-//            + "    \"roles\": \"[\\\"ROLE_GUEST\\\"]\"\n"
-//            + "}";
-    claims = new DefaultClaims();
-    claims.put("username", "guest");
-    claims.put("email", "thomas.jejkal@kit.edu");
-    claims.put("orcid", "0000-0003-2804-688X");
-    claims.put("loginFailures", 0);
-    claims.put("active", true);
-    claims.put("locked", false);
-    roles = new ArrayList<>();
-    roles.add(RepoUserRole.GUEST.toString());
-    claims.put("roles", roles);
-    guestToken = Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS512, applicationProperties.getJwtSecret()).compact();
+    guestToken = edu.kit.datamanager.util.JwtBuilder.createUserToken("guest", RepoUserRole.GUEST).
+            addSimpleClaim("email", "thomas.jejkal@kit.edu").
+            addSimpleClaim("orcid", "0000-0003-2804-688X").
+            addSimpleClaim("loginFailures", 0).
+            addSimpleClaim("active", true).
+            addSimpleClaim("locked", false).getCompactToken(applicationProperties.getJwtSecret());
 
     sampleResource = DataResource.factoryNewDataResource("altIdentifier");
     sampleResource.setState(DataResource.State.VOLATILE);
@@ -259,7 +191,7 @@ public class DataResourceControllerTest{
     sampleResource.getGeoLocations().add(GeoLocation.factoryGeoLocation("A place"));
     sampleResource.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(RelatedIdentifier.RELATION_TYPES.IS_DOCUMENTED_BY, "document_location", Scheme.factoryScheme("id", "uri"), "metadata_scheme"));
     sampleResource.getSubjects().add(Subject.factorySubject("testing", "uri", "en", Scheme.factoryScheme("id", "uri")));
-    
+
     sampleResource = dataResourceDao.save(sampleResource);
 
     otherResource = DataResource.factoryNewDataResource("otherResource");

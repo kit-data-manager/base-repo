@@ -16,6 +16,8 @@
 package edu.kit.datamanager.repo.service;
 
 import edu.kit.datamanager.repo.domain.ContentInformation;
+import edu.kit.datamanager.repo.domain.DataResource;
+import java.io.InputStream;
 import java.util.Optional;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.data.domain.Page;
@@ -32,6 +34,7 @@ public interface IContentInformationService extends HealthIndicator{
   public Page<ContentInformation> findByParentResourceIdEqualsAndRelativePathLikeAndHasTag(Long id, String relativePath, String tag, Pageable pgbl);
 
   //public Page<ContentInformation> findAll(ContentInformation example, Pageable pgbl);
+  ContentInformation create(ContentInformation contentInformation, DataResource resource, InputStream file, String path, boolean force);
 
   ContentInformation createOrUpdate(final ContentInformation entity);
 

@@ -32,13 +32,11 @@ import edu.kit.datamanager.controller.hateoas.event.PaginatedResultsRetrievedEve
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.entities.PERMISSION;
-import edu.kit.datamanager.exceptions.FeatureNotImplementedException;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.EtagMismatchException;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.UnauthorizedAccessException;
 import edu.kit.datamanager.exceptions.UpdateForbiddenException;
-import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.domain.Agent;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -48,22 +46,17 @@ import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
-import edu.kit.datamanager.repo.util.PathUtils;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
+import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.service.IContentProvider;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.PatchUtil;
-import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -72,28 +65,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.http.Header;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.tika.detect.Detector;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -115,6 +96,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Autowired
   private Logger LOGGER;
+
   @Autowired
   private final IDataResourceService dataResourceService;
 
@@ -124,13 +106,17 @@ public class DataResourceController implements IDataResourceController{
   @Autowired
   private ApplicationEventPublisher eventPublisher;
 
+//  @Autowired
+//  private ApplicationProperties applicationProperties;
   @Autowired
-  private ApplicationProperties applicationProperties;
+  private IContentProvider[] contentProviders;
 
-  public DataResourceController(IDataResourceService dataResourceService, IContentInformationService contentInformationService){
+  public DataResourceController(IDataResourceService dataResourceService, IContentInformationService contentInformationService){//, IContentProvider[] contentProviders){
     super();
     this.dataResourceService = dataResourceService;
     this.contentInformationService = contentInformationService;
+    //this.contentProviders = contentProviders;
+
   }
 
   @Override
@@ -441,134 +427,132 @@ public class DataResourceController implements IDataResourceController{
     }
     DataResource resource = result.get();
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
-    //check for existing content information
-    ContentInformation contentInfo;
 
-    Optional<ContentInformation> existingContentInformation = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, null);
-
-    Path toRemove = null;
-    if(existingContentInformation.isPresent()){
-      //existing content, overwrite necessary
-      if(!force){
-        //conflict
-        throw new ResourceAlreadyExistException("There is already content registered at " + path + ". Provide force=true in order to overwrite the existing resource.");
-      } else{
-        //overwrite...mark file for deletion
-        contentInfo = existingContentInformation.get();
-        URI contentUri = URI.create(contentInfo.getContentUri());
-        if("file".equals(contentUri.getScheme())){
-          //mark file for removal
-          toRemove = Paths.get(URI.create(contentInfo.getContentUri()));
-        }//content URI is not pointing to a file...just replace the entry
-      }
-    } else{
-      //no existing content information, create new or take provided
-      contentInfo = (contentInformation != null) ? contentInformation : ContentInformation.createContentInformation(path);
-      contentInfo.setId(null);
-      contentInfo.setParentResource(resource);
-      contentInfo.setRelativePath(path);
-    }
-
-    if(file != null){
-      //file upload
-      URI dataUri = PathUtils.getDataUri(contentInfo.getParentResource(), contentInfo.getRelativePath(), applicationProperties);
-      Path destination = Paths.get(dataUri);
-      //store data
-      OutputStream out = null;
-      try{
-        //read/write file, create checksum and calculate file size
-        Files.createDirectories(destination.getParent());
-
-        InputStream in = file.getInputStream();
-        MessageDigest md = MessageDigest.getInstance("SHA1");
-
-        int cnt;
-        long bytes = 0;
-        byte[] buffer = new byte[1024];
-        out = Files.newOutputStream(destination);
-        while((cnt = in.read(buffer)) > -1){
-          out.write(buffer, 0, cnt);
-          md.update(buffer, 0, cnt);
-          bytes += cnt;
-        }
-
-        contentInfo.setHash("sha1:" + Hex.encodeHexString(md.digest()));
-        contentInfo.setSize(bytes);
-        contentInfo.setContentUri(dataUri.toString());
-
-        try(InputStream is = Files.newInputStream(destination); BufferedInputStream bis = new BufferedInputStream(is);){
-          AutoDetectParser parser = new AutoDetectParser();
-          Detector detector = parser.getDetector();
-          Metadata md1 = new Metadata();
-          md1.add(Metadata.RESOURCE_NAME_KEY, contentInfo.getFilename());
-          org.apache.tika.mime.MediaType mediaType = detector.detect(bis, md1);
-          contentInfo.setMediaType(mediaType.toString());
-        }
-      } catch(IOException ex){
-        LOGGER.error("Failed to finish upload.", ex);
-        throw new CustomInternalServerError("Unable to read from stream. Upload canceled.");
-      } catch(NoSuchAlgorithmException ex){
-        LOGGER.error("Failed to initialize SHA1 message digest. File upload won't be possible.", ex);
-        throw new CustomInternalServerError("Internal digest initialization error. Unable to perform upload.");
-      } finally{
-        if(out != null){
-          try{
-            out.flush();
-            out.close();
-          } catch(IOException ignored){
-          }
-        }
-      }
-    } else{
-      //no file upload, take data reference URI from provided content information
-      if(contentInformation == null || contentInformation.getContentUri() == null){
-        throw new BadArgumentException("Neither a file upload nor an external content URI were provided.");
-      } else{
-        if("file".equals(URI.create(contentInfo.getContentUri()).getScheme().toLowerCase()) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
-          throw new BadArgumentException("You are not permitted to add content information with URI scheme of type 'file'.");
-        }
-        //take content uri and provided checksum and size, if available
-        contentInfo.setContentUri(contentInformation.getContentUri());
-        contentInfo.setSize(contentInformation.getSize());
-        contentInfo.setHash(contentInformation.getHash());
-      }
-    }
-
-    //copy metadata and tags from provided content information if available
-    if(contentInformation != null){
-      if(contentInformation.getMetadata() != null){
-        contentInfo.setMetadata(contentInformation.getMetadata());
-      }
-      if(contentInformation.getTags() != null){
-        contentInfo.setTags(contentInformation.getTags());
-      }
-    }
-
-    URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(id, PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
+    URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(resource.getId(), PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
 
     try{
-      contentInformationService.createOrUpdate(contentInfo);
+      contentInformationService.create(contentInformation, resource, (file != null) ? file.getInputStream() : null, path, force);
       URIBuilder builder = new URIBuilder(link);
       builder.setPath(builder.getPath().replace("**", path));
       return ResponseEntity.created(builder.build()).build();
     } catch(URISyntaxException ex){
       LOGGER.error("Failed to create location URI for path " + path + ". However, resource should be created.", ex);
       return ResponseEntity.created(link).build();
-    } finally{
-      if(toRemove != null){
-        try{
-          Files.deleteIfExists(toRemove);
-        } catch(IOException ex){
-          LOGGER.warn("Failed to remove previously existing data at " + toRemove + ". Manual removal required.", ex);
-        }
-      }
+    } catch(IOException ex){
+      LOGGER.error("Failed to open file input stream.", ex);
+      throw new CustomInternalServerError("Unable to read from stream. Upload canceled.");
     }
 
     // ApplicationContext context = new AnnotationConfigApplicationContext(RabbitMQConfiguration.class);
-    //  AmqpTemplate template = context.getBean(AmqpTemplate.class);
-    // rabbitTemplate.convertAndSend("topic_note", "note.data.update", path + "/" + file.getOriginalFilename());
+//      AmqpTemplate template = context.getBean(AmqpTemplate.class);
+//      
+//     rabbitTemplate.convertAndSend("topic_note", "note.data.update", path + "/" + file.getOriginalFilename());
   }
 
+//  private void test(ContentInformation contentInformation, DataResource resource, InputStream file, String path, boolean force){
+//    //check for existing content information
+//    ContentInformation contentInfo;
+//
+//    Optional<ContentInformation> existingContentInformation = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(resource.getId(), path, null);
+//
+//    Path toRemove = null;
+//    if(existingContentInformation.isPresent()){
+//      //existing content, overwrite necessary
+//      if(!force){
+//        //conflict
+//        throw new ResourceAlreadyExistException("There is already content registered at " + path + ". Provide force=true in order to overwrite the existing resource.");
+//      } else{
+//        //overwrite...mark file for deletion
+//        contentInfo = existingContentInformation.get();
+//        URI contentUri = URI.create(contentInfo.getContentUri());
+//        if("file".equals(contentUri.getScheme())){
+//          //mark file for removal
+//          toRemove = Paths.get(URI.create(contentInfo.getContentUri()));
+//        }//content URI is not pointing to a file...just replace the entry
+//      }
+//    } else{
+//      //no existing content information, create new or take provided
+//      contentInfo = (contentInformation != null) ? contentInformation : ContentInformation.createContentInformation(path);
+//      contentInfo.setId(null);
+//      contentInfo.setParentResource(resource);
+//      contentInfo.setRelativePath(path);
+//    }
+//
+//    if(file != null){
+//      //file upload
+//      URI dataUri = PathUtils.getDataUri(contentInfo.getParentResource(), contentInfo.getRelativePath(), applicationProperties);
+//      Path destination = Paths.get(dataUri);
+//      //store data
+//      OutputStream out = null;
+//      try{
+//        //read/write file, create checksum and calculate file size
+//        Files.createDirectories(destination.getParent());
+//
+//        InputStream in = file.getInputStream();
+//        MessageDigest md = MessageDigest.getInstance("SHA1");
+//
+//        int cnt;
+//        long bytes = 0;
+//        byte[] buffer = new byte[1024];
+//        out = Files.newOutputStream(destination);
+//        while((cnt = in.read(buffer)) > -1){
+//          out.write(buffer, 0, cnt);
+//          md.update(buffer, 0, cnt);
+//          bytes += cnt;
+//        }
+//
+//        contentInfo.setHash("sha1:" + Hex.encodeHexString(md.digest()));
+//        contentInfo.setSize(bytes);
+//        contentInfo.setContentUri(dataUri.toString());
+//
+//        try(InputStream is = Files.newInputStream(destination); BufferedInputStream bis = new BufferedInputStream(is);){
+//          AutoDetectParser parser = new AutoDetectParser();
+//          Detector detector = parser.getDetector();
+//          Metadata md1 = new Metadata();
+//          md1.add(Metadata.RESOURCE_NAME_KEY, contentInfo.getFilename());
+//          org.apache.tika.mime.MediaType mediaType = detector.detect(bis, md1);
+//          contentInfo.setMediaType(mediaType.toString());
+//        }
+//      } catch(IOException ex){
+//        LOGGER.error("Failed to finish upload.", ex);
+//        throw new CustomInternalServerError("Unable to read from stream. Upload canceled.");
+//      } catch(NoSuchAlgorithmException ex){
+//        LOGGER.error("Failed to initialize SHA1 message digest. File upload won't be possible.", ex);
+//        throw new CustomInternalServerError("Internal digest initialization error. Unable to perform upload.");
+//      } finally{
+//        if(out != null){
+//          try{
+//            out.flush();
+//            out.close();
+//          } catch(IOException ignored){
+//          }
+//        }
+//      }
+//    } else{
+//      //no file upload, take data reference URI from provided content information
+//      if(contentInformation == null || contentInformation.getContentUri() == null){
+//        throw new BadArgumentException("Neither a file upload nor an external content URI were provided.");
+//      } else{
+//        if("file".equals(URI.create(contentInfo.getContentUri()).getScheme().toLowerCase()) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+//          throw new BadArgumentException("You are not permitted to add content information with URI scheme of type 'file'.");
+//        }
+//        //take content uri and provided checksum and size, if available
+//        contentInfo.setContentUri(contentInformation.getContentUri());
+//        contentInfo.setSize(contentInformation.getSize());
+//        contentInfo.setHash(contentInformation.getHash());
+//      }
+//    }
+//
+//    //copy metadata and tags from provided content information if available
+//    if(contentInformation != null){
+//      if(contentInformation.getMetadata() != null){
+//        contentInfo.setMetadata(contentInformation.getMetadata());
+//      }
+//      if(contentInformation.getTags() != null){
+//        contentInfo.setTags(contentInformation.getTags());
+//      }
+//    }
+//  }
   @Override
   public ResponseEntity handleMetadataAccess(@PathVariable(value = "id") final Long id,
           @RequestParam(name = "tag", required = false) String tag,
@@ -657,11 +641,11 @@ public class DataResourceController implements IDataResourceController{
     //check resource and permission
     Optional<DataResource> result = dataResourceService.findById(id);
     if(!result.isPresent()){
+      LOGGER.debug("No resource found for identifier {}. Returning HTTP NOT_FOUND.", id);
       return ResponseEntity.notFound().build();
     }
     DataResource resource = result.get();
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
-
     //try to obtain single content element matching path exactly
     Optional<ContentInformation> existingContentInformation = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, null);
     if(existingContentInformation.isPresent()){
@@ -670,86 +654,21 @@ public class DataResourceController implements IDataResourceController{
       //obtain data uri and check for content to exist
       String dataUri = contentInformation.getContentUri();
       URI uri = URI.create(dataUri);
-      if(null == uri.getScheme()){
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Location", uri.toString());
-        return new ResponseEntity<>(null, headers, HttpStatus.NO_CONTENT);
-      } else{
-        //perform direct download if scheme is file
-        switch(uri.getScheme()){
-          case "file":
-            if(!Files.exists(Paths.get(uri))){
-              throw new ResourceNotFoundException("The provided resource was not found on the server.");
-            }
-            return ResponseEntity.
-                    ok().
-                    contentType((contentInformation.getMediaTypeAsObject() != null) ? contentInformation.getMediaTypeAsObject() : MediaType.APPLICATION_OCTET_STREAM).
-                    header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + contentInformation.getFilename() + "\"").
-                    body(new FileSystemResource(new File(uri)));
-          case "http":
-          case "https": {
-            //try to redirect transfer if scheme is not file
-            CloseableHttpClient client = HttpClients.createDefault();
-            HttpGet httpGet = new HttpGet(uri.toString());
-            HttpHeaders headers = new HttpHeaders();
-            HttpStatus returnedStatus;
-            try{
-              CloseableHttpResponse httpResponse = client.execute(httpGet);
-              HttpStatus responseStatus = HttpStatus.resolve(httpResponse.getStatusLine().getStatusCode());
-
-              if(responseStatus == null){
-                LOGGER.warn("Received unknown response status " + httpResponse.getStatusLine().getStatusCode() + " while accessing resource URI " + uri.toString() + ". Returning Content-Location header with value " + uri.toString() + " and HTTP SERVICE_UNAVAILABLE.");
-                headers.add("Content-Location", uri.toString());
-                returnedStatus = HttpStatus.SERVICE_UNAVAILABLE;
-              } else{
-                returnedStatus = responseStatus;
-                switch(responseStatus){
-                  case OK: {
-                    //add location header in order to trigger redirect
-                    returnedStatus = HttpStatus.SEE_OTHER;
-                    headers.add("Location", uri.toString());
-                    break;
-                  }
-                  case SEE_OTHER:
-                  case FOUND:
-                  case MOVED_PERMANENTLY:
-                  case TEMPORARY_REDIRECT:
-                  case PERMANENT_REDIRECT: {
-                    Header location = httpResponse.getFirstHeader("Location");
-                    if(location != null){
-                      headers.add("Location", location.getValue());
-                    } else{
-                      LOGGER.error("Received status " + responseStatus + " but no location header.");
-                      returnedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-                    }
-                    break;
-                  }
-                  default: {
-                    LOGGER.warn("Received status " + responseStatus + ". Returning Content-Location header with value " + uri.toString() + " and HTTP NO_CONTENT.");
-                    returnedStatus = HttpStatus.NO_CONTENT;
-                    headers.add("Content-Location", uri.toString());
-                  }
-                }
-              }
-            } catch(IOException ex){
-              LOGGER.error("Failed to resolve content URI " + uri + ". Sending HTTP SERVICE_UNAVAILABLE.", ex);
-              returnedStatus = HttpStatus.SERVICE_UNAVAILABLE;
-              headers.add("Content-Location", uri.toString());
-            }
-            return new ResponseEntity<>(null, headers, returnedStatus);
-          }
-          default:
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Location", uri.toString());
-
-            return new ResponseEntity<>(null, headers, HttpStatus.NO_CONTENT);
+      LOGGER.debug("Trying to provide content at URI {} by any configured content provider.", uri);
+      for(IContentProvider contentProvider : contentProviders){
+        if(contentProvider.canProvide(uri.getScheme())){
+          return contentProvider.provide(uri, contentInformation.getMediaTypeAsObject(), contentInformation.getFilename());
         }
       }
+
+      LOGGER.info("No content provider found for URI {}. Returning URI in Content-Location header.", uri);
+      HttpHeaders headers = new HttpHeaders();
+      headers.add("Content-Location", uri.toString());
+      return new ResponseEntity<>(null, headers, HttpStatus.NO_CONTENT);
     } else{
-      ///distinguish between 'nothing found, even no collection' and 'collection found but download not implemented'
-      //no single result was found, path is representing a virtual folder
-      //add zipped download here later
-      throw new FeatureNotImplementedException("There is no data resource at this location and collection download is not implemented, yet.");
+      //TODO: check later for collection download
+      LOGGER.debug("No content found for resource {} at path {}. Returning HTTP 404.", id, path);
+      return ResponseEntity.notFound().build();
     }
   }
 

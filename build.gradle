@@ -67,7 +67,7 @@ dependencies {
    compile("com.monitorjbl:spring-json-view:0.16")
    compile("org.postgresql:postgresql:42.2.1")
    compile("org.apache.tika:tika-core:1.18") 
-    
+
    compileOnly('org.projectlombok:lombok')
 
    testCompile("com.h2database:h2:1.4.194") 

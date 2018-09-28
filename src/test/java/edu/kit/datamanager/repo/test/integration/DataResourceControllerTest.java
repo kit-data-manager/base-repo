@@ -1056,7 +1056,7 @@ public class DataResourceControllerTest{
   @Test
   public void testDownloadCollection() throws Exception{
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isNotImplemented());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isNotFound());
   }
 
   /**

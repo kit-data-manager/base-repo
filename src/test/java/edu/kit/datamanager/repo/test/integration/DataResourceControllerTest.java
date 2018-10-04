@@ -1040,17 +1040,16 @@ public class DataResourceControllerTest{
             "Bearer " + userToken)).andDo(print()).andExpect(status().isNotFound());
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/fileWithoutUriScheme").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isNoContent()).andExpect(header().string("Content-Location", equalTo("/invalidlocation/missingFile")));
+   
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(header().string("Content-Disposition", equalTo("attachment; filename=\"validFile\"")));
+    
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/invalidRemoteUri").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable()).andExpect(header().string("Content-Location", equalTo("http://somedomain.new/myFileWhichDoesNotExist")));
-
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/withMediaType").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(header().string("Content-Type", equalTo("text/plain")));
-
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/withRedirect").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(header().string("Location", equalTo("http://www.heise.de")));
-
   }
 
   @Test

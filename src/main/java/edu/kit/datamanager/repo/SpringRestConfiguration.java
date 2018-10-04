@@ -31,5 +31,4 @@ public class SpringRestConfiguration extends RepositoryRestConfigurerAdapter{
   public void configureRepositoryRestConfiguration(RepositoryRestConfiguration config){
     config.setRepositoryDetectionStrategy(RepositoryDetectionStrategy.RepositoryDetectionStrategies.ALL);
   }
-
 }

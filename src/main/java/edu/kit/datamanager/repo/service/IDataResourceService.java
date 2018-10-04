@@ -15,12 +15,17 @@
  */
 package edu.kit.datamanager.repo.service;
 
+import com.github.fge.jsonpatch.JsonPatch;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.entities.PERMISSION;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 /**
@@ -41,6 +46,16 @@ public interface IDataResourceService extends HealthIndicator{
   DataResource createOrUpdate(final DataResource entity);
 
   Optional<DataResource> findById(final Long id);
+
+  Pair<DataResource, String> createDateResource(DataResource resource);
+
+  DataResource readResourceById(Long id);
+
+  List<DataResource> findByExample(DataResource example, PageRequest request, BiConsumer<Integer, Integer> linkEventTrigger);
+
+  void patch(Long id, Predicate<String> etagChecker, JsonPatch patch);
+
+  void delete(Long id, Predicate<String> etagChecker);
 
   void delete(final DataResource entity);
 }

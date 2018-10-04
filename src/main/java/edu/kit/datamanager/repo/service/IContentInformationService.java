@@ -18,9 +18,11 @@ package edu.kit.datamanager.repo.service;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 /**
@@ -37,6 +39,10 @@ public interface IContentInformationService extends HealthIndicator{
   ContentInformation create(ContentInformation contentInformation, DataResource resource, InputStream file, String path, boolean force);
 
   ContentInformation createOrUpdate(final ContentInformation entity);
+
+  List<ContentInformation> getContentInformation(Long id, String relPath, String tag, PageRequest request);
+
+  ContentInformation getContentInformation(Long id, String relPath, String tag);
 
   void delete(final ContentInformation entity);
 }

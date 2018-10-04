@@ -15,10 +15,14 @@
  */
 package edu.kit.datamanager.repo.service.impl;
 
+import com.monitorjbl.json.JsonResult;
+import com.monitorjbl.json.JsonView;
+import static com.monitorjbl.json.Match.match;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
+import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.ContentInformationMatchSpecification;
 import edu.kit.datamanager.repo.dao.ContentInformationTagSpecification;
@@ -38,10 +42,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -49,6 +55,7 @@ import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +65,8 @@ import org.springframework.transaction.annotation.Transactional;
  * @author jejkal
  */
 public class ContentInformationService implements IContentInformationService{
+
+  private final JsonResult json = JsonResult.instance();
 
   @Autowired
   private Logger logger;
@@ -92,6 +101,37 @@ public class ContentInformationService implements IContentInformationService{
     return dao.findAll(spec, pgbl);
   }
 
+  @Override
+  public List<ContentInformation> getContentInformation(Long id, String relPath, String tag, PageRequest request){
+    //obtain page according to request
+    Page<ContentInformation> page = findByParentResourceIdEqualsAndRelativePathLikeAndHasTag(id, relPath, tag, request);
+
+    //wrong header added!
+    // eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(ContentInformation.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), pageSize));
+    //result list found, remove data resource information except id and return
+    return json.use(JsonView.with(page.getContent())
+            .onClass(DataResource.class, match().exclude("*").include("id")))
+            .returnValue();
+  }
+
+  @Override
+  public ContentInformation getContentInformation(Long id, String relPath, String tag){
+    Optional<ContentInformation> existingContentInformation = findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, relPath, tag);
+
+    if(existingContentInformation.isPresent()){
+      //single entry found, remove data resource information except id and return
+      ContentInformation contentInformation = existingContentInformation.get();
+
+      contentInformation = json.use(JsonView.with(contentInformation)
+              .onClass(DataResource.class, match().exclude("*").include("id")))
+              .returnValue();
+      return contentInformation;
+    } else{
+      logger.debug("No content information found for resource {} at path {} with tag {}.", id, relPath, tag);
+      throw new ResourceNotFoundException("No content found at the provided location.");
+    }
+  }
+
 //  @Override
 //  @Transactional(readOnly = true)
 //  public Page<ContentInformation> findAll(ContentInformation example, Pageable pgbl){
@@ -102,7 +142,10 @@ public class ContentInformationService implements IContentInformationService{
 //    return getDao().findAll(pgbl);
 //  }
   @Override
-  public ContentInformation create(ContentInformation contentInformation, DataResource resource, InputStream file, String path, boolean force){
+  public ContentInformation create(ContentInformation contentInformation, DataResource resource,
+          InputStream file, String path,
+          boolean force
+  ){
     //check for existing content information
     ContentInformation contentInfo;
 
@@ -218,12 +261,14 @@ public class ContentInformationService implements IContentInformationService{
   }
 
   @Override
-  public ContentInformation createOrUpdate(ContentInformation entity){
+  public ContentInformation createOrUpdate(ContentInformation entity
+  ){
     return getDao().save(entity);
   }
 
   @Override
-  public void delete(ContentInformation entity){
+  public void delete(ContentInformation entity
+  ){
     getDao().delete(entity);
   }
 

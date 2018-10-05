@@ -24,6 +24,7 @@ import edu.kit.datamanager.dao.ByExampleSpecification;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
+import edu.kit.datamanager.exceptions.AccessForbiddenException;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.EtagMismatchException;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
@@ -109,7 +110,7 @@ public class DataResourceService implements IDataResourceService{
 //    return getDao().findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(id, sids, permission);
 //  }
   @Override
-  public Pair<DataResource, String> createDateResource(DataResource resource){
+  public DataResource create(DataResource resource){
     if(resource.getIdentifier() == null){
       //set placeholder identifier
       resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER));
@@ -118,7 +119,7 @@ public class DataResourceService implements IDataResourceService{
       for(Identifier alt : resource.getAlternateIdentifiers()){
         if(Identifier.IDENTIFIER_TYPE.INTERNAL.equals(alt.getIdentifierType())){
           if(alt.getValue() == null){
-            throw new BadArgumentException("Provided internal indentifier must not be null.");
+            throw new BadArgumentException("Provided internal identifier must not be null.");
           }
           resource.setResourceIdentifier(alt.getValue());
           haveAlternateInternalIdentifier = true;
@@ -211,45 +212,26 @@ public class DataResourceService implements IDataResourceService{
       resource.setState(DataResource.State.VOLATILE);
     }
 
-    DataResource newResource = dao.save(resource);
-
-    return Pair.of(newResource, Integer.toString(resource.hashCode()));
+    return dao.save(resource);
   }
 
   @Override
-  public DataResource readResourceById(Long id){
+  public DataResource getById(Long id, PERMISSION requestedPermission) throws ResourceNotFoundException, AccessForbiddenException{
     Optional<DataResource> result = findById(id);
     if(!result.isPresent()){
       logger.debug("No data resource found for identifier {}. Returning HTTP 404.", id);
       throw new ResourceNotFoundException("Data resource with id " + id + " was not found.");
     }
     DataResource resource = result.get();
-    
-    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
-//    Match match = match();
-//    if(!DataResourceUtils.hasPermission(resource, PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
-//      logger.debug("Removing ACL information from resources due to non-administrator access.");
-//      //exclude ACLs if not administrate or administrator permissions are set
-//      match = match.exclude("acls");
-//    } else{
-//      logger.debug("Administrator access detected, keepting ACL information in resources.");
-//    }
-//
-//    //transform and return JSON representation as next controller result
-//    json.use(JsonView.with(resource)
-//            .onClass(DataResource.class, match))
-//            .returnValue();
-//    
-//    //return the etag
-//    return Integer.toString(resource.hashCode());
+    DataResourceUtils.performPermissionCheck(resource, requestedPermission);
+
     return resource;
   }
 
   @Override
   public List<DataResource> findByExample(DataResource example, PageRequest request, BiConsumer<Integer, Integer> linkEventTrigger){
     Page<DataResource> page;
-
     if(AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
       //do find all
       logger.debug("Administrator access detected. Calling findAll() with example {} and page request {}.", example, request);
@@ -269,15 +251,6 @@ public class DataResourceService implements IDataResourceService{
     List<DataResource> modResources = page.getContent();
     if(modResources.isEmpty()){
       logger.debug("No data resource found for example {} and principal identifiers {}. Returning empty result.", example, AuthenticationHelper.getAuthorizationIdentities());
-    }
-    if(!AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
-      logger.debug("Removing ACL information from resources due to non-administrator access.");
-      //exclude ACLs if no administrator permissions are set
-      modResources = json.use(JsonView.with(page.getContent())
-              .onClass(DataResource.class, match().exclude("acls")))
-              .returnValue();
-    } else{
-      logger.debug("Administrator access detected, keepting ACL information in resources.");
     }
     return modResources;
   }
@@ -317,11 +290,6 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  public DataResource createOrUpdate(DataResource entity){
-    return getDao().save(entity);
-  }
-
-  @Override
   public void patch(Long id, Predicate<String> etagChecker, JsonPatch patch){
     Optional<DataResource> result = findById(id);
     if(!result.isPresent()){
@@ -351,7 +319,7 @@ public class DataResourceService implements IDataResourceService{
     DataResource updated = PatchUtil.applyPatch(resource, patch, DataResource.class, userGrants);
 
     logger.info("Persisting patched resource.");
-    createOrUpdate(updated);
+    dao.save(updated);
     logger.info("Resource successfully persisted.");
   }
 
@@ -368,18 +336,13 @@ public class DataResourceService implements IDataResourceService{
         logger.debug("Setting resource state to REVOKED.");
         resource.setState(DataResource.State.REVOKED);
         logger.debug("Persisting revoked resource.");
-        createOrUpdate(resource);
+        dao.save(resource);
       } else{
         throw new UpdateForbiddenException("Insufficient role. ADMINISTRATE permission or ROLE_ADMINISTRATOR required.");
       }
     } else{
       logger.debug("No data resource found for identifier {}. Returning HTTP 204.", id);
     }
-  }
-
-  @Override
-  public void delete(DataResource entity){
-    getDao().delete(entity);
   }
 
   protected IDataResourceDao getDao(){

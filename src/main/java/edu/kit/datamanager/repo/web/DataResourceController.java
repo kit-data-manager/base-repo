@@ -125,14 +125,14 @@ public class DataResourceController implements IDataResourceController{
       throw new UnauthorizedAccessException("Anonymous resource creation disabled.");
     }
 
-    Pair<DataResource, String> result = dataResourceService.createDateResource(resource);
+    DataResource result = dataResourceService.create(resource);
 
-    return ResponseEntity.created(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(result.getLeft().getId(), request, response)).toUri()).eTag("\"" + result.getRight() + "\"").body(result.getLeft());
+    return ResponseEntity.created(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(result.getId(), request, response)).toUri()).eTag("\"" + Integer.toString(result.hashCode()) + "\"").body(result);
   }
 
   @Override
   public ResponseEntity<DataResource> getById(@PathVariable("id") final Long id, WebRequest request, final HttpServletResponse response){
-    DataResource resource = dataResourceService.readResourceById(id);
+    DataResource resource = dataResourceService.getById(id, PERMISSION.READ);
     //filter resource if necessary and return it automatically
     filterAndAutoReturnResource(resource);
     //trigger response creation and set etag...the response body is set automatically
@@ -159,7 +159,9 @@ public class DataResourceController implements IDataResourceController{
       eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, currentPage, totalPages, pageSize));
     });
 
-    return ResponseEntity.ok(resources);
+    filterAndAutoReturnResource(resources);
+
+    return ResponseEntity.ok().build();
   }
 
   @Override
@@ -255,7 +257,7 @@ public class DataResourceController implements IDataResourceController{
       relPath = relPath.substring(1);
     }
     //check resource and permission
-    DataResource resource = dataResourceService.readResourceById(id);
+    DataResource resource = dataResourceService.getById(id, PERMISSION.READ);
 
     //switch between collection and element listing
     if(relPath.endsWith("/") || relPath.length() == 0){
@@ -277,12 +279,14 @@ public class DataResourceController implements IDataResourceController{
       PageRequest pageRequest = PageRequest.of(pgbl.getPageNumber(), pageSize, pgblSort);
 
       List<ContentInformation> resultList = contentInformationService.getContentInformation(id, relPath, tag, pageRequest);
+      filterAndAutoReturnContentInformation(resultList);
       LOGGER.debug("Obtained {} content information result(s).", resultList.size());
-      return ResponseEntity.ok(resultList);
+      return ResponseEntity.ok().build();
     } else{
       ContentInformation contentInformation = contentInformationService.getContentInformation(id, relPath, tag);
+      filterAndAutoReturnContentInformation(contentInformation);
       LOGGER.debug("Obtained single content information result.");
-      return ResponseEntity.ok().eTag("\"" + Integer.toString(resource.hashCode()) + "\"").body(contentInformation);
+      return ResponseEntity.ok().eTag("\"" + Integer.toString(resource.hashCode()) + "\"").build();
     }
   }
 
@@ -298,32 +302,25 @@ public class DataResourceController implements IDataResourceController{
     }
     String path = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
 
-    DataResource resource = dataResourceService.readResourceById(id);
+    DataResource resource = dataResourceService.getById(id, PERMISSION.READ);
 
+    LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getResourceIdentifier());
     //try to obtain single content element matching path exactly
-    Optional<ContentInformation> existingContentInformation = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, null);
-    if(existingContentInformation.isPresent()){
-      //single entry found, remove data resource information except id and return
-      ContentInformation contentInformation = existingContentInformation.get();
-      //obtain data uri and check for content to exist
-      String dataUri = contentInformation.getContentUri();
-      URI uri = URI.create(dataUri);
-      LOGGER.debug("Trying to provide content at URI {} by any configured content provider.", uri);
-      for(IContentProvider contentProvider : contentProviders){
-        if(contentProvider.canProvide(uri.getScheme())){
-          return contentProvider.provide(uri, contentInformation.getMediaTypeAsObject(), contentInformation.getFilename());
-        }
+    ContentInformation contentInformation = contentInformationService.getContentInformation(id, path, null);
+    //obtain data uri and check for content to exist
+    String dataUri = contentInformation.getContentUri();
+    URI uri = URI.create(dataUri);
+    LOGGER.debug("Trying to provide content at URI {} by any configured content provider.", uri);
+    for(IContentProvider contentProvider : contentProviders){
+      if(contentProvider.canProvide(uri.getScheme())){
+        return contentProvider.provide(uri, contentInformation.getMediaTypeAsObject(), contentInformation.getFilename());
       }
-
-      LOGGER.info("No content provider found for URI {}. Returning URI in Content-Location header.", uri);
-      HttpHeaders headers = new HttpHeaders();
-      headers.add("Content-Location", uri.toString());
-      return new ResponseEntity<>(null, headers, HttpStatus.NO_CONTENT);
-    } else{
-      //TODO: check later for collection download
-      LOGGER.debug("No content found for resource {} at path {}. Returning HTTP 404.", id, path);
-      return ResponseEntity.notFound().build();
     }
+
+    LOGGER.info("No content provider found for URI {}. Returning URI in Content-Location header.", uri);
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Content-Location", uri.toString());
+    return new ResponseEntity<>(null, headers, HttpStatus.NO_CONTENT);
   }
 
   @Override
@@ -342,40 +339,31 @@ public class DataResourceController implements IDataResourceController{
     }
     String path = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
     //check resource and permission
-    Optional<DataResource> result = dataResourceService.findById(id);
-    if(!result.isPresent()){
-      return ResponseEntity.notFound().build();
-    }
-    DataResource resource = result.get();
-    DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
+    DataResource resource = dataResourceService.getById(id, PERMISSION.WRITE);
+    LOGGER.debug("Successfully obtained resource with identifier {}. Continue with content check.", resource.getResourceIdentifier());
+
     //try to obtain single content element matching path exactly
-    Optional<ContentInformation> existingContentInformation = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, null);
-    if(existingContentInformation.isPresent()){
-      ContentInformation toUpdate = existingContentInformation.get();
-      if(!request.checkNotModified(Integer.toString(resource.hashCode()))){
-        throw new EtagMismatchException("ETag not matching, resource has changed.");
-      }
+    ContentInformation toUpdate = contentInformationService.getContentInformation(id, path, null);
 
-      PERMISSION callerPermission = DataResourceUtils.getAccessPermission(resource);
-      boolean callerIsAdmin = AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString());
-      Collection<GrantedAuthority> userGrants = new ArrayList<>();
-      userGrants.add(new SimpleGrantedAuthority(callerPermission.getValue()));
-
-      if(callerIsAdmin){
-        LOGGER.debug("Admin access detected. Adding ADMINISTRATOR role to granted authorities.");
-        userGrants.add(new SimpleGrantedAuthority(RepoUserRole.ADMINISTRATOR.getValue()));
-
-      }
-
-      ContentInformation updated = PatchUtil.applyPatch(toUpdate, patch, ContentInformation.class,
-              userGrants);
-      LOGGER.info("Persisting patched content information.");
-      contentInformationService.createOrUpdate(updated);
-      LOGGER.info("Content information successfully persisted.");
-      return ResponseEntity.noContent().build();
-    } else{
-      throw new ResourceNotFoundException("No content information found for resource with identifier " + id + " at path " + path);
+    if(!request.checkNotModified(Integer.toString(resource.hashCode()))){
+      throw new EtagMismatchException("ETag not matching, resource has changed.");
     }
+
+    PERMISSION callerPermission = DataResourceUtils.getAccessPermission(resource);
+    boolean callerIsAdmin = AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString());
+    Collection<GrantedAuthority> userGrants = new ArrayList<>();
+    userGrants.add(new SimpleGrantedAuthority(callerPermission.getValue()));
+
+    if(callerIsAdmin){
+      LOGGER.debug("Admin access detected. Adding ADMINISTRATOR role to granted authorities.");
+      userGrants.add(new SimpleGrantedAuthority(RepoUserRole.ADMINISTRATOR.getValue()));
+    }
+
+    ContentInformation updated = PatchUtil.applyPatch(toUpdate, patch, ContentInformation.class, userGrants);
+    LOGGER.info("Persisting patched content information.");
+    contentInformationService.createOrUpdate(updated);
+    LOGGER.info("Content information successfully persisted.");
+    return ResponseEntity.noContent().build();
   }
 
   @Override
@@ -397,15 +385,17 @@ public class DataResourceController implements IDataResourceController{
     }
     DataResource resource = result.get();
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.ADMINISTRATE);
+
     //try to obtain single content element matching path exactly
-    Optional<ContentInformation> existingContentInformation = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, null);
-    if(existingContentInformation.isPresent()){
+    Optional<ContentInformation> contentInfoOptional = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, null);
+    if(contentInfoOptional.isPresent()){
+      LOGGER.debug("Content information entry found. Checking ETag.");
+      ContentInformation contentInfo = contentInfoOptional.get();
       if(!request.checkNotModified(Integer.toString(resource.hashCode()))){
         throw new EtagMismatchException("ETag not matching, resource has changed.");
       }
 
       Path toRemove = null;
-      ContentInformation contentInfo = existingContentInformation.get();
       URI contentUri = URI.create(contentInfo.getContentUri());
       if("file".equals(contentUri.getScheme())){
         //mark file for removal
@@ -433,14 +423,44 @@ public class DataResourceController implements IDataResourceController{
       //exclude ACLs if not administrate or administrator permissions are set
       match = match.exclude("acls");
     } else{
-      LOGGER.debug("Administrator access detected, keepting ACL information in resources.");
-
+      LOGGER.debug("Administrator access detected, keeping ACL information in resources.");
     }
 
     //transform and return JSON representation as next controller result
     json.use(JsonView.with(resource)
             .onClass(DataResource.class,
                     match))
+            .returnValue();
+  }
+
+  private void filterAndAutoReturnResource(List<DataResource> resources){
+    Match match = match();
+    if(!AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+      LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
+      //exclude ACLs if not administrate or administrator permissions are set
+      match = match.exclude("acls");
+    } else{
+      LOGGER.debug("Administrator access detected, keeping ACL information in resources.");
+    }
+
+    //transform and return JSON representation as next controller result
+    json.use(JsonView.with(resources)
+            .onClass(DataResource.class,
+                    match))
+            .returnValue();
+  }
+
+  private void filterAndAutoReturnContentInformation(ContentInformation resource){
+    //transform and return JSON representation as next controller result
+    json.use(JsonView.with(resource)
+            .onClass(DataResource.class, match().exclude("*").include("id")))
+            .returnValue();
+  }
+
+  private void filterAndAutoReturnContentInformation(List<ContentInformation> resources){
+    //transform and return JSON representation as next controller result
+    json.use(JsonView.with(resources)
+            .onClass(DataResource.class, match().exclude("*").include("id")))
             .returnValue();
 
   }

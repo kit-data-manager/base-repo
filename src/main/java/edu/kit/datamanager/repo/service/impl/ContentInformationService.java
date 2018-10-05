@@ -47,7 +47,6 @@ import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -58,6 +57,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -82,7 +82,6 @@ public class ContentInformationService implements IContentInformationService{
   @Override
   @Transactional(readOnly = true)
   public Optional<ContentInformation> findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(Long id, String relativePath, String tag){
-
     Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(id, relativePath, true));//new ByExampleSpecification(em).byExample(example));
     if(tag != null){
       spec = ContentInformationTagSpecification.andIfPermission(spec, tag);
@@ -115,37 +114,23 @@ public class ContentInformationService implements IContentInformationService{
   }
 
   @Override
-  public ContentInformation getContentInformation(Long id, String relPath, String tag){
-    Optional<ContentInformation> existingContentInformation = findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, relPath, tag);
+  public ContentInformation getContentInformation(Long id, String relativePath, String tag){
+    Optional<ContentInformation> contentInformation = findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, relativePath, tag);
 
-    if(existingContentInformation.isPresent()){
-      //single entry found, remove data resource information except id and return
-      ContentInformation contentInformation = existingContentInformation.get();
-
-      contentInformation = json.use(JsonView.with(contentInformation)
-              .onClass(DataResource.class, match().exclude("*").include("id")))
-              .returnValue();
-      return contentInformation;
-    } else{
-      logger.debug("No content information found for resource {} at path {} with tag {}.", id, relPath, tag);
-      throw new ResourceNotFoundException("No content found at the provided location.");
+    if(!contentInformation.isPresent()){
+      //TODO: check later for collection download
+      logger.error("No content found for resource {} at path {}. Returning HTTP 404.", id, relativePath);
+      throw new ResourceNotFoundException("Content information for id " + id + ", path " + relativePath + " and tag " + tag + " found.");
     }
+
+    logger.debug("Returning content information for id {}, at path {} with tag {}.", id, relativePath, tag);
+    return contentInformation.get();
   }
 
-//  @Override
-//  @Transactional(readOnly = true)
-//  public Page<ContentInformation> findAll(ContentInformation example, Pageable pgbl){
-//    if(example != null){
-//      Specification<ContentInformation> spec = Specification.where(new ByExampleSpecification(em).byExample(example));
-//      return getDao().findAll(spec, pgbl);
-//    }
-//    return getDao().findAll(pgbl);
-//  }
   @Override
   public ContentInformation create(ContentInformation contentInformation, DataResource resource,
           InputStream file, String path,
-          boolean force
-  ){
+          boolean force){
     //check for existing content information
     ContentInformation contentInfo;
 

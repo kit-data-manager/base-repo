@@ -72,8 +72,13 @@ public class DataResourceUtils{
    *
    * @param resource The resource to check.
    * @param requiredPermission The required permission to access the resource.
+   *
+   * @throws AccessForbiddenException if the caller has not the required
+   * permissions.
+   * @throws ResourceNotFoundException if the resource has been revoked and the
+   * caller has no ADMINISTRATE permissions.
    */
-  public static void performPermissionCheck(DataResource resource, PERMISSION requiredPermission){
+  public static void performPermissionCheck(DataResource resource, PERMISSION requiredPermission) throws AccessForbiddenException, ResourceNotFoundException{
     LOGGER.debug("Performing permission check for {} permission to resource {}.", requiredPermission, resource);
     PERMISSION callerPermission = getAccessPermission(resource);
 

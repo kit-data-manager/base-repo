@@ -655,7 +655,7 @@ public class DataResourceControllerTest{
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-None-Match", etag).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
 
-    dataResourceService.delete(sampleResource);
+    dataResourceDao.delete(sampleResource);
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken)).andDo(print()).andExpect(status().isNotFound());

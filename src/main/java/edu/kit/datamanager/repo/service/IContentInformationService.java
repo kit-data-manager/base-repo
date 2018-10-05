@@ -31,7 +31,7 @@ import org.springframework.data.domain.Pageable;
  */
 public interface IContentInformationService extends HealthIndicator{
 
-  public Optional<ContentInformation> findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(Long id, String relativePath, String tag);
+  public Optional<ContentInformation>  findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(Long id, String relativePath, String tag);
 
   public Page<ContentInformation> findByParentResourceIdEqualsAndRelativePathLikeAndHasTag(Long id, String relativePath, String tag, Pageable pgbl);
 

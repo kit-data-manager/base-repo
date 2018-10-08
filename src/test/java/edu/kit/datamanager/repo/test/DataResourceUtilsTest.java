@@ -29,7 +29,6 @@ import edu.kit.datamanager.security.filter.JwtAuthenticationToken;
 import edu.kit.datamanager.security.filter.ScopedPermission;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.JwtBuilder;
-import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

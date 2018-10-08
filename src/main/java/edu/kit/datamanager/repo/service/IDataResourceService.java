@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,15 +39,6 @@ import org.springframework.data.domain.Pageable;
  * @author jejkal
  */
 public interface IDataResourceService extends HealthIndicator{
-
-//  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(DataResource.State state, List<String> sids, AclEntry.PERMISSION permission);
-//
-//  public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(DataResource.State state, List<String> sids, AclEntry.PERMISSION permission, Pageable pgbl);
-//
-//  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, AclEntry.PERMISSION permission);
-  public Page<DataResource> findAll(DataResource example, List<String> sids, PERMISSION permission, Pageable pgbl, boolean IncludeRevoked);
-
-  public Page<DataResource> findAll(DataResource example, Pageable pgbl, boolean IncludeRevoked);
 
   /**
    * Create a new data resource using the provided template. Where possible,
@@ -74,6 +64,132 @@ public interface IDataResourceService extends HealthIndicator{
    * identifier already exists.
    */
   DataResource create(DataResource resource) throws BadArgumentException, ResourceAlreadyExistException;
+
+  /**
+   * Find a resource by its numeric id. This method is meant to provide a plain
+   * query to the underlying DAO implementation. As long as the data backend is
+   * available, this method should not produce any exception. The result is an
+   * Optional of type DataResource. Before using the value of the Optional, it
+   * should be tested whether a value is present or not. If specific access
+   * checks are required, {@link #getById(java.lang.Long, edu.kit.datamanager.entities.PERMISSION)
+   * } should be preferred.
+   *
+   * @param id The id of the resource.
+   *
+   * @return An optional holding the data resource with the provided id or which
+   * has no value.
+   */
+  Optional<DataResource> findById(final Long id);
+
+  /**
+   * Get a resource by its numeric id. In contrast to {@link #findById(java.lang.Long)
+   * } this method may throw exceptions if a resource with the provided id was
+   * not found or if the caller has insufficient permissions. Basically, this
+   * method must only return if an accessible resource for the provided id was
+   * found and is accessible. However, this also means that this method is NOT
+   * expected to return 'null'.
+   *
+   * @param id The id of the resource.
+   * @param requestedPermission The permissions needed for resource access, e.g.
+   * READ or WRITE.
+   *
+   * @return The resource with the provided id, if one exists.
+   *
+   * @throws ResourceNotFoundException if no resource with the provided id could
+   * be found or if the resource has been revoked and the caller has not
+   * ADMINISTRATE permissions.
+   * @throws AccessForbiddenException if the caller has insufficient
+   * permissions, e.g. if WRITE access was requested but the caller only has
+   * READ access or if WRITE access was requested, but the resource is fixed and
+   * the caller has no ADMINISTRATE permissions.
+   */
+  DataResource getById(Long id, PERMISSION requestedPermission) throws ResourceNotFoundException, AccessForbiddenException;
+
+  /**
+   * Basic find by example method. An implementation of this method is not
+   * intended to imply any specific context or authentication information. It is
+   * expected to use the provided information in order to create a query to the
+   * data backend and to return appropriate results.
+   *
+   * The example is used to create a query to the data backend. It depends on
+   * the implementation which fields of the example are evaluated, at least
+   * simple fields should be evaluated. Resources in state REVOKED may or may
+   * not be included depending on the 'icludeRevoked' flag.
+   *
+   * The result can be requested in a paginated form using the pgbl argument.
+   *
+   * @param example The example resource used to build the query for assigned
+   * values.
+   * @param pgbl The pageable object containing pagination information.
+   * @param includeRevoked If TRUE, resources in state 'REVOKED' are included,
+   * otherwise they are ignored. Typically, only privileged users should see
+   * revoked resources.
+   *
+   * @return A page object containing all matching resources on the current
+   * page. The list of results might be empty, but the result should NOT be
+   * 'null'.
+   */
+  Page<DataResource> findAll(DataResource example, Pageable pgbl, boolean includeRevoked);
+
+  /**
+   * Basic find by example method supporting permission check. An implementation
+   * of this method is not intended to imply any specific context or
+   * authentication information. It is expected to use the provided information
+   * in order to create a query to the data backend and to return appropriate
+   * results.
+   *
+   * The example is used to create a query to the data backend. It depends on
+   * the implementation which fields of the example are evaluated, at least
+   * simple fields should be evaluated. In addition, the result can be filtered
+   * by permission for the provided list of sids and resources in state REVOKED
+   * may or may not be included depending on the 'icludeRevoked' flag.
+   *
+   * The result can be requested in a paginated form using the pgbl argument.
+   *
+   * @param example The example resource used to build the query for assigned
+   * values.
+   * @param sids A list of subject ids identifying caller. This list may or may
+   * not contain multiple entries identifying either a user or a group of users.
+   * @param permission The minimum permission at least one subject in the list
+   * of sids must possess.
+   * @param pgbl The pageable object containing pagination information.
+   * @param includeRevoked If TRUE, resources in state 'REVOKED' are included,
+   * otherwise they are ignored. Typically, only privileged users should see
+   * revoked resources.
+   *
+   * @return A page object containing all matching resources on the current
+   * page. The list of results might be empty, but the result should NOT be
+   * 'null'.
+   */
+  Page<DataResource> findAllFiltered(DataResource example, List<String> sids, PERMISSION permission, Pageable pgbl, boolean includeRevoked);
+
+  /**
+   * Find a data resource by the provided example. The example is used to create
+   * a query to the data backend. It depends on the implementation which fields
+   * of the example are evaluated, at least simple fields should be evaluated.
+   * The result as list containing matching elements according to the provided
+   * pagination information. In addition, a link event trigger consumer is
+   * provided. The consumer takes the current page and the number of total pages
+   * in order to trigger HTTP link header creation.
+   *
+   * If no element is matching the provided example, an empty list should be
+   * returned. This method is NOT expected to return 'null'.
+   *
+   * This method is intended toprovide a high level wrapper for {@link #findAll(edu.kit.datamanager.repo.domain.DataResource, org.springframework.data.domain.Pageable, boolean, java.util.function.BiConsumer)
+   * } and {@link #findAllFiltered(edu.kit.datamanager.repo.domain.DataResource, java.util.List, edu.kit.datamanager.entities.PERMISSION, org.springframework.data.domain.Pageable, boolean, java.util.function.BiConsumer)
+   * } and may use them internally. In addition it may perform security checks
+   * in order to determine, which of the two findAll implementations should be
+   * called, e.g. for privileged or unprivileged access.
+   *
+   * @param example The example resource used to build the query for assigned
+   * values.
+   * @param pgbl The pageable object containing pagination information.
+   * @param linkEventTrigger The link event trigger function taking the current
+   * page and the number of total pages to trigger link header creation.
+   *
+   * @return A list of data resources matching the example or an empty list.
+   */
+  List<DataResource> findByExample(DataResource example, Pageable pgbl, BiConsumer<Integer, Integer> linkEventTrigger);
 
   /**
    * Apply the provided patch to the resource with the provided id. Before the
@@ -124,48 +240,5 @@ public interface IDataResourceService extends HealthIndicator{
    * permissions for the resource and does not possess the role ADMINISTRATOR.
    */
   void delete(Long id, Predicate<String> etagChecker) throws EtagMismatchException, UpdateForbiddenException;
-
-  /**
-   * Find a resource by its numeric id. This method is meant to provide a plain
-   * query to the underlying DAO implementation. This means, as long as the data
-   * backend is available, this method should not produce any exception. The
-   * result is an Optional of type DataResource. Before using, it should be
-   * tested whether a value is present or not. Furthermore, particular access
-   * checks should be done before delivering the result to a client.
-   *
-   * @param id The id of the resource.
-   *
-   * @return An optional holding the data resource with the provided id or which
-   * has no value.
-   */
-  Optional<DataResource> findById(final Long id);
-
-  /**
-   * Get a resource by its numeric id. In contrast to {@link #findById(java.lang.Long)
-   * } this method may throw exceptions if a resource with the provided id was
-   * not found or if the caller has insufficient permissions. Basically, this
-   * method must only return if an accessible resource for the provided id was
-   * found and is accessible. However, this also means that this method is NOT
-   * expected to return 'null'.
-   *
-   * @param id The id of the resource.
-   * @param requestedPermission The permissions needed for resource access, e.g.
-   * READ or WRITE.
-   *
-   * @return The resource with the provided id, if one exists.
-   *
-   * @throws ResourceNotFoundException if no resource with the provided id could
-   * be found or if the resource has been revoked and the caller has not
-   * ADMINISTRATE permissions.
-   * @throws AccessForbiddenException if the caller has insufficient
-   * permissions, e.g. if WRITE access was requested but the caller only has
-   * READ access or if WRITE access was requested, but the resource is fixed and
-   * the caller has no ADMINISTRATE permissions.
-   */
-  DataResource getById(Long id, PERMISSION requestedPermission) throws ResourceNotFoundException, AccessForbiddenException;
-
-  /**
-   */
-  List<DataResource> findByExample(DataResource example, PageRequest request, BiConsumer<Integer, Integer> linkEventTrigger);
 
 }

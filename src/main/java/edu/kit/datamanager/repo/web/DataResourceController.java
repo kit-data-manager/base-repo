@@ -33,24 +33,19 @@ import org.springframework.web.context.request.WebRequest;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.exceptions.BadArgumentException;
-import edu.kit.datamanager.exceptions.EtagMismatchException;
-import edu.kit.datamanager.exceptions.UnauthorizedAccessException;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
-import edu.kit.datamanager.exceptions.FeatureNotImplementedException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.service.IContentProvider;
-import edu.kit.datamanager.service.impl.FileContentProvider;
 import edu.kit.datamanager.util.AuthenticationHelper;
+import edu.kit.datamanager.util.ControllerUtils;
 import edu.kit.datamanager.util.PatchUtil;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -60,28 +55,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.Header;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
@@ -113,7 +98,15 @@ public class DataResourceController implements IDataResourceController{
   @Autowired
   private IContentProvider[] contentProviders;
 
-  public DataResourceController(IDataResourceService dataResourceService, IContentInformationService contentInformationService){//, IContentProvider[] contentProviders){
+  /**
+   * Default constructor.
+   *
+   * @param dataResourceService Data resource service instance added e.g. via
+   * dependency injection.
+   * @param contentInformationService Content information service instance added
+   * e.g. via dependency injection.
+   */
+  public DataResourceController(IDataResourceService dataResourceService, IContentInformationService contentInformationService){
     super();
     this.dataResourceService = dataResourceService;
     this.contentInformationService = contentInformationService;
@@ -121,22 +114,26 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity<DataResource> create(@RequestBody DataResource resource, WebRequest request, final HttpServletResponse response){
-    if(AuthenticationHelper.isAnonymous()){
-      throw new UnauthorizedAccessException("Anonymous resource creation disabled.");
-    }
+    ControllerUtils.checkAnonymousAccess();
 
-    DataResource result = dataResourceService.create(resource);
+    DataResource result = dataResourceService.create(resource,
+            (String) AuthenticationHelper.getAuthentication().getPrincipal(),
+            AuthenticationHelper.getFirstname(),
+            AuthenticationHelper.getLastname());
 
-    return ResponseEntity.created(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(result.getId(), request, response)).toUri()).eTag("\"" + Integer.toString(result.hashCode()) + "\"").body(result);
+    return ResponseEntity.created(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(result.getId(), request, response)).toUri()).eTag("\"" + result.getEtag() + "\"").body(result);
   }
 
   @Override
   public ResponseEntity<DataResource> getById(@PathVariable("id") final Long id, WebRequest request, final HttpServletResponse response){
-    DataResource resource = dataResourceService.getById(id, PERMISSION.READ);
+    DataResource resource = dataResourceService.findById(id);
+
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+
     //filter resource if necessary and return it automatically
     filterAndAutoReturnResource(resource);
     //trigger response creation and set etag...the response body is set automatically
-    return ResponseEntity.ok().eTag("\"" + Integer.toString(resource.hashCode()) + "\"").build();
+    return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
   }
 
   @Override
@@ -150,39 +147,53 @@ public class DataResourceController implements IDataResourceController{
           WebRequest req,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
-    final int pageSize = pgbl.getPageSize() <= 100 ? pgbl.getPageSize() : 100;
+    PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
 
-    LOGGER.debug("Rebuilding page request for page {}, size {} and sort {}.", pgbl.getPageNumber(), pageSize, pgbl.getSort());
-    PageRequest request = PageRequest.of(pgbl.getPageNumber(), pageSize, pgbl.getSort());
+    Page<DataResource> page = dataResourceService.findByExample(example, AuthenticationHelper.getAuthorizationIdentities(),
+            AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()),
+            request);
 
-    List<DataResource> resources = dataResourceService.findByExample(example, request, (Integer currentPage, Integer totalPages) -> {
-      eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, currentPage, totalPages, pageSize));
-    });
+    eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), request.getPageSize()));
 
-    filterAndAutoReturnResource(resources);
+    filterAndAutoReturnResources(page.getContent());
 
     return ResponseEntity.ok().build();
   }
 
   @Override
   public ResponseEntity patch(@PathVariable("id") final Long id, @RequestBody JsonPatch patch, WebRequest request, final HttpServletResponse response){
-    if(AuthenticationHelper.isAnonymous()){
-      throw new UnauthorizedAccessException("Please login in order to be able to modify resources.");
-    }
+    ControllerUtils.checkAnonymousAccess();
 
-    dataResourceService.patch(id, (String t) -> request.checkNotModified(t), patch);
+    DataResource resource = dataResourceService.findById(id);
+
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
+
+    ControllerUtils.checkEtag(request, resource);
+
+    dataResourceService.patch(resource, patch, getUserAuthorities(resource));
 
     return ResponseEntity.noContent().build();
   }
 
   @Override
   public ResponseEntity delete(@PathVariable("id") final Long id, WebRequest request, final HttpServletResponse response){
-    if(AuthenticationHelper.isAnonymous()){
-      LOGGER.debug("Anonymous access to DELETE permitted. Returning HTTP 401.");
-      throw new UnauthorizedAccessException("Please login in order to be able to modify resources.");
-    }
+    ControllerUtils.checkAnonymousAccess();
 
-    dataResourceService.delete(id, (String t) -> request.checkNotModified(t));
+    try{
+      DataResource resource = dataResourceService.findById(id);
+      LOGGER.trace("Resource found. Checking for permission {} or role {}.", PERMISSION.ADMINISTRATE, RepoUserRole.ADMINISTRATOR);
+      if(DataResourceUtils.hasPermission(resource, PERMISSION.ADMINISTRATE) || AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.getValue())){
+        LOGGER.trace("Permissions found. Continuing with DELETE operation.");
+        ControllerUtils.checkEtag(request, resource);
+
+        dataResourceService.delete(resource);
+      } else{
+        throw new UpdateForbiddenException("Insufficient permissions. ADMINISTRATE permission or ROLE_ADMINISTRATOR required.");
+      }
+    } catch(ResourceNotFoundException ex){
+      //ignored
+      LOGGER.info("Resource with id {} not found. Returning with HTTP NO_CONTENT.", id);
+    }
 
     return ResponseEntity.noContent().build();
   }
@@ -195,26 +206,17 @@ public class DataResourceController implements IDataResourceController{
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
-    if(AuthenticationHelper.isAnonymous()){
-      throw new UnauthorizedAccessException("Please login in order to be able to upload data.");
-    }
-    //obtain relative path
-    String requestedUri = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, WebRequest.SCOPE_REQUEST);
-    if(requestedUri == null){
-      throw new CustomInternalServerError("Unable to obtain request URI.");
-    }
+    ControllerUtils.checkAnonymousAccess();
 
-    //@TODO Escape path for file system access
-    String path = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
+    String path = getContentPathFromRequest(request);
+
+    //@TODO escape path properly
     if(path == null || path.endsWith("/")){
       throw new BadArgumentException("Provided path is invalid. Path must not be empty and must not end with a slash.");
     }
     //check data resource and permissions
-    Optional<DataResource> result = dataResourceService.findById(id);
-    if(!result.isPresent()){
-      return ResponseEntity.notFound().build();
-    }
-    DataResource resource = result.get();
+    DataResource resource = dataResourceService.findById(id);
+
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
     URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(resource.getId(), PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
@@ -245,45 +247,32 @@ public class DataResourceController implements IDataResourceController{
           WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
-    //obtain accessed path
-    String requestedUri = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, WebRequest.SCOPE_REQUEST);
-    if(requestedUri == null){
-      throw new CustomInternalServerError("Unable to obtain request URI.");
-    }
-    String relPath = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
+    String path = getContentPathFromRequest(request);
 
-    if(relPath.startsWith("/")){
-      //remove leading slash if present, e.g. if path was empty
-      relPath = relPath.substring(1);
-    }
     //check resource and permission
-    DataResource resource = dataResourceService.getById(id, PERMISSION.READ);
+    DataResource resource = dataResourceService.findById(id);
+
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+
+    if(path.startsWith("/")){
+      //remove leading slash if present, e.g. if path was empty
+      path = path.substring(1);
+    }
 
     //switch between collection and element listing
-    if(relPath.endsWith("/") || relPath.length() == 0){
+    if(path.endsWith("/") || path.length() == 0){
       //collection listing
-      relPath += "%";
+      path += "%";
       //sanitize page request
-      int pageSize = pgbl.getPageSize();
-      if(pageSize > 100){
-        LOGGER.debug("Restricting user-provided page size {} to max. page size 100.", pageSize);
-        pageSize = 100;
-      }
 
-      LOGGER.debug("Rebuilding page request for page {}, size {} and sort {}.", pgbl.getPageNumber(), pageSize, pgbl.getSort());
-      Sort pgblSort = pgbl.getSort();
-      if(pgblSort.equals(Sort.unsorted())){
-        pgblSort = Sort.by(Sort.Order.asc("depth"), Sort.Order.asc("relativePath"));
-      }
+      PageRequest pageRequest = ControllerUtils.checkPaginationInformation(pgbl, pgbl.getSort().equals(Sort.unsorted()) ? Sort.by(Sort.Order.asc("depth"), Sort.Order.asc("relativePath")) : pgbl.getSort());
 
-      PageRequest pageRequest = PageRequest.of(pgbl.getPageNumber(), pageSize, pgblSort);
-
-      List<ContentInformation> resultList = contentInformationService.getContentInformation(id, relPath, tag, pageRequest);
+      List<ContentInformation> resultList = contentInformationService.getContentInformation(id, path, tag, pageRequest);
       filterAndAutoReturnContentInformation(resultList);
       LOGGER.debug("Obtained {} content information result(s).", resultList.size());
       return ResponseEntity.ok().build();
     } else{
-      ContentInformation contentInformation = contentInformationService.getContentInformation(id, relPath, tag);
+      ContentInformation contentInformation = contentInformationService.getContentInformation(id, path, tag);
       filterAndAutoReturnContentInformation(contentInformation);
       LOGGER.debug("Obtained single content information result.");
       return ResponseEntity.ok().eTag("\"" + Integer.toString(resource.hashCode()) + "\"").build();
@@ -296,13 +285,11 @@ public class DataResourceController implements IDataResourceController{
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
-    String requestedUri = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, WebRequest.SCOPE_REQUEST);
-    if(requestedUri == null){
-      throw new CustomInternalServerError("Unable to obtain request URI.");
-    }
-    String path = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
+    String path = getContentPathFromRequest(request);
 
-    DataResource resource = dataResourceService.getById(id, PERMISSION.READ);
+    DataResource resource = dataResourceService.findById(id);
+
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
     LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getResourceIdentifier());
     //try to obtain single content element matching path exactly
@@ -329,37 +316,19 @@ public class DataResourceController implements IDataResourceController{
           @RequestBody JsonPatch patch,
           final WebRequest request,
           final HttpServletResponse response){
-    if(AuthenticationHelper.isAnonymous()){
-      throw new UnauthorizedAccessException("Please login in order to be able to modify resources.");
-    }
-    //obtain accessed path
-    String requestedUri = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, WebRequest.SCOPE_REQUEST);
-    if(requestedUri == null){
-      throw new CustomInternalServerError("Unable to obtain request URI.");
-    }
-    String path = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
-    //check resource and permission
-    DataResource resource = dataResourceService.getById(id, PERMISSION.WRITE);
-    LOGGER.debug("Successfully obtained resource with identifier {}. Continue with content check.", resource.getResourceIdentifier());
+    ControllerUtils.checkAnonymousAccess();
 
-    //try to obtain single content element matching path exactly
+    String path = getContentPathFromRequest(request);
+
+    DataResource resource = dataResourceService.findById(id);
+
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+
+    ControllerUtils.checkEtag(request, resource);
+
     ContentInformation toUpdate = contentInformationService.getContentInformation(id, path, null);
 
-    if(!request.checkNotModified(Integer.toString(resource.hashCode()))){
-      throw new EtagMismatchException("ETag not matching, resource has changed.");
-    }
-
-    PERMISSION callerPermission = DataResourceUtils.getAccessPermission(resource);
-    boolean callerIsAdmin = AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString());
-    Collection<GrantedAuthority> userGrants = new ArrayList<>();
-    userGrants.add(new SimpleGrantedAuthority(callerPermission.getValue()));
-
-    if(callerIsAdmin){
-      LOGGER.debug("Admin access detected. Adding ADMINISTRATOR role to granted authorities.");
-      userGrants.add(new SimpleGrantedAuthority(RepoUserRole.ADMINISTRATOR.getValue()));
-    }
-
-    ContentInformation updated = PatchUtil.applyPatch(toUpdate, patch, ContentInformation.class, userGrants);
+    ContentInformation updated = PatchUtil.applyPatch(toUpdate, patch, ContentInformation.class, getUserAuthorities(resource));
     LOGGER.info("Persisting patched content information.");
     contentInformationService.createOrUpdate(updated);
     LOGGER.info("Content information successfully persisted.");
@@ -369,51 +338,70 @@ public class DataResourceController implements IDataResourceController{
   @Override
   public ResponseEntity deleteContent(@PathVariable(value = "id")
           final Long id, WebRequest request, HttpServletResponse response){
-    if(AuthenticationHelper.isAnonymous()){
-      throw new UnauthorizedAccessException("Please login in order to be able to modify resources.");
-    }
+    ControllerUtils.checkAnonymousAccess();
 
-    String requestedUri = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, WebRequest.SCOPE_REQUEST);
-    if(requestedUri == null){
-      throw new CustomInternalServerError("Unable to obtain request URI.");
-    }
-    String path = requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
+    String path = getContentPathFromRequest(request);
+
     //check resource and permission
-    Optional<DataResource> result = dataResourceService.findById(id);
-    if(!result.isPresent()){
-      return ResponseEntity.notFound().build();
-    }
-    DataResource resource = result.get();
+    DataResource resource = dataResourceService.findById(id);
+
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.ADMINISTRATE);
+
+    ControllerUtils.checkEtag(request, resource);
 
     //try to obtain single content element matching path exactly
     Optional<ContentInformation> contentInfoOptional = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, null);
     if(contentInfoOptional.isPresent()){
       LOGGER.debug("Content information entry found. Checking ETag.");
-      ContentInformation contentInfo = contentInfoOptional.get();
-      if(!request.checkNotModified(Integer.toString(resource.hashCode()))){
-        throw new EtagMismatchException("ETag not matching, resource has changed.");
-      }
 
-      Path toRemove = null;
+      ContentInformation contentInfo = contentInfoOptional.get();
+
+      Path localContentToRemove = null;
       URI contentUri = URI.create(contentInfo.getContentUri());
+      LOGGER.trace("Checking if content URI {} is pointing to a local file.", contentInfo);
       if("file".equals(contentUri.getScheme())){
         //mark file for removal
-        toRemove = Paths.get(URI.create(contentInfo.getContentUri()));
-      }//content URI is not pointing to a file...just replace the entry
-
+        localContentToRemove = Paths.get(URI.create(contentInfo.getContentUri()));
+      } else{
+        //content URI is not pointing to a file...just replace the entry
+        LOGGER.trace("Content to delete is pointing to {}. Local content deletion will be skipped.", contentInfo.getContentUri());
+      }
       contentInformationService.delete(contentInfo);
 
-      if(toRemove != null){
+      if(localContentToRemove != null){
         try{
-          Files.deleteIfExists(toRemove);
+          LOGGER.trace("Removing content file {}.", localContentToRemove);
+          Files.deleteIfExists(localContentToRemove);
         } catch(IOException ex){
-          LOGGER.warn("Failed to remove data at " + toRemove + ". Manual removal required.", ex);
+          LOGGER.warn("Failed to remove data at " + localContentToRemove + ". Manual removal required.", ex);
         }
+      } else{
+        LOGGER.trace("No local content file exists. Returning from DELETE.");
       }
     }
 
     return ResponseEntity.noContent().build();
+  }
+
+  private String getContentPathFromRequest(WebRequest request){
+    String requestedUri = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, WebRequest.SCOPE_REQUEST);
+    if(requestedUri == null){
+      throw new CustomInternalServerError("Unable to obtain request URI.");
+    }
+    return requestedUri.substring(requestedUri.indexOf("data/") + "data/".length());
+  }
+
+  private Collection<? extends GrantedAuthority> getUserAuthorities(DataResource resource){
+    LOGGER.trace("Determining user grants from authorization context.");
+    Collection<GrantedAuthority> userGrants = new ArrayList<>();
+    userGrants.add(new SimpleGrantedAuthority(DataResourceUtils.getAccessPermission(resource).getValue()));
+
+    if(AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+      LOGGER.trace("Administrator access detected. Adding role {} to granted authorities.", RepoUserRole.ADMINISTRATOR.getValue());
+      userGrants.add(new SimpleGrantedAuthority(RepoUserRole.ADMINISTRATOR.getValue()));
+    }
+
+    return userGrants;
   }
 
   private void filterAndAutoReturnResource(DataResource resource){
@@ -427,13 +415,10 @@ public class DataResourceController implements IDataResourceController{
     }
 
     //transform and return JSON representation as next controller result
-    json.use(JsonView.with(resource)
-            .onClass(DataResource.class,
-                    match))
-            .returnValue();
+    json.use(JsonView.with(resource).onClass(DataResource.class, match));
   }
 
-  private void filterAndAutoReturnResource(List<DataResource> resources){
+  private void filterAndAutoReturnResources(List<DataResource> resources){
     Match match = match();
     if(!AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
       LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
@@ -444,24 +429,19 @@ public class DataResourceController implements IDataResourceController{
     }
 
     //transform and return JSON representation as next controller result
-    json.use(JsonView.with(resources)
-            .onClass(DataResource.class,
-                    match))
-            .returnValue();
+    json.use(JsonView.with(resources).onClass(DataResource.class, match));
   }
 
   private void filterAndAutoReturnContentInformation(ContentInformation resource){
-    //transform and return JSON representation as next controller result
+    //hide all attributes but the id from the parent data resource in the content information entity
     json.use(JsonView.with(resource)
-            .onClass(DataResource.class, match().exclude("*").include("id")))
-            .returnValue();
+            .onClass(DataResource.class, match().exclude("*").include("id")));
   }
 
   private void filterAndAutoReturnContentInformation(List<ContentInformation> resources){
-    //transform and return JSON representation as next controller result
+    //hide all attributes but the id from the parent data resource in all content information entities
     json.use(JsonView.with(resources)
-            .onClass(DataResource.class, match().exclude("*").include("id")))
-            .returnValue();
+            .onClass(DataResource.class, match().exclude("*").include("id")));
 
   }
 

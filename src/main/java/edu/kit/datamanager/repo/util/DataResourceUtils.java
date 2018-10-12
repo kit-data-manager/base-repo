@@ -79,7 +79,7 @@ public class DataResourceUtils{
    * caller has no ADMINISTRATE permissions.
    */
   public static void performPermissionCheck(DataResource resource, PERMISSION requiredPermission) throws AccessForbiddenException, ResourceNotFoundException{
-    LOGGER.debug("Performing permission check for {} permission to resource {}.", requiredPermission, resource);
+    LOGGER.debug("Performing permission check for resource {} and permission {}.", "DataResource#" + resource.getId(), requiredPermission);
     PERMISSION callerPermission = getAccessPermission(resource);
 
     LOGGER.debug("Obtained caller permission {}. Checking resource state for special handling.", callerPermission);

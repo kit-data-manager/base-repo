@@ -44,18 +44,9 @@ import edu.kit.datamanager.repo.domain.Subject;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
-import edu.kit.datamanager.security.filter.JwtAuthenticationToken;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.DefaultClaims;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -725,22 +716,29 @@ public class DataResourceControllerTest{
   @Test
   public void testPatchResourceWithoutPermission() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + otherUserToken).header("If-None-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
   }
 
   @Test
   public void testPatchRevokedResourceWithoutPermission() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
+
     this.mockMvc.perform(patch("/api/v1/dataresources/" + revokedResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + userToken).header("If-None-Match", "\"" + revokedResource.getEtag() + "\"").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
   }
 
   @Test
   public void testPatchFixedResourceWithoutPermission() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + fixedResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+
     this.mockMvc.perform(patch("/api/v1/dataresources/" + fixedResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + userToken).header("If-None-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
   }
 
   @Test
@@ -1040,10 +1038,10 @@ public class DataResourceControllerTest{
             "Bearer " + userToken)).andDo(print()).andExpect(status().isNotFound());
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/fileWithoutUriScheme").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isNoContent()).andExpect(header().string("Content-Location", equalTo("/invalidlocation/missingFile")));
-   
+
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(header().string("Content-Disposition", equalTo("attachment; filename=\"validFile\"")));
-    
+
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/invalidRemoteUri").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable()).andExpect(header().string("Content-Location", equalTo("http://somedomain.new/myFileWhichDoesNotExist")));
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/withMediaType").header(HttpHeaders.AUTHORIZATION,
@@ -1138,9 +1136,11 @@ public class DataResourceControllerTest{
   @Test
   public void testPatchWithUnknownContent() throws Exception{
     String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/notExist").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-None-Match", "\"123456\"").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + userToken).header("If-None-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
   }
 
   @Test
@@ -1243,7 +1243,7 @@ public class DataResourceControllerTest{
   @Test
   public void testDeleteInvalidContent() throws Exception{
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId() + "/data/notExist").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header("If-None-Match", "0000")).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + adminToken).header("If-None-Match", "\"" + sampleResource.getEtag() + "\"")).andDo(print()).andExpect(status().isNoContent());
   }
 
   @Test

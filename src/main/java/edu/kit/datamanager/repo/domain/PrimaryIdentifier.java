@@ -71,7 +71,20 @@ public class PrimaryIdentifier extends Identifier{
     return IDENTIFIER_TYPE.DOI;
   }
 
+  /**
+   * Check if the value of this identifier is any of the available
+   * UnknownInformationConstants. If this is the case, FALSE is returned.
+   * Otherwise, TRUE is returned.
+   *
+   * @return TRUE if the value is none of the values defined as
+   * UnknownInformationConstants, FALSE if one value matches.
+   */
   public boolean hasDoi(){
-    return !UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER.getValue().equals(getValue());
+    for(UnknownInformationConstants constant : UnknownInformationConstants.values()){
+      if(constant.getValue().equals(getValue())){
+        return false;
+      }
+    }
+    return true;
   }
 }

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
+import edu.kit.datamanager.entities.EtagSupport;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.util.EnumUtils;
 import io.swagger.annotations.ApiModel;
@@ -60,7 +61,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @ApiModel(description = "Data resource element")
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DataResource implements Serializable{
+public class DataResource implements EtagSupport, Serializable{
 
   @Autowired
   @Getter(AccessLevel.NONE)
@@ -230,33 +231,10 @@ public class DataResource implements Serializable{
     return result;
   }
 
-//    @JsonIgnore
-//    public String getDataLocation() throws InvalidResourceException {
-//        StringBuilder relativePath = new StringBuilder();
-//        SimpleDateFormat f = new SimpleDateFormat("YYYY/MM");
-//        java.util.Date creationDate = getCreationDate();
-//        if (creationDate == null) {
-//            throw new InvalidResourceException(InvalidResourceException.ERROR_TYPE.NO_CREATION_DATE);
-//        }
-//
-//        relativePath.append(f.format(creationDate)).append("/").append(FilenameUtils.escapeStringAsFilename(getResourceIdentifier()));
-//        return relativePath.toString();
-//    }
-//    @Override
-//    public void validate() throws InvalidResourceException {
-//        //check identifier...this throws an InvalidResourceException in case of an error
-//        getResourceIdentifier();
-//        //check mandatory fields that cannot be assigned automatically
-//        if (getTitle().isEmpty()) {
-//            throw new InvalidResourceException(InvalidResourceException.ERROR_TYPE.NO_TITLE);
-//        }
-//        if (publisher == null) {
-//            throw new InvalidResourceException(InvalidResourceException.ERROR_TYPE.NO_PUBLISHER);
-//        }
-//        if (resourceType == null) {
-//            throw new InvalidResourceException(InvalidResourceException.ERROR_TYPE.NO_RESOURCE_TYPE);
-//        }
-//    }
+  public String getEtag(){
+    return Integer.toString(hashCode());
+  }
+
   @Override
   public int hashCode(){
     int hash = 5;

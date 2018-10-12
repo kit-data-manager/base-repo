@@ -16,17 +16,12 @@
 package edu.kit.datamanager.repo.service.impl;
 
 import com.github.fge.jsonpatch.JsonPatch;
-import com.monitorjbl.json.JsonResult;
 import edu.kit.datamanager.dao.ByExampleSpecification;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
-import edu.kit.datamanager.entities.RepoUserRole;
-import edu.kit.datamanager.exceptions.AccessForbiddenException;
 import edu.kit.datamanager.exceptions.BadArgumentException;
-import edu.kit.datamanager.exceptions.EtagMismatchException;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
-import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.PermissionSpecification;
 import edu.kit.datamanager.repo.dao.StateSpecification;
@@ -36,11 +31,8 @@ import edu.kit.datamanager.repo.domain.PrimaryIdentifier;
 import edu.kit.datamanager.repo.domain.UnknownInformationConstants;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
-import edu.kit.datamanager.repo.util.DataResourceUtils;
-import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.PatchUtil;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
@@ -48,7 +40,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
@@ -59,7 +50,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -86,10 +76,16 @@ public class DataResourceService implements IDataResourceService{
 
   @Override
   @Transactional(readOnly = false)
-  public DataResource create(DataResource resource){
-    logger.trace("Performing create({}).", resource);
+  public DataResource create(DataResource resource, String callerPrincipal){
+    return create(resource, callerPrincipal, null, null);
+  }
 
-    if(resource.getIdentifier() == null){
+  @Override
+  @Transactional(readOnly = false)
+  public DataResource create(DataResource resource, String callerPrincipal, String callerFirstName, String callerLastName){
+    logger.trace("Performing create({}, {}, {}, {}).", resource, callerPrincipal, callerFirstName, callerLastName);
+
+    if(resource.getIdentifier() == null || !resource.getIdentifier().hasDoi()){
       logger.debug("No primary identifier assigned to resource. Using placeholder '{}'.", UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER);
       //set placeholder identifier
       resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER));
@@ -143,24 +139,20 @@ public class DataResourceService implements IDataResourceService{
       throw new BadArgumentException("No resource type assigned to provided document.");
     }
 
-    String caller = (String) AuthenticationHelper.getAuthentication().getPrincipal();
-
     logger.trace("Checking for mandatory element 'creators'.");
     //check mandatory datacite attributes
     if(resource.getCreators().isEmpty()){
       logger.trace("No creators found. Adding creator based on authentication context.");
-      String firstName = AuthenticationHelper.getFirstname();
-      String lastName = AuthenticationHelper.getLastname();
 
       Agent creator = new Agent();
-      if(firstName == null && lastName == null){
-        logger.trace("Both, first and last name of authentication context are 'null'. Using caller principal '{}' as first name.", caller);
-        creator.setGivenName(caller);
+      if(callerFirstName == null && callerLastName == null){
+        logger.trace("Both, first and last name of authentication context are 'null'. Using caller principal '{}' as first name.", callerPrincipal);
+        creator.setGivenName(callerPrincipal);
         creator.setFamilyName(null);
       } else{
-        logger.trace("Setting firstname {} and lastname {} as caller.", firstName, lastName);
-        creator.setGivenName(AuthenticationHelper.getFirstname());
-        creator.setFamilyName(AuthenticationHelper.getLastname());
+        logger.trace("Setting firstname {} and lastname {} as caller.", callerFirstName, callerLastName);
+        creator.setGivenName(callerFirstName);
+        creator.setFamilyName(callerLastName);
       }
       logger.debug("Adding new creator {} to resource.", creator);
       resource.getCreators().add(creator);
@@ -169,8 +161,8 @@ public class DataResourceService implements IDataResourceService{
     logger.trace("Checking for mandatory element 'publisher'.");
     //set auto-generateable fields
     if(resource.getPublisher() == null){
-      logger.debug("Setting caller principal {} as publisher.", caller);
-      resource.setPublisher(caller);
+      logger.debug("Setting caller principal {} as publisher.", callerPrincipal);
+      resource.setPublisher(callerPrincipal);
     }
 
     logger.trace("Checking for mandatory element 'publicationYear'.");
@@ -184,8 +176,8 @@ public class DataResourceService implements IDataResourceService{
     //check ACLs for caller
     AclEntry callerEntry = null;
     for(AclEntry entry : resource.getAcls()){
-      if(caller.equals(entry.getSid())){
-        logger.trace("Acl entry for caller {} found: {}", caller, entry);
+      if(callerPrincipal.equals(entry.getSid())){
+        logger.trace("Acl entry for caller {} found: {}", callerPrincipal, entry);
         callerEntry = entry;
         break;
       }
@@ -193,7 +185,7 @@ public class DataResourceService implements IDataResourceService{
 
     if(callerEntry == null){
       logger.debug("Adding caller entry with ADMINISTRATE permissions.");
-      callerEntry = new AclEntry(caller, PERMISSION.ADMINISTRATE);
+      callerEntry = new AclEntry(callerPrincipal, PERMISSION.ADMINISTRATE);
       resource.getAcls().add(callerEntry);
     } else{
       logger.debug("Ensuring ADMINISTRATE permissions for acl entry {}.", callerEntry);
@@ -233,50 +225,34 @@ public class DataResourceService implements IDataResourceService{
 
   @Override
   @Transactional(readOnly = true)
-  public Optional<DataResource> findById(final Long id){
+  public DataResource findById(final Long id){
     logger.trace("Performing findById({}).", id);
-    return getDao().findById(id);
-  }
+    Optional<DataResource> result = getDao().findById(id);
 
-  @Override
-  public DataResource getById(Long id, PERMISSION requestedPermission) throws ResourceNotFoundException, AccessForbiddenException{
-    logger.trace("Performing getById({}, {}).", id, requestedPermission);
-    Optional<DataResource> result = findById(id);
     if(!result.isPresent()){
       logger.error("No data resource found for identifier {}. Throwing ResourceNotFoundException.", id);
       throw new ResourceNotFoundException("Data resource with id " + id + " was not found.");
     }
-    DataResource resource = result.get();
-    logger.trace("Performing permission check for permission {}.", requestedPermission);
-    DataResourceUtils.performPermissionCheck(resource, requestedPermission);
 
-    return resource;
+    return result.get();
   }
 
   @Override
-  public List<DataResource> findByExample(DataResource example, Pageable pgbl, BiConsumer<Integer, Integer> linkEventTrigger){
+  public Page<DataResource> findByExample(DataResource example, List<String> callerIdentities, boolean callerIsAdministrator, Pageable pgbl){
     logger.trace("Performing findByExample({}, {}).", example, pgbl);
     Page<DataResource> page;
-    if(AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+    if(callerIsAdministrator){
       //do find all
       logger.trace("Administrator access detected. Calling findAll({}, {}, {}).", example, pgbl, Boolean.TRUE);
       page = findAll(example, pgbl, true);
     } else{
       //query based on membership
-      logger.trace("Non-Administrator access detected. Calling findAllFiltered({}, {}, {}, {}, {}).", example, AuthenticationHelper.getAuthorizationIdentities(), PERMISSION.READ, pgbl, Boolean.FALSE);
-      page = findAllFiltered(example, AuthenticationHelper.getAuthorizationIdentities(), PERMISSION.READ, pgbl, false);
+      logger.trace("Non-Administrator access detected. Calling findAllFiltered({}, {}, {}, {}, {}).", example, callerIdentities, PERMISSION.READ, pgbl, Boolean.FALSE);
+      page = findAllFiltered(example, callerIdentities, PERMISSION.READ, pgbl, false);
     }
 
-    if(pgbl.getPageNumber() > page.getTotalPages()){
-      logger.debug("Requested page number {} is too large. Total number of pages is: {}. Expecting empty list.", pgbl.getPageNumber(), page.getTotalPages());
-    }
-
-    if(linkEventTrigger != null){
-      logger.trace("Executing linkEventTrigger.accept({}, {}).", page.getNumber(), page.getTotalPages());
-      linkEventTrigger.accept(page.getNumber(), page.getTotalPages());
-    }
     logger.trace("Returning page content.");
-    return page.getContent();
+    return page;
   }
 
   @Override
@@ -306,6 +282,12 @@ public class DataResourceService implements IDataResourceService{
     return doFind(spec, pgbl, pIncludeRevoked);
   }
 
+  @Override
+  public Page<DataResource> findAll(DataResource resource, Pageable pgbl){
+    logger.trace("Performing findAll({}).", "DataResource#" + resource.getId());
+    return findAll(resource, pgbl, false);
+  }
+
   /**
    * Private helper used by findAll and findAllFiltered.
    */
@@ -330,26 +312,9 @@ public class DataResourceService implements IDataResourceService{
 
   @Override
   @Transactional(readOnly = false)
-  public void patch(Long id, Predicate<String> etagChecker, JsonPatch patch){
-    logger.trace("Performing patch({}, {}).", id, patch);
-    DataResource resource = getById(id, PERMISSION.WRITE);
-
-    if(!etagChecker.test(Integer.toString(resource.hashCode()))){
-      logger.error("Provided etag is not matching resource etag {}. Throwing EtagMismatchException.", Integer.toString(resource.hashCode()));
-      throw new EtagMismatchException("ETag not matching, resource has changed.");
-    }
-
-    logger.trace("Determining user grants from authorization context.");
-    Collection<GrantedAuthority> userGrants = new ArrayList<>();
-    userGrants.add(new SimpleGrantedAuthority(DataResourceUtils.getAccessPermission(resource).getValue()));
-
-    if(AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
-      logger.trace("Administrator access detected. Adding role {} to granted authorities.", RepoUserRole.ADMINISTRATOR.getValue());
-      userGrants.add(new SimpleGrantedAuthority(RepoUserRole.ADMINISTRATOR.getValue()));
-    }
-    logger.trace("Applying patch by calling patch([resource#{}], {}, {}, {}).", id, patch, DataResource.class, userGrants);
+  public void patch(DataResource resource, JsonPatch patch, Collection<? extends GrantedAuthority> userGrants){
+    logger.trace("Performing patch({}, {}, {}).", "DataResource#" + resource.getId(), patch, userGrants);
     DataResource updated = PatchUtil.applyPatch(resource, patch, DataResource.class, userGrants);
-
     logger.trace("Patch successfully applied. Persisting patched resource.");
     getDao().save(updated);
     logger.trace("Resource successfully persisted.");
@@ -357,32 +322,13 @@ public class DataResourceService implements IDataResourceService{
 
   @Override
   @Transactional(readOnly = false)
-  public void delete(Long id, Predicate<String> etagChecker){
-    //use findById as we do our own exception handling at this point
-    logger.trace("Performing delete({}).", id);
-    Optional<DataResource> result = findById(id);
-    if(result.isPresent()){
-      logger.trace("Resource found. Checking for permission {} or role {}.", PERMISSION.ADMINISTRATE, RepoUserRole.ADMINISTRATOR);
-      DataResource resource = result.get();
-      if(DataResourceUtils.hasPermission(resource, PERMISSION.ADMINISTRATE) || AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.getValue())){
-        logger.trace("Permissions found. Checking provided ETag.");
-        if(!etagChecker.test(Integer.toString(resource.hashCode()))){
-          logger.error("Provided ETag is not matching resource etag {}. Throwing EtagMismatchException.", Integer.toString(resource.hashCode()));
-          throw new EtagMismatchException("ETag not matching, resource has changed.");
-        } else{
-          logger.trace("ETag successfully checked.");
-        }
-        logger.debug("Setting resource state to {}.", DataResource.State.REVOKED);
-        resource.setState(DataResource.State.REVOKED);
-        logger.trace("Persisting revoked resource.");
-        getDao().save(resource);
-        logger.trace("Resource successfully persisted.");
-      } else{
-        throw new UpdateForbiddenException("Insufficient permissions. ADMINISTRATE permission or ROLE_ADMINISTRATOR required.");
-      }
-    } else{
-      logger.trace("No data resource found for identifier {}. Ignoring for delete operation.", id);
-    }
+  public void delete(DataResource resource){
+    logger.trace("Performing delete({}).", "DataResource#" + resource.getId());
+    logger.debug("Setting resource state to {}.", DataResource.State.REVOKED);
+    resource.setState(DataResource.State.REVOKED);
+    logger.trace("Persisting revoked resource.");
+    getDao().save(resource);
+    logger.trace("Resource successfully persisted.");
   }
 
   protected IDataResourceDao getDao(){
@@ -394,4 +340,5 @@ public class DataResourceService implements IDataResourceService{
     logger.trace("Obtaining health information.");
     return Health.up().withDetail("DataResources", getDao().count()).build();
   }
+
 }

@@ -22,6 +22,7 @@ import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.repo.util.PathUtils;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,6 +35,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 
@@ -74,6 +76,20 @@ public class ContentInformation implements Serializable{
   @SecureUpdate({"ROLE_ADMINISTRATOR", "PERMISSION_WRITE"})
   @ElementCollection
   private Set<String> tags = new HashSet<>();
+
+  public static ContentInformation createContentInformation(@NonNull Long parentId, @NonNull String relativePath, String... tags){
+    ContentInformation result = new ContentInformation();
+    result.setRelativePath(relativePath);
+
+    if(tags != null && (tags.length >= 1 && tags[0] != null)){
+      result.getTags().addAll(Arrays.asList(tags));
+    }
+
+    DataResource res = new DataResource();
+    res.setId(parentId);
+    result.setParentResource(res);
+    return result;
+  }
 
   public static ContentInformation createContentInformation(String relativePath){
     ContentInformation info = new ContentInformation();

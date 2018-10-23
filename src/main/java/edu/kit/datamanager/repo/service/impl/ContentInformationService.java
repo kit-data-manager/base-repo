@@ -15,9 +15,8 @@
  */
 package edu.kit.datamanager.repo.service.impl;
 
+import com.github.fge.jsonpatch.JsonPatch;
 import com.monitorjbl.json.JsonResult;
-import com.monitorjbl.json.JsonView;
-import static com.monitorjbl.json.Match.match;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
@@ -32,6 +31,7 @@ import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.PathUtils;
 import edu.kit.datamanager.util.AuthenticationHelper;
+import edu.kit.datamanager.util.PatchUtil;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,10 +42,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import java.util.Set;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
@@ -57,7 +56,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -74,84 +73,89 @@ public class ContentInformationService implements IContentInformationService{
   @Autowired
   private IContentInformationDao dao;
 
-  @PersistenceContext
-  private EntityManager em;
+//  @PersistenceContext
+//  private EntityManager em;
   @Autowired
   private ApplicationProperties applicationProperties;
 
+//  @Override
+//  @Transactional(readOnly = true)
+//  public Page<ContentInformation> getContentInformation(Long id, String relativePath, String tag, Pageable pgbl){
+//    logger.trace("Performing getContentInformation({}, {}, {}, {}).", id, relativePath, tag, pgbl);
+//
+//    //wrong header added!
+//    // eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(ContentInformation.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), pageSize));
+//    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(id, relativePath, false));
+//    if(tag != null){
+//      logger.debug("Content information tag {} provided. Using TagSpecification.", tag);
+//      spec = ContentInformationTagSpecification.andIfTag(spec, tag);
+//    }
+//    return dao.findAll(spec, pgbl);
+//  }
   @Override
   @Transactional(readOnly = true)
-  public Optional<ContentInformation> findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(Long id, String relativePath, String tag){
-    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(id, relativePath, true));//new ByExampleSpecification(em).byExample(example));
-    if(tag != null){
-      spec = ContentInformationTagSpecification.andIfPermission(spec, tag);
-    }
+  public ContentInformation getContentInformation(Long id, String relativePath){
+    logger.trace("Performing getContentInformation({}, {}).", id, relativePath);
 
-    return dao.findOne(spec);
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public Page<ContentInformation> findByParentResourceIdEqualsAndRelativePathLikeAndHasTag(Long id, String relativePath, String tag, Pageable pgbl){
-    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(id, relativePath, false));
-    if(tag != null){
-      spec = ContentInformationTagSpecification.andIfPermission(spec, tag);
-    }
-    return dao.findAll(spec, pgbl);
-  }
-
-  @Override
-  public List<ContentInformation> getContentInformation(Long id, String relPath, String tag, PageRequest request){
-    //obtain page according to request
-    Page<ContentInformation> page = findByParentResourceIdEqualsAndRelativePathLikeAndHasTag(id, relPath, tag, request);
-
-    //wrong header added!
-    // eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(ContentInformation.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), pageSize));
-    //result list found, remove data resource information except id and return
-    return json.use(JsonView.with(page.getContent())
-            .onClass(DataResource.class, match().exclude("*").include("id")))
-            .returnValue();
-  }
-
-  @Override
-  public ContentInformation getContentInformation(Long id, String relativePath, String tag){
-    Optional<ContentInformation> contentInformation = findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, relativePath, tag);
+    logger.trace("Performing findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag({}, {}).", id, relativePath);
+    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(id, relativePath, true));
+    Optional<ContentInformation> contentInformation = dao.findOne(spec);
 
     if(!contentInformation.isPresent()){
       //TODO: check later for collection download
-      logger.error("No content found for resource {} at path {}. Returning HTTP 404.", id, relativePath);
-      throw new ResourceNotFoundException("Content information for id " + id + ", path " + relativePath + " and tag " + tag + " found.");
+      logger.error("No content found for resource {} at path {}. Throwing ResourceNotFoundException.", id, relativePath);
+      throw new ResourceNotFoundException("No content information for id " + id + ", path " + relativePath + " found.");
     }
 
-    logger.debug("Returning content information for id {}, at path {} with tag {}.", id, relativePath, tag);
+    return contentInformation.get();
+  }
+
+  @Override
+  public ContentInformation findById(Long id) throws ResourceNotFoundException{
+    logger.trace("Performing findById({}).", id);
+
+    Optional<ContentInformation> contentInformation = getDao().findById(id);
+    if(!contentInformation.isPresent()){
+      //TODO: check later for collection download
+      logger.error("No content found for id {}. Throwing ResourceNotFoundException.", id);
+      throw new ResourceNotFoundException("No content information for id " + id + " found.");
+    }
     return contentInformation.get();
   }
 
   @Override
   public ContentInformation create(ContentInformation contentInformation, DataResource resource,
-          InputStream file, String path,
+          String path,
+          InputStream file,
           boolean force){
+    logger.trace("Performing create({}, {}, {}, {}, {}).", contentInformation, "DataResource#" + resource.getId(), "<InputStream>", path, force);
+
     //check for existing content information
+    //We use here no tags as tags are just for reflecting related content elements, but all tags are associated with the same content element.
+    Page<ContentInformation> existingContentInformation = findAll(ContentInformation.createContentInformation(resource.getId(), path), PageRequest.of(0, 1));
+
     ContentInformation contentInfo;
-
-    Optional<ContentInformation> existingContentInformation = findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(resource.getId(), path, null);
-
     Path toRemove = null;
-    if(existingContentInformation.isPresent()){
+    if(existingContentInformation.hasContent()){
+      logger.trace("Existing content information found. Checking 'force' flag.");
       //existing content, overwrite necessary
       if(!force){
         //conflict
-        throw new ResourceAlreadyExistException("There is already content registered at " + path + ". Provide force=true in order to overwrite the existing resource.");
+        logger.error("Existing content information found for resource {} at path {} and 'force' flag not set. Throwing ResourceAlreadyExistException.", "DataResource#" + resource.getId(), path);
+        throw new ResourceAlreadyExistException("There is already content registered at " + path + ". Provide force=true in order to replace the existing resource.");
       } else{
+        logger.trace("'Force' flag set. Checking for local content to replace.");
         //overwrite...mark file for deletion
-        contentInfo = existingContentInformation.get();
+        contentInfo = existingContentInformation.getContent().get(0);
         URI contentUri = URI.create(contentInfo.getContentUri());
         if("file".equals(contentUri.getScheme())){
           //mark file for removal
+          logger.debug("File content found. Marking current file at URI {} for replacement.", contentInfo.getContentUri());
           toRemove = Paths.get(URI.create(contentInfo.getContentUri()));
         }//content URI is not pointing to a file...just replace the entry
       }
     } else{
+      logger.trace("No existing content information found.");
       //no existing content information, create new or take provided
       contentInfo = (contentInformation != null) ? contentInformation : ContentInformation.createContentInformation(path);
       contentInfo.setId(null);
@@ -160,9 +164,11 @@ public class ContentInformationService implements IContentInformationService{
     }
 
     if(file != null){
+      logger.trace("User upload detected. Preparing to consume data.");
       //file upload
       URI dataUri = PathUtils.getDataUri(contentInfo.getParentResource(), contentInfo.getRelativePath(), applicationProperties);
       Path destination = Paths.get(dataUri);
+      logger.trace("Preparing destination {} for storing user data.", destination);
       //store data
       OutputStream out = null;
       try{
@@ -170,7 +176,7 @@ public class ContentInformationService implements IContentInformationService{
         Files.createDirectories(destination.getParent());
 
         MessageDigest md = MessageDigest.getInstance("SHA1");
-
+        logger.trace("Start reading user data from stream.");
         int cnt;
         long bytes = 0;
         byte[] buffer = new byte[1024];
@@ -181,10 +187,15 @@ public class ContentInformationService implements IContentInformationService{
           bytes += cnt;
         }
 
+        logger.trace("Performing upload post-processing.");
         contentInfo.setHash("sha1:" + Hex.encodeHexString(md.digest()));
+        logger.debug("Assigned hash {} to content information.", contentInfo.getHash());
         contentInfo.setSize(bytes);
+        logger.debug("Assigned size {} to content information.", contentInfo.getSize());
         contentInfo.setContentUri(dataUri.toString());
+        logger.debug("Assigned content URI {} to content information.", contentInfo.getContentUri());
 
+        logger.trace("Trying to determine content type.");
         try(InputStream is = Files.newInputStream(destination); BufferedInputStream bis = new BufferedInputStream(is);){
           AutoDetectParser parser = new AutoDetectParser();
           Detector detector = parser.getDetector();
@@ -192,12 +203,13 @@ public class ContentInformationService implements IContentInformationService{
           md1.add(Metadata.RESOURCE_NAME_KEY, contentInfo.getFilename());
           org.apache.tika.mime.MediaType mediaType = detector.detect(bis, md1);
           contentInfo.setMediaType(mediaType.toString());
+          logger.trace("Assigned media type {} to content information.", contentInfo.getMediaType());
         }
       } catch(IOException ex){
-        logger.error("Failed to finish upload.", ex);
+        logger.error("Failed to finish upload. Throwing CustomInternalServerError.", ex);
         throw new CustomInternalServerError("Unable to read from stream. Upload canceled.");
       } catch(NoSuchAlgorithmException ex){
-        logger.error("Failed to initialize SHA1 message digest. File upload won't be possible.", ex);
+        logger.error("Failed to initialize SHA1 message digest. Throwing CustomInternalServerError.", ex);
         throw new CustomInternalServerError("Internal digest initialization error. Unable to perform upload.");
       } finally{
         if(out != null){
@@ -209,52 +221,92 @@ public class ContentInformationService implements IContentInformationService{
         }
       }
     } else{
+      logger.trace("No user upload detected. Checking content URI in content information.");
       //no file upload, take data reference URI from provided content information
       if(contentInformation == null || contentInformation.getContentUri() == null){
+        logger.error("No content URI provided in content information. Throwing BadArgumentException.");
         throw new BadArgumentException("Neither a file upload nor an external content URI were provided.");
       } else{
-        if("file".equals(URI.create(contentInfo.getContentUri()).getScheme().toLowerCase()) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+        logger.trace("Content URI {} detected. Checking URI scheme.", contentInfo.getContentUri());
+        if("file".equals(URI.create(contentInfo.getContentUri()).getScheme().toLowerCase()) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.getValue())){
+          logger.error("Content URI scheme is 'file' but caller has no ADMINISTRATOR role. Content information creation rejected. Throwing BadArgumentException.");
           throw new BadArgumentException("You are not permitted to add content information with URI scheme of type 'file'.");
         }
+        logger.trace("Accepting attributed from provided content information.");
         //take content uri and provided checksum and size, if available
         contentInfo.setContentUri(contentInformation.getContentUri());
+        logger.debug("Assigned content URI {} to content information.", contentInfo.getContentUri());
         contentInfo.setSize(contentInformation.getSize());
+        logger.debug("Assigned size {} to content information.", contentInfo.getSize());
         contentInfo.setHash(contentInformation.getHash());
+        logger.debug("Assigned hash {} to content information.", contentInfo.getHash());
       }
     }
 
     //copy metadata and tags from provided content information if available
+    logger.trace("Checking for additional metadata.");
     if(contentInformation != null){
       if(contentInformation.getMetadata() != null){
+        logger.trace("Additional metadata found. Setting metadata.");
         contentInfo.setMetadata(contentInformation.getMetadata());
       }
+
       if(contentInformation.getTags() != null){
+        logger.trace("User-provided tags found. Setting tags.");
         contentInfo.setTags(contentInformation.getTags());
       }
     }
 
+    logger.trace("Persisting content information.");
     ContentInformation result = getDao().save(contentInfo);
     if(toRemove != null){
       try{
+        logger.debug("Removing replaced content from {}.", toRemove);
         Files.deleteIfExists(toRemove);
+        logger.trace("Content at {} successfully removed.", toRemove);
       } catch(IOException ex){
-        logger.warn("Failed to remove previously existing data at " + toRemove + ". Manual removal required.", ex);
+        logger.warn("Failed to remove previously existing content from " + toRemove + ". Manual removal required.", ex);
       }
     }
     return result;
-
   }
 
   @Override
-  public ContentInformation createOrUpdate(ContentInformation entity
-  ){
-    return getDao().save(entity);
+  @Transactional(readOnly = true)
+  public Page<ContentInformation> findAll(ContentInformation c, Pageable pgbl){
+    logger.trace("Performing findAll({}, {}).", c, pgbl);
+
+    if(c.getParentResource() == null){
+      logger.error("Parent resource in template must not be null. Throwing CustomInternalServerError.");
+      throw new CustomInternalServerError("Parent resource is missing from template.");
+    }
+    long parentId = c.getParentResource().getId();
+    String relativePath = c.getRelativePath();
+    Set<String> tags = c.getTags();
+    //wrong header added!
+    // eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(ContentInformation.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), pageSize));
+    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(parentId, relativePath, false));
+    if(tags != null && !tags.isEmpty()){
+      logger.debug("Content information tags {} provided. Using TagSpecification.", tags);
+      spec = ContentInformationTagSpecification.andIfTags(spec, tags.toArray(new String[]{}));
+    }
+    return dao.findAll(spec, pgbl);
   }
 
   @Override
-  public void delete(ContentInformation entity
-  ){
-    getDao().delete(entity);
+  @Transactional(readOnly = false)
+  public void patch(ContentInformation resource, JsonPatch patch, Collection<? extends GrantedAuthority> userGrants){
+    logger.trace("Performing patch({}, {}, {}).", "ContentInformation#" + resource.getId(), patch, userGrants);
+    ContentInformation updated = PatchUtil.applyPatch(resource, patch, ContentInformation.class, userGrants);
+    logger.trace("Patch successfully applied. Persisting patched resource.");
+    getDao().save(updated);
+    logger.trace("Resource successfully persisted.");
+  }
+
+  @Override
+  public void delete(ContentInformation resource){
+    logger.trace("Performing delete({}).", "ContentInformation#" + resource.getId());
+    getDao().delete(resource);
   }
 
   protected IContentInformationDao getDao(){

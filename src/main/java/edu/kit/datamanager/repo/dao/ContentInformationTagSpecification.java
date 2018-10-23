@@ -28,9 +28,22 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class ContentInformationTagSpecification{
 
-  public static Specification<ContentInformation> andIfPermission(Specification<ContentInformation> specifications, final String tag){
-    specifications = specifications.and(toSpecification(tag));
+  public static Specification<ContentInformation> andIfTags(Specification<ContentInformation> specifications, final String[] tags){
+    specifications = specifications.and(toSpecification(tags));
     return specifications;
+  }
+
+  public static Specification<ContentInformation> andIfTag(Specification<ContentInformation> specifications, final String tag){
+    return andIfTags(specifications, new String[]{tag});
+  }
+
+  public static Specification<ContentInformation> toSpecification(final String[] tags){
+
+    return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
+      query.distinct(true);
+
+      return builder.and(root.join("tags").in(Arrays.asList(tags)));
+    };
   }
 
   public static Specification<ContentInformation> toSpecification(final String tag){

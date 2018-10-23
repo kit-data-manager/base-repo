@@ -222,7 +222,7 @@ public class DataResourceController implements IDataResourceController{
     URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(resource.getId(), PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
 
     try{
-      contentInformationService.create(contentInformation, resource, (file != null) ? file.getInputStream() : null, path, force);
+      contentInformationService.create(contentInformation, resource, path, (file != null) ? file.getInputStream() : null, force);
       URIBuilder builder = new URIBuilder(link);
       builder.setPath(builder.getPath().replace("**", path));
       return ResponseEntity.created(builder.build()).build();
@@ -254,28 +254,34 @@ public class DataResourceController implements IDataResourceController{
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
+    LOGGER.trace("Checking provided path {}.", path);
     if(path.startsWith("/")){
+      LOGGER.debug("Removing leading slash from path {}.", path);
       //remove leading slash if present, e.g. if path was empty
       path = path.substring(1);
     }
 
     //switch between collection and element listing
     if(path.endsWith("/") || path.length() == 0){
+      LOGGER.trace("Path ends with slash or is empty. Performing collection access.");
       //collection listing
       path += "%";
       //sanitize page request
 
       PageRequest pageRequest = ControllerUtils.checkPaginationInformation(pgbl, pgbl.getSort().equals(Sort.unsorted()) ? Sort.by(Sort.Order.asc("depth"), Sort.Order.asc("relativePath")) : pgbl.getSort());
 
-      List<ContentInformation> resultList = contentInformationService.getContentInformation(id, path, tag, pageRequest);
-      filterAndAutoReturnContentInformation(resultList);
-      LOGGER.debug("Obtained {} content information result(s).", resultList.size());
+      LOGGER.trace("Obtaining content information page for parent resource {}, path {} and tag {}. Page information are: {}", id, path, tag, pageRequest);
+      Page<ContentInformation> resultList = contentInformationService.findAll(ContentInformation.createContentInformation(id, path, tag), pageRequest);
+
+      LOGGER.trace("Obtained {} content information result(s).", resultList.getContent().size());
+      filterAndAutoReturnContentInformation(resultList.getContent());
       return ResponseEntity.ok().build();
     } else{
-      ContentInformation contentInformation = contentInformationService.getContentInformation(id, path, tag);
+      LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
+      ContentInformation contentInformation = contentInformationService.getContentInformation(id, path);
       filterAndAutoReturnContentInformation(contentInformation);
-      LOGGER.debug("Obtained single content information result.");
-      return ResponseEntity.ok().eTag("\"" + Integer.toString(resource.hashCode()) + "\"").build();
+      LOGGER.trace("Obtained single content information result.");
+      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
     }
   }
 
@@ -293,7 +299,7 @@ public class DataResourceController implements IDataResourceController{
 
     LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getResourceIdentifier());
     //try to obtain single content element matching path exactly
-    ContentInformation contentInformation = contentInformationService.getContentInformation(id, path, null);
+    ContentInformation contentInformation = contentInformationService.getContentInformation(id, path);
     //obtain data uri and check for content to exist
     String dataUri = contentInformation.getContentUri();
     URI uri = URI.create(dataUri);
@@ -326,12 +332,10 @@ public class DataResourceController implements IDataResourceController{
 
     ControllerUtils.checkEtag(request, resource);
 
-    ContentInformation toUpdate = contentInformationService.getContentInformation(id, path, null);
+    ContentInformation toUpdate = contentInformationService.getContentInformation(id, path);
 
-    ContentInformation updated = PatchUtil.applyPatch(toUpdate, patch, ContentInformation.class, getUserAuthorities(resource));
-    LOGGER.info("Persisting patched content information.");
-    contentInformationService.createOrUpdate(updated);
-    LOGGER.info("Content information successfully persisted.");
+    contentInformationService.patch(toUpdate, patch, getUserAuthorities(resource));
+
     return ResponseEntity.noContent().build();
   }
 
@@ -350,11 +354,11 @@ public class DataResourceController implements IDataResourceController{
     ControllerUtils.checkEtag(request, resource);
 
     //try to obtain single content element matching path exactly
-    Optional<ContentInformation> contentInfoOptional = contentInformationService.findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag(id, path, null);
-    if(contentInfoOptional.isPresent()){
+    Page<ContentInformation> contentInfoOptional = contentInformationService.findAll(ContentInformation.createContentInformation(id, path), PageRequest.of(0, 1));
+    if(contentInfoOptional.hasContent()){
       LOGGER.debug("Content information entry found. Checking ETag.");
 
-      ContentInformation contentInfo = contentInfoOptional.get();
+      ContentInformation contentInfo = contentInfoOptional.getContent().get(0);
 
       Path localContentToRemove = null;
       URI contentUri = URI.create(contentInfo.getContentUri());
@@ -434,15 +438,12 @@ public class DataResourceController implements IDataResourceController{
 
   private void filterAndAutoReturnContentInformation(ContentInformation resource){
     //hide all attributes but the id from the parent data resource in the content information entity
-    json.use(JsonView.with(resource)
-            .onClass(DataResource.class, match().exclude("*").include("id")));
+    json.use(JsonView.with(resource).onClass(DataResource.class, match().exclude("*").include("id")));
   }
 
   private void filterAndAutoReturnContentInformation(List<ContentInformation> resources){
     //hide all attributes but the id from the parent data resource in all content information entities
-    json.use(JsonView.with(resources)
-            .onClass(DataResource.class, match().exclude("*").include("id")));
-
+    json.use(JsonView.with(resources).onClass(DataResource.class, match().exclude("*").include("id")));
   }
 
 }

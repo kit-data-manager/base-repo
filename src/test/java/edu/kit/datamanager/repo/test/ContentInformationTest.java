@@ -32,7 +32,7 @@ import org.springframework.http.MediaType;
 public class ContentInformationTest{
 
   @Test
-  public void test(){
+  public void testManualCreation(){
     DataResource parentResource = DataResource.factoryNewDataResource();
     ContentInformation info = new ContentInformation();
     info.setContentUri("file:///tmp/data/myfile.txt");
@@ -62,6 +62,34 @@ public class ContentInformationTest{
     Assert.assertEquals("data/myfile.txt", info.getRelativePath());
     Assert.assertEquals(2, info.getDepth());
 
+  }
+
+  @Test
+  public void testCreateTemplate(){
+    ContentInformation info = ContentInformation.createContentInformation(1l, "folder/file.txt", "testing");
+    Assert.assertNotNull(info.getParentResource());
+    Assert.assertEquals(Long.valueOf(1l), info.getParentResource().getId());
+    Assert.assertEquals("folder/file.txt", info.getRelativePath());
+    Assert.assertFalse(info.getTags().isEmpty());
+    Assert.assertEquals("testing", info.getTags().toArray(new String[]{})[0]);
+
+    info = ContentInformation.createContentInformation(1l, "folder/file.txt", (String[]) null);
+    Assert.assertTrue(info.getTags().isEmpty());
+
+    info = ContentInformation.createContentInformation(1l, "folder/file.txt", (String) null);
+    Assert.assertTrue(info.getTags().isEmpty());
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testCreateTemplateWithNullParentId(){
+    ContentInformation info = ContentInformation.createContentInformation(null, "/");
+    Assert.fail("Content information " + info + " should not have been created.");
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testCreateTemplateWithNullPath(){
+    ContentInformation info = ContentInformation.createContentInformation(1l, null);
+    Assert.fail("Content information " + info + " should not have been created.");
   }
 
   @Test

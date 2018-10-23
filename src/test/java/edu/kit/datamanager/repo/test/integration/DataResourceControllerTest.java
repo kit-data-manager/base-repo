@@ -951,16 +951,32 @@ public class DataResourceControllerTest{
     MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex4.txt", "application/json", Files.newInputStream(temp));
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
-    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
+    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex4.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+
+    
+    cinfo = new ContentInformation();
+    
+    fstmp = new MockMultipartFile("file", "bibtex5.txt", "application/json", Files.newInputStream(temp));
+    secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
+
+    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex5.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
 
     //get by tag ... should return one element
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").param("tag", "testing").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1))).andExpect(MockMvcResultMatchers.jsonPath("$[0].tags[0]").value("testing"));
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).
+            andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1))).
+            andExpect(MockMvcResultMatchers.jsonPath("$[0].tags[0]").value("testing"));
 
     //get by unknown tag...should return all elements (result set size should not be 1)
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").param("tag", "other").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(Matchers.not(1))));
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).
+            andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(Matchers.not(1))));
   }
 
   @Test
@@ -987,7 +1003,11 @@ public class DataResourceControllerTest{
             "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data//").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1))).andExpect(MockMvcResultMatchers.jsonPath("$[0].relativePath").value("bibtex5.txt"));
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).
+            andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1))).
+            andExpect(MockMvcResultMatchers.jsonPath("$[0].relativePath").value("bibtex5.txt"));
   }
 
   /**

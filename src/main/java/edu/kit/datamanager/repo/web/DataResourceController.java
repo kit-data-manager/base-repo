@@ -44,7 +44,6 @@ import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.service.IContentProvider;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
-import edu.kit.datamanager.util.PatchUtil;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -54,7 +53,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,7 +118,10 @@ public class DataResourceController implements IDataResourceController{
             (String) AuthenticationHelper.getAuthentication().getPrincipal(),
             AuthenticationHelper.getFirstname(),
             AuthenticationHelper.getLastname());
-
+ // ApplicationContext context = new AnnotationConfigApplicationContext(RabbitMQConfiguration.class);
+//      AmqpTemplate template = context.getBean(AmqpTemplate.class);
+//      
+//     rabbitTemplate.convertAndSend("topic_note", "note.data.update", path + "/" + file.getOriginalFilename());
     return ResponseEntity.created(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(result.getId(), request, response)).toUri()).eTag("\"" + result.getEtag() + "\"").body(result);
   }
 
@@ -233,11 +234,6 @@ public class DataResourceController implements IDataResourceController{
       LOGGER.error("Failed to open file input stream.", ex);
       throw new CustomInternalServerError("Unable to read from stream. Upload canceled.");
     }
-
-    // ApplicationContext context = new AnnotationConfigApplicationContext(RabbitMQConfiguration.class);
-//      AmqpTemplate template = context.getBean(AmqpTemplate.class);
-//      
-//     rabbitTemplate.convertAndSend("topic_note", "note.data.update", path + "/" + file.getOriginalFilename());
   }
 
   @Override

@@ -15,6 +15,7 @@
  */
 package edu.kit.datamanager.repo.test;
 
+import edu.kit.datamanager.configuration.GenericApplicationProperties;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import java.net.URI;
 import org.junit.Assert;
@@ -44,8 +45,6 @@ public class ApplicationPropertiesTest{
     props2.setBasepath(URI.create("file:///tmp/").toURL());
     props2.setJwtSecret("test123");
     Assert.assertTrue(props1.equals(props2));
-    Assert.assertFalse(props1.equals(null));
-    Assert.assertFalse(props1.equals("A String"));
 
     props1.setJwtSecret("different");
     Assert.assertFalse(props1.equals(props2));
@@ -54,17 +53,4 @@ public class ApplicationPropertiesTest{
     props1.setBasepath(URI.create("file:///otherFolder/").toURL());
     Assert.assertFalse(props1.equals(props2));
   }
-
-  @Test
-  public void testToString() throws Exception{
-    ApplicationProperties props = new ApplicationProperties();
-    props.setBasepath(URI.create("file:///tmp/").toURL());
-    props.setJwtSecret("test123");
-    String toString = props.toString();
-    Assert.assertNotNull(toString);
-    Assert.assertTrue(toString.startsWith(ApplicationProperties.class.getSimpleName()));
-    Assert.assertTrue(toString.contains("jwtSecret=test123"));
-    Assert.assertTrue(toString.contains("basepath=file:/tmp/"));
-  }
-
 }

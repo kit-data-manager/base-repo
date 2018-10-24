@@ -17,6 +17,7 @@ spring:
 repo:
    auth:
       jwtSecret: test123
+      disabled: true
    basepath:  file:///Users/jejkal/tmp 
    
 management:

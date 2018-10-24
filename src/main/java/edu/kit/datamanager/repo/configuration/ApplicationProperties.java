@@ -15,10 +15,10 @@
  */
 package edu.kit.datamanager.repo.configuration;
 
+import edu.kit.datamanager.configuration.GenericApplicationProperties;
 import java.net.URL;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,12 +26,10 @@ import org.springframework.stereotype.Component;
  * @author jejkal
  */
 @Component
-@ConfigurationProperties("repo")
 @Data
-public class ApplicationProperties{
+@EqualsAndHashCode(callSuper = true)
+public class ApplicationProperties extends GenericApplicationProperties{
 
-  @Value("${repo.auth.jwtSecret}")
-  private String jwtSecret;
   private URL basepath;
 
 }

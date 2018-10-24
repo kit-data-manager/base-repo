@@ -18,6 +18,7 @@ package edu.kit.datamanager.repo;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.security.filter.JwtAuthenticationFilter;
 import edu.kit.datamanager.security.filter.JwtAuthenticationProvider;
+import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
 import edu.kit.datamanager.security.filter.NoopAuthenticationEventPublisher;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,10 +56,20 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 
   @Override
   protected void configure(HttpSecurity http) throws Exception{
-    http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+    HttpSecurity httpSecurity = http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .csrf().disable()
-            .addFilterAfter(new JwtAuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class).
+            .addFilterAfter(new JwtAuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class);
+
+    
+    if(applicationProperties.isAuthDisabled()){
+      logger.info("Authentication is DISABLED. Adding 'NoAuthenticationFilter' to authentication chain.");
+      httpSecurity = httpSecurity.addFilterAfter(new NoAuthenticationFilter(applicationProperties.getJwtSecret(), authenticationManager()), JwtAuthenticationFilter.class);
+    } else{
+      logger.info("Authentication is ENABLED.");
+    }
+
+    httpSecurity.
             authorizeRequests().
             antMatchers("/api/v1").authenticated();
     http.headers().cacheControl().disable();

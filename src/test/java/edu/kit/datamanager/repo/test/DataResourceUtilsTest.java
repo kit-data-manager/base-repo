@@ -46,7 +46,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
  */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(AuthenticationHelper.class)
-@PowerMockIgnore({"javax.crypto.*" })
+@PowerMockIgnore({"javax.crypto.*"})
 public class DataResourceUtilsTest{
 
   @Before
@@ -267,6 +267,37 @@ public class DataResourceUtilsTest{
     Assert.assertTrue(DataResourceUtils.hasPermission(res3, PERMISSION.READ));
     Assert.assertTrue(DataResourceUtils.hasPermission(res3, PERMISSION.WRITE));
     Assert.assertTrue(DataResourceUtils.hasPermission(res3, PERMISSION.ADMINISTRATE));
+  }
+
+  @Test
+  public void testAreAclsEqual(){
+    AclEntry entry = new AclEntry("tester", PERMISSION.WRITE);
+    AclEntry entry2 = new AclEntry("guest", PERMISSION.WRITE);
+    AclEntry entry3 = new AclEntry("admin", PERMISSION.ADMINISTRATE);
+    AclEntry entry4 = new AclEntry("guest", PERMISSION.NONE);
+
+    //equal lists
+    Assert.assertTrue(DataResourceUtils.areAclsEqual(new AclEntry[]{entry, entry2}, new AclEntry[]{entry, entry2}));
+    //different order
+    Assert.assertTrue(DataResourceUtils.areAclsEqual(new AclEntry[]{entry2, entry}, new AclEntry[]{entry, entry2}));
+    //shorter first list
+    Assert.assertFalse(DataResourceUtils.areAclsEqual(new AclEntry[]{entry}, new AclEntry[]{entry, entry2}));
+    //shorter second list
+    Assert.assertFalse(DataResourceUtils.areAclsEqual(new AclEntry[]{entry, entry2}, new AclEntry[]{entry}));
+    //one entry per list
+    Assert.assertTrue(DataResourceUtils.areAclsEqual(new AclEntry[]{entry3}, new AclEntry[]{entry3}));
+    //empty first list
+    Assert.assertFalse(DataResourceUtils.areAclsEqual(new AclEntry[]{}, new AclEntry[]{entry3}));
+    //empty second list
+    Assert.assertFalse(DataResourceUtils.areAclsEqual(new AclEntry[]{entry3}, new AclEntry[]{}));
+
+    //changed permission
+    Assert.assertFalse(DataResourceUtils.areAclsEqual(new AclEntry[]{entry, entry2}, new AclEntry[]{entry, entry4}));
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testAreAclsEqualWithNullArgument(){
+    DataResourceUtils.areAclsEqual(null, null);
   }
 
   private void mockJwtUserAuthentication(RepoUserRole role){

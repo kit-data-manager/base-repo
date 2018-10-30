@@ -17,9 +17,10 @@ spring:
 repo:
    auth:
       jwtSecret: test123
-      disabled: true
+      enabled: false
    basepath:  file:///Users/jejkal/tmp 
-   
+   messaging:
+      enabled: true 
 management:
    endpoint:
       health:
@@ -32,10 +33,10 @@ management:
    enabled: false
 logging:
    level:
-      edu.kit: WARN
-      org.springframework.web.servlet.mvc: WARN
+      edu.kit: TRACE
+      org.springframework: TRACE
+      org.springframework.amqp: DEBUG
 server:
    port: 8090
-      
-      
-      
+#   compression:
+#      enabled: false

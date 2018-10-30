@@ -1,6 +1,7 @@
 repo:
    auth:
       jwtSecret: test123
+      enabled: true
    basepath: file:///tmp/
   
 management:

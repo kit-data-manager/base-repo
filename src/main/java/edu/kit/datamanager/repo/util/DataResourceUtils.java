@@ -24,7 +24,11 @@ import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.util.AuthenticationHelper;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,6 +181,41 @@ public class DataResourceUtils{
    */
   public static boolean hasPermission(DataResource resource, PERMISSION permission){
     return getAccessPermission(resource).atLeast(permission);
+  }
+
+  /**
+   * Test if two acl lists are identical. This method returns FALSE if both
+   * arrays have a different length or if at least one entry is different, e.g.
+   * does not exist of has a different permission. Otherwise, TRUE is returned.
+   * The implemented check is independent from the order of both arrays.
+   *
+   * @param first The first acl array, which is the reference.
+   * @param second The second acl array.
+   *
+   * @return TRUE if all array elements of 'first' exist in 'second' with the
+   * same PERMISSION, FALSE otherwise.
+   */
+  public static boolean areAclsEqual(@NonNull AclEntry[] first, @NonNull AclEntry[] second){
+
+    if(first.length != second.length){
+      //size differs, lists cannot be identical
+      return false;
+    }
+    Map<String, PERMISSION> aclMapBefore = aclEntriesToMap(first);
+    Map<String, PERMISSION> aclMapAfter = aclEntriesToMap(second);
+
+    return aclMapBefore.entrySet().stream().noneMatch((entry) -> (!entry.getValue().equals(aclMapAfter.get(entry.getKey()))));
+  }
+
+  /**
+   * Helper to create a map from an acl array.
+   */
+  private static Map<String, PERMISSION> aclEntriesToMap(AclEntry... entries){
+    Map<String, PERMISSION> aclMap = new HashMap<>();
+    for(AclEntry entry : entries){
+      aclMap.put(entry.getSid(), entry.getPermission());
+    }
+    return aclMap;
   }
 
 }

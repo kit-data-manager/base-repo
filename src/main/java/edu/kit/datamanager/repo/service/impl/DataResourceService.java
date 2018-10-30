@@ -19,6 +19,7 @@ import com.github.fge.jsonpatch.JsonPatch;
 import edu.kit.datamanager.dao.ByExampleSpecification;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
+import edu.kit.datamanager.entities.messaging.DataResourceMessage;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
@@ -31,6 +32,9 @@ import edu.kit.datamanager.repo.domain.PrimaryIdentifier;
 import edu.kit.datamanager.repo.domain.UnknownInformationConstants;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
+import edu.kit.datamanager.service.IMessagingService;
+import edu.kit.datamanager.util.AuthenticationHelper;
+import edu.kit.datamanager.util.ControllerUtils;
 import edu.kit.datamanager.util.PatchUtil;
 import java.time.Instant;
 import java.util.Calendar;
@@ -38,6 +42,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -62,6 +67,9 @@ public class DataResourceService implements IDataResourceService{
   private IDataResourceDao dao;
   @Autowired
   private Logger logger;
+
+  @Autowired
+  private IMessagingService messagingService;
 
   @PersistenceContext
   private EntityManager em;
@@ -219,7 +227,11 @@ public class DataResourceService implements IDataResourceService{
       logger.trace("Resource state found. State is: {}", resource.getState());
     }
     logger.trace("Persisting created resource.");
-    return getDao().save(resource);
+    resource = getDao().save(resource);
+
+    logger.trace("Sending CREATE event.");
+    messagingService.send(DataResourceMessage.factoryCreateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
+    return resource;
   }
 
   @Override
@@ -249,7 +261,8 @@ public class DataResourceService implements IDataResourceService{
       logger.trace("Non-Administrator access detected. Calling findAllFiltered({}, {}, {}, {}, {}).", example, callerIdentities, PERMISSION.READ, pgbl, Boolean.FALSE);
       page = findAllFiltered(example, callerIdentities, PERMISSION.READ, pgbl, false);
     }
-
+    logger.trace("Sending UPDATE ACL event.");
+    messagingService.send(DataResourceMessage.factoryUpdateMessage(1l, AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
     logger.trace("Returning page content.");
     return page;
   }
@@ -315,8 +328,12 @@ public class DataResourceService implements IDataResourceService{
     logger.trace("Performing patch({}, {}, {}).", "DataResource#" + resource.getId(), patch, userGrants);
     DataResource updated = PatchUtil.applyPatch(resource, patch, DataResource.class, userGrants);
     logger.trace("Patch successfully applied. Persisting patched resource.");
+    AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
     getDao().save(updated);
-    logger.trace("Resource successfully persisted.");
+    AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
+
+    logger.trace("Sending UPDATE event.");
+    messagingService.send(DataResourceMessage.factoryUpdateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
   }
 
   @Override

@@ -62,7 +62,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
             .addFilterAfter(new JwtAuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class);
 
     
-    if(applicationProperties.isAuthDisabled()){
+    if(!applicationProperties.isAuthEnabled()){
       logger.info("Authentication is DISABLED. Adding 'NoAuthenticationFilter' to authentication chain.");
       httpSecurity = httpSecurity.addFilterAfter(new NoAuthenticationFilter(applicationProperties.getJwtSecret(), authenticationManager()), JwtAuthenticationFilter.class);
     } else{

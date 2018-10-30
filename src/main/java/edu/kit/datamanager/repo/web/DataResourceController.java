@@ -118,10 +118,7 @@ public class DataResourceController implements IDataResourceController{
             (String) AuthenticationHelper.getAuthentication().getPrincipal(),
             AuthenticationHelper.getFirstname(),
             AuthenticationHelper.getLastname());
- // ApplicationContext context = new AnnotationConfigApplicationContext(RabbitMQConfiguration.class);
-//      AmqpTemplate template = context.getBean(AmqpTemplate.class);
-//      
-//     rabbitTemplate.convertAndSend("topic_note", "note.data.update", path + "/" + file.getOriginalFilename());
+
     return ResponseEntity.created(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(result.getId(), request, response)).toUri()).eTag("\"" + result.getEtag() + "\"").body(result);
   }
 
@@ -244,7 +241,6 @@ public class DataResourceController implements IDataResourceController{
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
     String path = getContentPathFromRequest(request);
-
     //check resource and permission
     DataResource resource = dataResourceService.findById(id);
 

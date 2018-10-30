@@ -25,6 +25,8 @@ import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.service.impl.DataResourceService;
 import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.repo.service.impl.ContentInformationService;
+import edu.kit.datamanager.service.IMessagingService;
+import edu.kit.datamanager.service.impl.RabbitMQMessagingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InjectionPoint;
@@ -47,27 +49,27 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @SpringBootApplication
 @ComponentScan({"edu.kit.datamanager"})
 public class Application{
-
+  
   @Autowired
   private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
-
+  
   @Bean
   @Scope("prototype")
   public Logger logger(InjectionPoint injectionPoint){
     Class<?> targetClass = injectionPoint.getMember().getDeclaringClass();
     return LoggerFactory.getLogger(targetClass.getCanonicalName());
   }
-
+  
   @Bean
   public IDataResourceService dataResourceService(){
     return new DataResourceService();
   }
-
+  
   @Bean
   public IContentInformationService contentInformationService(){
     return new ContentInformationService();
   }
-
+  
   @Bean(name = "OBJECT_MAPPER_BEAN")
   public ObjectMapper jsonObjectMapper(){
     return Jackson2ObjectMapperBuilder.json()
@@ -77,49 +79,40 @@ public class Application{
             .build();
   }
 
+//  @Bean
+//  public WebMvcConfigurer corsConfigurer(){
+//    return new WebMvcConfigurer(){
+//      @Override
+//      public void addCorsMappings(CorsRegistry registry){
+//        registry.addMapping("/**").allowedOrigins("http://localhost:8090").exposedHeaders("Content-Length").allowedHeaders("Accept");
+//      }
+//    };
+//  }
   @Bean
   @Primary
   public RequestMappingHandlerAdapter adapter(){
     return requestMappingHandlerAdapter;
   }
-
+  
   @Bean
   public JsonViewSupportFactoryBean views(){
     return new JsonViewSupportFactoryBean();
   }
-
+  
   @Bean
   @ConfigurationProperties("repo")
   public ApplicationProperties applicationProperties(){
     return new ApplicationProperties();
   }
-
-//  @Bean
-//  public ConnectionFactory connectionFactory(){
-//    return new CachingConnectionFactory("localhost");
-//  }
-//
-//  @Bean
-//  public AmqpAdmin amqpAdmin(){
-//    return new RabbitAdmin(connectionFactory());
-//  }
-//
-//  @Bean
-//  public RabbitTemplate rabbitTemplate(){
-//    return new RabbitTemplate(connectionFactory());
-//  }
-//
-//  @Bean
-//  TopicExchange exchange(){
-//    return new TopicExchange("topic_note");
-//  }
-//  @Bean
-//  public Queue myQueue(){
-//    return new Queue("myqueue");
-//  }
+  
+  @Bean
+  public IMessagingService messagingService(){
+    return new RabbitMQMessagingService();
+  }
+  
   public static void main(String[] args){
     ApplicationContext ctx = SpringApplication.run(Application.class, args);
     System.out.println("Spring is running!");
   }
-
+  
 }

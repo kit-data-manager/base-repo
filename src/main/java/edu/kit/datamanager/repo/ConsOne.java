@@ -15,10 +15,6 @@
  */
 package edu.kit.datamanager.repo;
 
-import edu.kit.datamanager.entities.messaging.BasicMessage;
-import edu.kit.datamanager.messaging.client.handler.IMessageHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,13 +22,13 @@ import org.springframework.stereotype.Component;
  * @author jejkal
  */
 @Component
-public class ConsOne implements IMessageHandler{
+public class ConsOne{// implements IMessageHandler{
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ConsOne.class);
-
-  @Override
-  public void handle(BasicMessage message){
-    LOGGER.error("Successfully received message {}.", message);
-  }
+//  private static final Logger LOGGER = LoggerFactory.getLogger(ConsOne.class);
+//
+//  @Override
+//  public void handle(BasicMessage message){
+//    LOGGER.error("Successfully received message {}.", message);
+//  }
 
 }

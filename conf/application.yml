@@ -21,6 +21,12 @@ repo:
    basepath:  file:///Users/jejkal/tmp 
    messaging:
       enabled: true 
+      binding:
+         exchange: repository_events
+         queue: testQueue1
+         routingKeys: dataresource.create.#, dataresource.update.#
+   schedule:
+      rate: 1000
 management:
    endpoint:
       health:

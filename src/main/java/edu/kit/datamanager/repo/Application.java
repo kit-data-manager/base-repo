@@ -40,6 +40,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 
 /**
@@ -47,29 +48,30 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * @author jejkal
  */
 @SpringBootApplication
-@ComponentScan({"edu.kit.datamanager"})
+@EnableScheduling
+@ComponentScan({"edu.kit.datamanager", "edu.kit.datamanager.messaging.client"})
 public class Application{
-  
+
   @Autowired
   private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
-  
+
   @Bean
   @Scope("prototype")
   public Logger logger(InjectionPoint injectionPoint){
     Class<?> targetClass = injectionPoint.getMember().getDeclaringClass();
     return LoggerFactory.getLogger(targetClass.getCanonicalName());
   }
-  
+
   @Bean
   public IDataResourceService dataResourceService(){
     return new DataResourceService();
   }
-  
+
   @Bean
   public IContentInformationService contentInformationService(){
     return new ContentInformationService();
   }
-  
+
   @Bean(name = "OBJECT_MAPPER_BEAN")
   public ObjectMapper jsonObjectMapper(){
     return Jackson2ObjectMapperBuilder.json()
@@ -93,26 +95,26 @@ public class Application{
   public RequestMappingHandlerAdapter adapter(){
     return requestMappingHandlerAdapter;
   }
-  
+
   @Bean
   public JsonViewSupportFactoryBean views(){
     return new JsonViewSupportFactoryBean();
   }
-  
+
   @Bean
   @ConfigurationProperties("repo")
   public ApplicationProperties applicationProperties(){
     return new ApplicationProperties();
   }
-  
+
   @Bean
   public IMessagingService messagingService(){
     return new RabbitMQMessagingService();
   }
-  
+
   public static void main(String[] args){
     ApplicationContext ctx = SpringApplication.run(Application.class, args);
     System.out.println("Spring is running!");
   }
-  
+
 }

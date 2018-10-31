@@ -45,7 +45,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 
   @Autowired
   private ApplicationProperties applicationProperties;
-
+ 
   public WebSecurityConfig(){
   }
 

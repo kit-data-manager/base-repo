@@ -53,6 +53,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import javax.websocket.server.PathParam;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -235,7 +236,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity handleMetadataAccess(@PathVariable(value = "id") final Long id,
-          @RequestParam(name = "tag", required = false) String tag,
+          @RequestParam(name = "tag", required = false) String tag,         
           final Pageable pgbl,
           WebRequest request,
           final HttpServletResponse response,

@@ -12,7 +12,7 @@ In order to build this microservice you'll need:
 After obtaining the sources change to the folder where the sources are located perform the following steps:
 
 ```
-user@localhost:/home/user$ git clone --recursive git clone --recursive https://github.com/kit-data-manager/base-repo.git
+user@localhost:/home/user$ git clone --recursive https://github.com/kit-data-manager/base-repo.git
 user@localhost:/home/user$ cd base-repo
 user@localhost:/home/user/base-repo$ git submodule foreach git pull origin master
 Entering 'libraries/service-base'

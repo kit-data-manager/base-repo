@@ -19,9 +19,9 @@ spring:
     ################################################################################
     servlet:
       # Max file size. (Default 1MB)   
-#      multipart.max-file-size: 1MB
+#      multipart.max-file-size: 10MB
       # Max request size. (Default 1MB)
-#      multipart.max-request-size: 1MB
+#      multipart.max-request-size: 10MB
 repo:
    auth:
       jwtSecret: test123

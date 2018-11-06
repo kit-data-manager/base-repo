@@ -4,6 +4,16 @@ repo:
       enabled: true
    basepath: file:///tmp/
   
+spring:
+    ################################################################################
+    ###                  MAX file size for up-/download                          ###
+    ################################################################################
+    servlet:
+      # Max file size. (Default 1MB)   
+#      multipart.max-file-size: 10MB
+      # Max request size. (Default 1MB)
+#      multipart.max-request-size: 10MB
+
 management:
    endpoint:
       health:

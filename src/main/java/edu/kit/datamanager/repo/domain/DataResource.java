@@ -93,6 +93,7 @@ public class DataResource implements EtagSupport, Serializable{
 
   //The internal resource identifier assigned once during creation
   @ApiModelProperty(hidden = true)
+  // @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private String resourceIdentifier = null;
 

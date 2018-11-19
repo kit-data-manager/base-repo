@@ -46,3 +46,8 @@ server:
    port: 8090
 #   compression:
 #      enabled: false
+servlet:
+    # Max file size.
+    multipart.max-file-size: 10MB
+    # Max request size.
+    multipart.max-request-size: 10MB

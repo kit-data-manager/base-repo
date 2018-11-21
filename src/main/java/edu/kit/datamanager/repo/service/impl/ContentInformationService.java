@@ -94,17 +94,17 @@ public class ContentInformationService implements IContentInformationService{
 //  }
   @Override
   @Transactional(readOnly = true)
-  public ContentInformation getContentInformation(Long id, String relativePath){
-    logger.trace("Performing getContentInformation({}, {}).", id, relativePath);
+  public ContentInformation getContentInformation(String identifier, String relativePath){
+    logger.trace("Performing getContentInformation({}, {}).", identifier, relativePath);
 
-    logger.trace("Performing findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag({}, {}).", id, relativePath);
-    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(id, relativePath, true));
+    logger.trace("Performing findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag({}, {}).", identifier, relativePath);
+    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(identifier, relativePath, true));
     Optional<ContentInformation> contentInformation = dao.findOne(spec);
 
     if(!contentInformation.isPresent()){
       //TODO: check later for collection download
-      logger.error("No content found for resource {} at path {}. Throwing ResourceNotFoundException.", id, relativePath);
-      throw new ResourceNotFoundException("No content information for id " + id + ", path " + relativePath + " found.");
+      logger.error("No content found for resource {} at path {}. Throwing ResourceNotFoundException.", identifier, relativePath);
+      throw new ResourceNotFoundException("No content information for identifier " + identifier + ", path " + relativePath + " found.");
     }
 
     return contentInformation.get();
@@ -132,7 +132,7 @@ public class ContentInformationService implements IContentInformationService{
 
     //check for existing content information
     //We use here no tags as tags are just for reflecting related content elements, but all tags are associated with the same content element.
-    Page<ContentInformation> existingContentInformation = findAll(ContentInformation.createContentInformation(resource.getId(), path), PageRequest.of(0, 1));
+    Page<ContentInformation> existingContentInformation = findAll(ContentInformation.createContentInformation(resource.getResourceIdentifier(), path), PageRequest.of(0, 1));
 
     ContentInformation contentInfo;
     Path toRemove = null;
@@ -280,7 +280,7 @@ public class ContentInformationService implements IContentInformationService{
       logger.error("Parent resource in template must not be null. Throwing CustomInternalServerError.");
       throw new CustomInternalServerError("Parent resource is missing from template.");
     }
-    long parentId = c.getParentResource().getId();
+    String parentId = c.getParentResource().getResourceIdentifier();
     String relativePath = c.getRelativePath();
     Set<String> tags = c.getTags();
     //wrong header added!

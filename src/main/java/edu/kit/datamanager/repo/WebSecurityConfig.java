@@ -22,14 +22,18 @@ import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
 import edu.kit.datamanager.security.filter.NoopAuthenticationEventPublisher;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.firewall.DefaultHttpFirewall;
+import org.springframework.security.web.firewall.HttpFirewall;
 
 /**
  *
@@ -45,7 +49,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 
   @Autowired
   private ApplicationProperties applicationProperties;
- 
+
   public WebSecurityConfig(){
   }
 
@@ -61,7 +65,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
             .csrf().disable()
             .addFilterAfter(new JwtAuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class);
 
-    
     if(!applicationProperties.isAuthEnabled()){
       logger.info("Authentication is DISABLED. Adding 'NoAuthenticationFilter' to authentication chain.");
       httpSecurity = httpSecurity.addFilterAfter(new NoAuthenticationFilter(applicationProperties.getJwtSecret(), authenticationManager()), JwtAuthenticationFilter.class);
@@ -73,8 +76,20 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
             authorizeRequests().
             antMatchers("/api/v1").authenticated();
     http.headers().cacheControl().disable();
+
   }
 
+  @Bean
+  public HttpFirewall allowUrlEncodedSlashHttpFirewall(){
+    DefaultHttpFirewall firewall = new DefaultHttpFirewall();
+    firewall.setAllowUrlEncodedSlash(true);
+    return firewall;
+  }
+
+  @Override
+  public void configure(WebSecurity web) throws Exception{
+    web.httpFirewall(allowUrlEncodedSlashHttpFirewall());
+  }
 //  @Bean
 //  CorsConfigurationSource corsConfigurationSource(){
 //    final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

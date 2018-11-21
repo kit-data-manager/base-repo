@@ -232,6 +232,7 @@ public class DataResource implements EtagSupport, Serializable{
     return result;
   }
 
+  @Override
   public String getEtag(){
     return Integer.toString(hashCode());
   }

@@ -21,10 +21,14 @@ import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.messaging.DataResourceMessage;
 import edu.kit.datamanager.exceptions.BadArgumentException;
+import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.repo.dao.AlternateIdentifierSpec;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
+import edu.kit.datamanager.repo.dao.InternalIdentifierSpec;
 import edu.kit.datamanager.repo.dao.PermissionSpecification;
+import edu.kit.datamanager.repo.dao.PrimaryIdentifierSpec;
 import edu.kit.datamanager.repo.dao.StateSpecification;
 import edu.kit.datamanager.repo.domain.Agent;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -42,13 +46,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -243,6 +247,29 @@ public class DataResourceService implements IDataResourceService{
     if(!result.isPresent()){
       logger.error("No data resource found for identifier {}. Throwing ResourceNotFoundException.", id);
       throw new ResourceNotFoundException("Data resource with id " + id + " was not found.");
+    }
+
+    return result.get();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public DataResource findByAnyIdentifier(final String resourceIdentifier){
+    logger.trace("Performing findOne(resourceIdentifier == '{}').", resourceIdentifier);
+    Optional<DataResource> result = getDao().findOne(InternalIdentifierSpec.toSpecification(resourceIdentifier));
+
+    if(!result.isPresent()){
+      logger.error("No data resource found for resource identifier {}. Checking primary and alternate identifiers.", resourceIdentifier);
+      logger.trace("Performing findOne(primaryIdentifier == '{}' || alternateIdentifier == '{}').", resourceIdentifier, resourceIdentifier);
+      try{
+        result = getDao().findOne(AlternateIdentifierSpec.toSpecification(resourceIdentifier).or(PrimaryIdentifierSpec.toSpecification(resourceIdentifier)));
+      } catch(IncorrectResultSizeDataAccessException ex){
+        logger.error("!!!POTENTIAL INCONSISTENCY DETECTED!!! Multiple resources with primary/alternate identifier {} " + resourceIdentifier + " detected.");
+        throw new CustomInternalServerError("Inconsistent state detected. The provided identifier is mapping to multiple resources.");
+      }
+      if(!result.isPresent()){
+        throw new ResourceNotFoundException("Data resource with identifier " + resourceIdentifier + " was not found.");
+      }
     }
 
     return result.get();

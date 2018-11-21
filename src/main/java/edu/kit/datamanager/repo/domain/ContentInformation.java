@@ -77,7 +77,7 @@ public class ContentInformation implements Serializable{
   @ElementCollection
   private Set<String> tags = new HashSet<>();
 
-  public static ContentInformation createContentInformation(@NonNull Long parentId, @NonNull String relativePath, String... tags){
+  public static ContentInformation createContentInformation(@NonNull String parentId, @NonNull String relativePath, String... tags){
     ContentInformation result = new ContentInformation();
     result.setRelativePath(relativePath);
 
@@ -86,7 +86,7 @@ public class ContentInformation implements Serializable{
     }
 
     DataResource res = new DataResource();
-    res.setId(parentId);
+    res.setResourceIdentifier(parentId);
     result.setParentResource(res);
     return result;
   }

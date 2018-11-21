@@ -21,6 +21,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
+import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -415,7 +416,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
-   
+
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.identifier.value").value("12.123/123"));
   }
@@ -767,6 +768,42 @@ public class DataResourceControllerTest{
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("2017"));
+
+  }
+
+  @Test
+  public void testPatchAlternateIdentifier() throws Exception{
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+
+    String patch = "[{\"op\": \"add\",\"path\": \"/alternateIdentifiers/1\",\"value\": {\"identifierType\":\"OTHER\", \"value\":\"another-identifier\"}}]";
+    this.mockMvc.perform(patch("/api/v1/dataresources/" + otherResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + otherUserToken).header("If-None-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
+
+    this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers[1].value").value("another-identifier"));
+  }
+
+  @Test
+  public void testPatchAlternateDuplicateIdentifier() throws Exception{
+    
+    //first, add identifier to otherResource...
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+
+    String patch = "[{\"op\": \"add\",\"path\": \"/alternateIdentifiers/1\",\"value\": {\"identifierType\":\"OTHER\", \"value\":\"will-be-duplicated\"}}]";
+    this.mockMvc.perform(patch("/api/v1/dataresources/" + otherResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + otherUserToken).header("If-None-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
+
+    this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers[1].value").value("will-be-duplicated"));
+
+    //now change to sample resource and try to add identifier, too
+    etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+
+    this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header("If-None-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isConflict());
 
   }
 

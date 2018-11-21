@@ -62,10 +62,9 @@ import org.springframework.test.context.transaction.TransactionalTestExecutionLi
 @PrepareForTest(AuthenticationHelper.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestExecutionListeners(listeners = {//ServletTestExecutionListener.class,
+@TestExecutionListeners(listeners = {
   DependencyInjectionTestExecutionListener.class,
-  // DirtiesContextTestExecutionListener.class,
-  TransactionalTestExecutionListener.class, // WithSecurityContextTestExecutionListener.class
+  TransactionalTestExecutionListener.class
 })
 @ActiveProfiles("test")
 public class DataResourceServiceTest{

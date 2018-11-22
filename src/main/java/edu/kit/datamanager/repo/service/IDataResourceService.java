@@ -88,6 +88,23 @@ public interface IDataResourceService extends IGenericService<DataResource>, Hea
   DataResource create(DataResource resource, String callerPrincipal) throws BadArgumentException, ResourceAlreadyExistException;
 
   /**
+   * Enhanced find method to obtain a single resource having the provided value
+   * as any of its identifiers. The implementation should check the internal
+   * identifier first. Afterwards, also alternate identifiers as well as the
+   * primary identifier should be checked. If any of the checked identifiers
+   * matches, the resource is returned. If no identifier matches, the
+   * implementation should throw an exception mapping to HTTP 404.
+   *
+   * The result can be requested in a paginated form using the pgbl argument.
+   *
+   * @param identifier The identifier used to query for a single resource.
+   *
+   * @return A single resource if one was found. This method should never return
+   * null. If no resource could be found, an exception is expected to be thrown.
+   */
+  DataResource findByAnyIdentifier(String identifier);
+
+  /**
    * Basic find by example method. An implementation of this method is not
    * intended to imply any specific context or authentication information. It is
    * expected to use the provided information in order to create a query to the
@@ -96,7 +113,7 @@ public interface IDataResourceService extends IGenericService<DataResource>, Hea
    * The example is used to create a query to the data backend. It depends on
    * the implementation which fields of the example are evaluated, at least
    * simple fields should be evaluated. Resources in state REVOKED may or may
-   * not be included depending on the 'icludeRevoked' flag.
+   * not be included depending on the 'includeRevoked' flag.
    *
    * The result can be requested in a paginated form using the pgbl argument.
    *
@@ -124,7 +141,7 @@ public interface IDataResourceService extends IGenericService<DataResource>, Hea
    * the implementation which fields of the example are evaluated, at least
    * simple fields should be evaluated. In addition, the result can be filtered
    * by permission for the provided list of sids and resources in state REVOKED
-   * may or may not be included depending on the 'icludeRevoked' flag.
+   * may or may not be included depending on the 'includeRevoked' flag.
    *
    * The result can be requested in a paginated form using the pgbl argument.
    *

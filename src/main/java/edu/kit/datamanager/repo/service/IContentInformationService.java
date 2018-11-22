@@ -91,14 +91,14 @@ public interface IContentInformationService extends IGenericService<ContentInfor
    * resource and relative path should be unique and a single content
    * information resource is returned if one exists for the provided data
    * resource and relative path. If one wants to list multiple content
-   * information resources matching a certain path, {@link #getContentInformation(java.lang.Long, java.lang.String, java.lang.String, org.springframework.data.domain.Pageable)
+   * information resources matching a certain path, {@link #getContentInformation(java.lang.String, java.lang.String, java.lang.String, org.springframework.data.domain.Pageable)
    * } should be used.
    *
-   * @param id The numeric identifier of the parent resource.
+   * @param identifier The resource identifier of the parent resource.
    * @param relativePath The relative path information stored in the content
    * information resource.
    *
    * @return The ContentInformation resource.
    */
-  ContentInformation getContentInformation(Long id, String relativePath);
+  ContentInformation getContentInformation(String identifier, String relativePath);
 }

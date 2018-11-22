@@ -21,10 +21,14 @@ import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.messaging.DataResourceMessage;
 import edu.kit.datamanager.exceptions.BadArgumentException;
+import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.repo.dao.AlternateIdentifierSpec;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
+import edu.kit.datamanager.repo.dao.InternalIdentifierSpec;
 import edu.kit.datamanager.repo.dao.PermissionSpecification;
+import edu.kit.datamanager.repo.dao.PrimaryIdentifierSpec;
 import edu.kit.datamanager.repo.dao.StateSpecification;
 import edu.kit.datamanager.repo.domain.Agent;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -37,18 +41,22 @@ import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import edu.kit.datamanager.util.PatchUtil;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import org.apache.commons.collections4.ListUtils;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -92,6 +100,7 @@ public class DataResourceService implements IDataResourceService{
   public DataResource create(DataResource resource, String callerPrincipal, String callerFirstName, String callerLastName){
     logger.trace("Performing create({}, {}, {}, {}).", resource, callerPrincipal, callerFirstName, callerLastName);
 
+    //check for provided DOI
     if(resource.getIdentifier() == null || !resource.getIdentifier().hasDoi()){
       logger.debug("No primary identifier assigned to resource. Using placeholder '{}'.", UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER);
       //set placeholder identifier
@@ -124,13 +133,11 @@ public class DataResourceService implements IDataResourceService{
 
     logger.trace("Checking for existing resource with identifier {}.", resource.getResourceIdentifier());
     //check resource by identifier
-    DataResource expl = new DataResource();
-    expl.setResourceIdentifier(resource.getResourceIdentifier());
+    long cnt = getDao().count(PrimaryIdentifierSpec.toSpecification(resource.getResourceIdentifier()).or(AlternateIdentifierSpec.toSpecification(resource.getResourceIdentifier()).or(InternalIdentifierSpec.toSpecification(resource.getResourceIdentifier()))));
+    logger.trace("Found {} existing resources conflicting with provided identifier {}.", cnt, resource.getResourceIdentifier());
 
-    Page<DataResource> res = findAll(expl, PageRequest.of(0, 1), true);
-
-    if(res.hasContent()){
-      logger.error("Found existing resource with identifier {}. Throwing ResourceAlreadyExistException.", resource.getResourceIdentifier());
+    if(cnt != 0){
+      logger.error("Number of conflicting identifiers with identifier {} is neq 0. Throwing ResourceAlreadyExistException.", resource.getResourceIdentifier());
       throw new ResourceAlreadyExistException("There is already a resource with identifier " + resource.getResourceIdentifier());
     }
 
@@ -249,6 +256,29 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public DataResource findByAnyIdentifier(final String resourceIdentifier){
+    logger.trace("Performing findOne(resourceIdentifier == '{}').", resourceIdentifier);
+    Optional<DataResource> result = getDao().findOne(InternalIdentifierSpec.toSpecification(resourceIdentifier));
+
+    if(!result.isPresent()){
+      logger.error("No data resource found for resource identifier {}. Checking primary and alternate identifiers.", resourceIdentifier);
+      logger.trace("Performing findOne(primaryIdentifier == '{}' || alternateIdentifier == '{}').", resourceIdentifier, resourceIdentifier);
+      try{
+        result = getDao().findOne(AlternateIdentifierSpec.toSpecification(resourceIdentifier).or(PrimaryIdentifierSpec.toSpecification(resourceIdentifier)));
+      } catch(IncorrectResultSizeDataAccessException ex){
+        logger.error("!!!POTENTIAL INCONSISTENCY DETECTED!!! Multiple resources with primary/alternate identifier {} " + resourceIdentifier + " detected.");
+        throw new CustomInternalServerError("Inconsistent state detected. The provided identifier is mapping to multiple resources.");
+      }
+      if(!result.isPresent()){
+        throw new ResourceNotFoundException("Data resource with identifier " + resourceIdentifier + " was not found.");
+      }
+    }
+
+    return result.get();
+  }
+
+  @Override
   public Page<DataResource> findByExample(DataResource example, List<String> callerIdentities, boolean callerIsAdministrator, Pageable pgbl){
     logger.trace("Performing findByExample({}, {}).", example, pgbl);
     Page<DataResource> page;
@@ -326,11 +356,36 @@ public class DataResourceService implements IDataResourceService{
   @Transactional(readOnly = false)
   public void patch(DataResource resource, JsonPatch patch, Collection<? extends GrantedAuthority> userGrants){
     logger.trace("Performing patch({}, {}, {}).", "DataResource#" + resource.getId(), patch, userGrants);
+    List<String> identifierListBefore = new ArrayList<>();
+    identifierListBefore.add(resource.getIdentifier().getValue());
+    resource.getAlternateIdentifiers().forEach((alt) -> {
+      identifierListBefore.add(alt.getValue());
+    });
+    logger.trace("Resource identifiers before patch: {}", identifierListBefore);
     DataResource updated = PatchUtil.applyPatch(resource, patch, DataResource.class, userGrants);
-    logger.trace("Patch successfully applied. Persisting patched resource.");
-    AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
+
+    List<String> identifierListAfter = new ArrayList<>();
+    identifierListAfter.add(updated.getIdentifier().getValue());
+    updated.getAlternateIdentifiers().forEach((alt) -> {
+      identifierListAfter.add(alt.getValue());
+    });
+    logger.trace("Resource identifiers after patch: {}", identifierListAfter);
+    identifierListAfter.removeAll(identifierListBefore);
+    logger.trace("New/updated resource identifiers: {}", identifierListAfter);
+
+    logger.trace("Patch successfully applied. Checking for conflicting identifiers.");
+
+    String[] afterList = identifierListAfter.toArray(new String[]{});
+    long cnt = getDao().count(PrimaryIdentifierSpec.toSpecification(afterList).or(AlternateIdentifierSpec.toSpecification(afterList).or(InternalIdentifierSpec.toSpecification(afterList))));
+    logger.trace("Found {} existing resources conflicting with patched identifier {}.", cnt, resource.getResourceIdentifier());
+    if(cnt > 0){
+      logger.error("Number of conflicting identifiers with identifiers {} is neq 0. Throwing ResourceAlreadyExistException.", identifierListAfter);
+      throw new ResourceAlreadyExistException("There is at least one resource with one of the following identifiers: " + identifierListAfter);
+    }
+    logger.trace("No identifier conflict detected. Persisting resource.");
+   // AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
     getDao().save(updated);
-    AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
+    //AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
 
     logger.trace("Sending UPDATE event.");
     messagingService.send(DataResourceMessage.factoryUpdateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));

@@ -93,7 +93,7 @@ public class DataResource implements EtagSupport, Serializable{
 
   //The internal resource identifier assigned once during creation
   @ApiModelProperty(hidden = true)
-  // @SecureUpdate({"FORBIDDEN"})
+  @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private String resourceIdentifier = null;
 
@@ -232,6 +232,7 @@ public class DataResource implements EtagSupport, Serializable{
     return result;
   }
 
+  @Override
   public String getEtag(){
     return Integer.toString(hashCode());
   }

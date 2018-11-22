@@ -39,6 +39,7 @@ management:
    enabled: false
 logging:
    level:
+      #root: TRACE
       edu.kit: TRACE
       org.springframework: TRACE
       org.springframework.amqp: DEBUG

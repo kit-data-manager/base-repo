@@ -17,14 +17,11 @@ package edu.kit.datamanager.repo.dao;
 
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
-import io.swagger.annotations.ExampleProperty;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Root;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
@@ -33,24 +30,23 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class ContentInformationMatchSpecification{
 
-  public static Specification<ContentInformation> andIfPermission(Specification<ContentInformation> specifications, final Long parentId, final String path, boolean exactPath){
+  public static Specification<ContentInformation> andIfPermission(Specification<ContentInformation> specifications, final String parentId, final String path, boolean exactPath){
     specifications = specifications.and(toSpecification(parentId, path, exactPath));
     return specifications;
   }
 
-  public static Specification<ContentInformation> toSpecification(final Long parentId, final String path, final boolean exactPath){
+  public static Specification<ContentInformation> toSpecification(final String parentId, final String path, final boolean exactPath){
 //
 //    ExampleMatcher m = ExampleMatcher.matching().withMatcher("tst1234", ExampleMatcher.GenericPropertyMatchers.endsWith());
 //        Example<DataResource> ex = Example.of(DataResource.factoryDataResourceWithDoi("test123"), m);
 
-    
     return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
       Join<ContentInformation, DataResource> joinOptions = root.join("parentResource");
 
       Path<DataResource> p = root.get("parentResource");
-      Path<Long> pid = p.get("id");
+      Path<String> pid = p.get("resourceIdentifier");
 
       if(!exactPath){
         return builder.and(builder.equal(pid, parentId), builder.like(root.get("relativePath"), path));

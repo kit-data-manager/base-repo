@@ -66,17 +66,17 @@ public class ContentInformationTest{
 
   @Test
   public void testCreateTemplate(){
-    ContentInformation info = ContentInformation.createContentInformation(1l, "folder/file.txt", "testing");
+    ContentInformation info = ContentInformation.createContentInformation("1", "folder/file.txt", "testing");
     Assert.assertNotNull(info.getParentResource());
-    Assert.assertEquals(Long.valueOf(1l), info.getParentResource().getId());
+    Assert.assertEquals("1", info.getParentResource().getResourceIdentifier());
     Assert.assertEquals("folder/file.txt", info.getRelativePath());
     Assert.assertFalse(info.getTags().isEmpty());
     Assert.assertEquals("testing", info.getTags().toArray(new String[]{})[0]);
 
-    info = ContentInformation.createContentInformation(1l, "folder/file.txt", (String[]) null);
+    info = ContentInformation.createContentInformation("1", "folder/file.txt", (String[]) null);
     Assert.assertTrue(info.getTags().isEmpty());
 
-    info = ContentInformation.createContentInformation(1l, "folder/file.txt", (String) null);
+    info = ContentInformation.createContentInformation("1", "folder/file.txt", (String) null);
     Assert.assertTrue(info.getTags().isEmpty());
   }
 
@@ -88,7 +88,7 @@ public class ContentInformationTest{
 
   @Test(expected = NullPointerException.class)
   public void testCreateTemplateWithNullPath(){
-    ContentInformation info = ContentInformation.createContentInformation(1l, null);
+    ContentInformation info = ContentInformation.createContentInformation("1", null);
     Assert.fail("Content information " + info + " should not have been created.");
   }
 

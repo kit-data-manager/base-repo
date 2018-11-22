@@ -1,6 +1,6 @@
 # KIT Data Manager - Base Repository Service
 
-This project contains repository service microservice for the KIT DM infrastructure. The service provides
+This project contains the repository service microservice for the KIT DM infrastructure. The service provides
 data resource management, e.g. register DataCite-oriented metadata and upload/download content to data resources.
 
 ## How to build

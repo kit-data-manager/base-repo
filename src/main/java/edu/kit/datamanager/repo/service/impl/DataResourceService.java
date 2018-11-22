@@ -41,6 +41,7 @@ import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import edu.kit.datamanager.util.PatchUtil;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -53,6 +54,7 @@ import java.util.UUID;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.apache.commons.collections4.ListUtils;
+import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
@@ -383,9 +385,9 @@ public class DataResourceService implements IDataResourceService{
       throw new ResourceAlreadyExistException("There is at least one resource with one of the following identifiers: " + identifierListAfter);
     }
     logger.trace("No identifier conflict detected. Persisting resource.");
-   // AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
+    //AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
     getDao().save(updated);
-    //AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
+    // AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
 
     logger.trace("Sending UPDATE event.");
     messagingService.send(DataResourceMessage.factoryUpdateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));

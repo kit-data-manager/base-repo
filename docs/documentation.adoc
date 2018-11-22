@@ -1,0 +1,29 @@
+= My REST API
+v{version}, Tom Hombergs, {date}
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:highlightjs-theme: github
+:toc: left
+:toclevels: 3
+:sectlinks:
+:sectnums:
+
+[introduction]
+== Introduction
+... some warm introductory words... .
+
+== Creating a Project
+
+=== Example Request
+
+include::{snippets}/test-create-resource/curl-request.adoc[]
+
+include::{snippets}/test-create-resource/http-request.adoc[]
+
+include::{snippets}/test-create-resource/http-response.adoc[]
+
+include::{snippets}/test-create-resource/request-body.adoc[]
+
+include::{snippets}/test-create-resource/response-body.adoc[]
+

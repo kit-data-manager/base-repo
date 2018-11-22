@@ -1,3 +1,6 @@
+
+import java.text.SimpleDateFormat
+
 buildscript {
    repositories { 
       mavenLocal() 
@@ -18,6 +21,7 @@ plugins {
    //id "org.ajoberstar.grgit" version "2.0.1"
    // id "com.github.spotbugs" version "1.6.1"
    id "com.jfrog.bintray" version "1.7.3"
+   id "org.asciidoctor.convert" version "1.5.3"
 }
 
 apply plugin: 'java'
@@ -59,12 +63,11 @@ dependencies {
    //compile("org.springframework.boot:spring-boot-starter-amqp")
    compile("org.springframework.boot:spring-boot-starter-data-rest")
    compile("org.javers:javers-spring-boot-starter-sql:3.9.0")
-
    //compile("io.springfox:springfox-swagger2:2.9.0")
    compile("io.springfox:springfox-swagger-ui:2.9.0")
    
    compile("edu.kit.datamanager:service-base:0.1")
-  // compile("edu.kit.datamanager:generic-message-consumer:0.1.0")
+   // compile("edu.kit.datamanager:generic-message-consumer:0.1.0")
 
    compile("com.monitorjbl:spring-json-view:0.16")
    compile("org.postgresql:postgresql:42.2.1")
@@ -81,12 +84,41 @@ dependencies {
    testCompile("org.mockito:mockito-core:2.8.9")
    testCompile("org.powermock:powermock-module-junit4:1.7.4")
    testCompile("org.powermock:powermock-api-mockito2:1.7.4")
+   testCompile('org.springframework.restdocs:spring-restdocs-mockmvc:2.0.2.RELEASE')
+   
+   testCompile('org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2')
+   asciidoctor('org.springframework.restdocs:spring-restdocs-asciidoctor:2.0.2.RELEASE')
 }
 
+ext {
+   snippetsDir = file("build/generated-snippets")
+}
+
+test { 
+   outputs.dir snippetsDir
+}
+
+
+asciidoctor {
+   attributes "snippets": snippetsDir,
+            "version": version,
+            "date": new SimpleDateFormat("yyyy-MM-dd").format(new Date())
+   inputs.dir snippetsDir
+   dependsOn test  
+   sourceDir "docs/"
+   outputDir "build/docs"
+}
 
 jacocoTestReport {
    reports {
       xml.enabled true
       html.enabled true
+   }
+   
+   bootJar {
+      dependsOn asciidoctor
+      from ("${asciidoctor.outputDir}/html5") {
+         into 'static/docs'
+      }
    }
 }

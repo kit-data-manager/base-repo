@@ -21,7 +21,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
-import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -340,7 +339,7 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = new ObjectMapper();
 
     String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json-patch+json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
 
     Assert.assertNotNull(location);
 
@@ -359,7 +358,7 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
     String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json-patch+json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
 
     Assert.assertNotNull(location);
 
@@ -378,7 +377,7 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
     this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json-patch+json").content(mapper.writeValueAsString(resource))).andExpect(status().isBadRequest());
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isBadRequest());
   }
 
   @Test
@@ -391,7 +390,7 @@ public class DataResourceControllerTest{
     mapper.registerModule(new JavaTimeModule());
 
     String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json-patch+json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
 
     Assert.assertNotNull(location);
 
@@ -786,7 +785,7 @@ public class DataResourceControllerTest{
 
   @Test
   public void testPatchAlternateDuplicateIdentifier() throws Exception{
-    
+
     //first, add identifier to otherResource...
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getResourceIdentifier()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");

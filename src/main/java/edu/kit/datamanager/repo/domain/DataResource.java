@@ -157,6 +157,7 @@ public class DataResource implements EtagSupport, Serializable{
 
   @ApiModelProperty(value = "One or more alternate identifiers the can be used to identify the resources in addition to the primary identifier.", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private Set<Identifier> alternateIdentifiers = new HashSet<>();
 
   @ApiModelProperty(value = "Unstructured size information about the resource or its contents.", example = "15 files, 10 page, 100 bytes", required = false)
@@ -201,6 +202,7 @@ public class DataResource implements EtagSupport, Serializable{
 
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @SecureUpdate({"ROLE_ADMINISTRATOR", "PERMISSION_ADMINISTRATE"})
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private Set<AclEntry> acls = new HashSet<>();
 
   public static DataResource factoryNewDataResource(){
@@ -233,6 +235,7 @@ public class DataResource implements EtagSupport, Serializable{
   }
 
   @Override
+  @JsonIgnore
   public String getEtag(){
     return Integer.toString(hashCode());
   }

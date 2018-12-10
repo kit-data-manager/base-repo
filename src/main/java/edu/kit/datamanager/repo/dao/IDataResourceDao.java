@@ -29,12 +29,12 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
  *
  * @author jejkal
  */
-public interface IDataResourceDao extends JpaRepository<DataResource, Long>, JpaSpecificationExecutor<DataResource>{
+public interface IDataResourceDao extends JpaRepository<DataResource, String>, JpaSpecificationExecutor<DataResource>{
 
-  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, PERMISSION permission);
+   public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, PERMISSION permission);
 
   public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, PERMISSION permission, Pageable pgbl);
 
-  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(Long id, List<String> sids, PERMISSION permission);
+  public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(String id, List<String> sids, PERMISSION permission);
 
 }

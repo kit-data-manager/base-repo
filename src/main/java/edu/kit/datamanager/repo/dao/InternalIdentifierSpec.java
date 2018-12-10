@@ -15,14 +15,10 @@
  */
 package edu.kit.datamanager.repo.dao;
 
-import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.repo.domain.DataResource;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
-import org.datacite.schema.kernel_4.Resource;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
@@ -41,7 +37,7 @@ public class InternalIdentifierSpec{
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
-      return builder.and(root.get("resourceIdentifier").in((Object[]) identifier));
+      return builder.and(root.get("id").in((Object[]) identifier));
     };
   }
 }

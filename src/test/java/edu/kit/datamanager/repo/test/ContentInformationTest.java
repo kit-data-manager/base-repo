@@ -56,7 +56,7 @@ public class ContentInformationTest{
     Assert.assertEquals(1, info.getMetadata().size());
     Assert.assertEquals("a file", info.getMetadata().get("type"));
     Assert.assertNotNull(info.getParentResource());
-    Assert.assertEquals(parentResource.getResourceIdentifier(), info.getParentResource().getResourceIdentifier());
+    Assert.assertEquals(parentResource.getId(), info.getParentResource().getId());
     Assert.assertNotNull(info.getTags());
     Assert.assertEquals(2, info.getTags().size());
     Assert.assertEquals("data/myfile.txt", info.getRelativePath());
@@ -68,7 +68,7 @@ public class ContentInformationTest{
   public void testCreateTemplate(){
     ContentInformation info = ContentInformation.createContentInformation("1", "folder/file.txt", "testing");
     Assert.assertNotNull(info.getParentResource());
-    Assert.assertEquals("1", info.getParentResource().getResourceIdentifier());
+    Assert.assertEquals("1", info.getParentResource().getId());
     Assert.assertEquals("folder/file.txt", info.getRelativePath());
     Assert.assertFalse(info.getTags().isEmpty());
     Assert.assertEquals("testing", info.getTags().toArray(new String[]{})[0]);

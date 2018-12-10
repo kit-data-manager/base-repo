@@ -109,16 +109,15 @@ asciidoctor {
    outputDir "build/docs"
 }
 
-jacocoTestReport {
-   reports {
-      xml.enabled true
-      html.enabled true
-   }
-   
-   bootJar {
+ bootJar {
       dependsOn asciidoctor
       from ("${asciidoctor.outputDir}/html5") {
          into 'static/docs'
       }
    }
-}
+   
+jacocoTestReport {
+   reports {
+      xml.enabled true
+      html.enabled true
+   }}

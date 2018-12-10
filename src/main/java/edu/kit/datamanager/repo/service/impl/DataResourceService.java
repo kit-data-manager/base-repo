@@ -110,7 +110,7 @@ public class DataResourceService implements IDataResourceService{
             throw new BadArgumentException("Provided internal identifier must not be null.");
           }
           logger.debug("Setting resource identifier to provided internal identifier with value {}.", alt.getValue());
-          resource.setResourceIdentifier(alt.getValue());
+          resource.setId(alt.getValue());
           haveAlternateInternalIdentifier = true;
           break;
         }
@@ -120,23 +120,24 @@ public class DataResourceService implements IDataResourceService{
         String altId = UUID.randomUUID().toString();
         logger.debug("No primary identifier assigned to resource and no alternate identifier of type INTERNAL was found. Assigning alternate INTERNAL identifier {}.", altId);
         resource.getAlternateIdentifiers().add(Identifier.factoryInternalIdentifier(altId));
-        resource.setResourceIdentifier(altId);
+        resource.setId(altId);
       }
     } else{
       logger.debug("Primary identifier found. Setting resource identifier to primary identifier {}.", resource.getIdentifier().getValue());
-      resource.setResourceIdentifier(resource.getIdentifier().getValue());
-    }
+      resource.setId(resource.getIdentifier().getValue());
+     
+      //assure that externally provided identifier has correct type
+      resource.getIdentifier().setIdentifierType(Identifier.IDENTIFIER_TYPE.DOI);
 
-    logger.trace("Checking for existing resource with identifier {}.", resource.getResourceIdentifier());
+    }
+    logger.trace("Checking for existing resource with identifier {}.", resource.getId());
     //check resource by identifier
-    long cnt = getDao().count(PrimaryIdentifierSpec.toSpecification(resource.getResourceIdentifier()).or(AlternateIdentifierSpec.toSpecification(resource.getResourceIdentifier()).or(InternalIdentifierSpec.toSpecification(resource.getResourceIdentifier()))));
-    logger.trace("Found {} existing resources conflicting with provided identifier {}.", cnt, resource.getResourceIdentifier());
-
+    long cnt = getDao().count(PrimaryIdentifierSpec.toSpecification(resource.getId()).or(AlternateIdentifierSpec.toSpecification(resource.getId()).or(InternalIdentifierSpec.toSpecification(resource.getId()))));
+    logger.trace("Found {} existing resources conflicting with provided identifier {}.", cnt, resource.getId());
     if(cnt != 0){
-      logger.error("Number of conflicting identifiers with identifier {} is neq 0. Throwing ResourceAlreadyExistException.", resource.getResourceIdentifier());
-      throw new ResourceAlreadyExistException("There is already a resource with identifier " + resource.getResourceIdentifier());
+      logger.error("Number of conflicting identifiers with identifier {} is neq 0. Throwing ResourceAlreadyExistException.", resource.getId());
+      throw new ResourceAlreadyExistException("There is already a resource with identifier " + resource.getId());
     }
-
     logger.trace("Checking for mandatory element 'titles'.");
     if(resource.getTitles().isEmpty()){
       logger.error("No titles found. Throwing BadArgumentException.");
@@ -202,7 +203,6 @@ public class DataResourceService implements IDataResourceService{
       //make sure at least the caller has administrate permissions
       callerEntry.setPermission(PERMISSION.ADMINISTRATE);
     }
-
     logger.trace("Checking for creation date.");
     boolean haveCreationDate = false;
     for(edu.kit.datamanager.repo.domain.Date d : resource.getDates()){
@@ -229,6 +229,7 @@ public class DataResourceService implements IDataResourceService{
     } else{
       logger.trace("Resource state found. State is: {}", resource.getState());
     }
+
     logger.trace("Persisting created resource.");
     resource = getDao().save(resource);
 
@@ -239,7 +240,7 @@ public class DataResourceService implements IDataResourceService{
 
   @Override
   @Transactional(readOnly = true)
-  public DataResource findById(final Long id){
+  public DataResource findById(final String id){
     logger.trace("Performing findById({}).", id);
     Optional<DataResource> result = getDao().findById(id);
 
@@ -287,8 +288,7 @@ public class DataResourceService implements IDataResourceService{
       logger.trace("Non-Administrator access detected. Calling findAllFiltered({}, {}, {}, {}, {}).", example, callerIdentities, PERMISSION.READ, pgbl, Boolean.FALSE);
       page = findAllFiltered(example, callerIdentities, PERMISSION.READ, pgbl, false);
     }
-    logger.trace("Sending UPDATE ACL event.");
-    messagingService.send(DataResourceMessage.factoryUpdateMessage(1l, AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
+
     logger.trace("Returning page content.");
     return page;
   }
@@ -373,7 +373,7 @@ public class DataResourceService implements IDataResourceService{
 
     String[] afterList = identifierListAfter.toArray(new String[]{});
     long cnt = getDao().count(PrimaryIdentifierSpec.toSpecification(afterList).or(AlternateIdentifierSpec.toSpecification(afterList).or(InternalIdentifierSpec.toSpecification(afterList))));
-    logger.trace("Found {} existing resources conflicting with patched identifier {}.", cnt, resource.getResourceIdentifier());
+    logger.trace("Found {} existing resources conflicting with patched identifier {}.", cnt, resource.getId());
     if(cnt > 0){
       logger.error("Number of conflicting identifiers with identifiers {} is neq 0. Throwing ResourceAlreadyExistException.", identifierListAfter);
       throw new ResourceAlreadyExistException("There is at least one resource with one of the following identifiers: " + identifierListAfter);

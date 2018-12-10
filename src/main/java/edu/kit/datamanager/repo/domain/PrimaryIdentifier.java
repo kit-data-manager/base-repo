@@ -19,8 +19,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.Identifier;
-import edu.kit.datamanager.util.EnumUtils;
-import java.util.Objects;
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

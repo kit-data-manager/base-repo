@@ -119,28 +119,27 @@ public class DataResourceController implements IDataResourceController{
   @Override
   public ResponseEntity<DataResource> create(@RequestBody DataResource resource, WebRequest request, final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
-
     DataResource result = dataResourceService.create(resource,
             (String) AuthenticationHelper.getAuthentication().getPrincipal(),
             AuthenticationHelper.getFirstname(),
             AuthenticationHelper.getLastname());
     try{
-      LOGGER.trace("Creating controller link for resource identifier {}.", result.getResourceIdentifier());
+      LOGGER.trace("Creating controller link for resource identifier {}.", result.getId());
       //do some hacking in order to properly escape the resource identifier
       //if escaping in beforehand, ControllerLinkBuilder will escape again, which invalidated the link
       String uriLink = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", request, response)).toString();
       //replace placeholder with escaped identifier in order to ensure single-escaping
-      uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getResourceIdentifier(), "UTF-8"));
+      uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getId(), "UTF-8"));
       LOGGER.trace("Created resource link is: {}", uriLink);
       return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").body(result);
     } catch(UnsupportedEncodingException ex){
-      LOGGER.error("Failed to encode resource identifier " + result.getResourceIdentifier() + ".", ex);
-      throw new CustomInternalServerError("Failed to decode resource identifier " + result.getResourceIdentifier() + ", but resource has been created.");
+      LOGGER.error("Failed to encode resource identifier " + result.getId() + ".", ex);
+      throw new CustomInternalServerError("Failed to decode resource identifier " + result.getId() + ", but resource has been created.");
     }
   }
 
   @Override
-  public ResponseEntity<DataResource> getById(@PathVariable("id") final String identifier, WebRequest request, final HttpServletResponse response){
+  public ResponseEntity<DataResource> getById(@PathVariable("id") final String identifier, WebRequest request, final HttpServletResponse response){ 
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, request, response)).toString();
     });
@@ -230,9 +229,7 @@ public class DataResourceController implements IDataResourceController{
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
     ControllerUtils.checkAnonymousAccess();
-
     String path = getContentPathFromRequest(request);
-
     //@TODO escape path properly
     if(path == null || path.endsWith("/")){
       throw new BadArgumentException("Provided path is invalid. Path must not be empty and must not end with a slash.");
@@ -244,7 +241,7 @@ public class DataResourceController implements IDataResourceController{
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
-    URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(resource.getResourceIdentifier(), PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
+    URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(resource.getId(), PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
 
     try{
       contentInformationService.create(contentInformation, resource, path, (file != null) ? file.getInputStream() : null, force);
@@ -291,15 +288,15 @@ public class DataResourceController implements IDataResourceController{
 
       PageRequest pageRequest = ControllerUtils.checkPaginationInformation(pgbl, pgbl.getSort().equals(Sort.unsorted()) ? Sort.by(Sort.Order.asc("depth"), Sort.Order.asc("relativePath")) : pgbl.getSort());
 
-      LOGGER.trace("Obtaining content information page for parent resource {}, path {} and tag {}. Page information are: {}", resource.getResourceIdentifier(), path, tag, pageRequest);
-      Page<ContentInformation> resultList = contentInformationService.findAll(ContentInformation.createContentInformation(resource.getResourceIdentifier(), path, tag), pageRequest);
+      LOGGER.trace("Obtaining content information page for parent resource {}, path {} and tag {}. Page information are: {}", resource.getId(), path, tag, pageRequest);
+      Page<ContentInformation> resultList = contentInformationService.findAll(ContentInformation.createContentInformation(resource.getId(), path, tag), pageRequest);
 
       LOGGER.trace("Obtained {} content information result(s).", resultList.getContent().size());
       filterAndAutoReturnContentInformation(resultList.getContent());
       return ResponseEntity.ok().build();
     } else{
       LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
-      ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getResourceIdentifier(), path);
+      ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path);
       filterAndAutoReturnContentInformation(contentInformation);
       LOGGER.trace("Obtained single content information result.");
       return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
@@ -320,9 +317,9 @@ public class DataResourceController implements IDataResourceController{
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
-    LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getResourceIdentifier());
+    LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getId());
     //try to obtain single content element matching path exactly
-    ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getResourceIdentifier(), path);
+    ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path);
     //obtain data uri and check for content to exist
     String dataUri = contentInformation.getContentUri();
     URI uri = URI.create(dataUri);
@@ -357,7 +354,7 @@ public class DataResourceController implements IDataResourceController{
 
     ControllerUtils.checkEtag(request, resource);
 
-    ContentInformation toUpdate = contentInformationService.getContentInformation(resource.getResourceIdentifier(), path);
+    ContentInformation toUpdate = contentInformationService.getContentInformation(resource.getId(), path);
 
     contentInformationService.patch(toUpdate, patch, getUserAuthorities(resource));
 
@@ -381,7 +378,7 @@ public class DataResourceController implements IDataResourceController{
     ControllerUtils.checkEtag(request, resource);
 
     //try to obtain single content element matching path exactly
-    Page<ContentInformation> contentInfoOptional = contentInformationService.findAll(ContentInformation.createContentInformation(resource.getResourceIdentifier(), path), PageRequest.of(0, 1));
+    Page<ContentInformation> contentInfoOptional = contentInformationService.findAll(ContentInformation.createContentInformation(resource.getId(), path), PageRequest.of(0, 1));
     if(contentInfoOptional.hasContent()){
       LOGGER.debug("Content information entry found. Checking ETag.");
 
@@ -415,17 +412,6 @@ public class DataResourceController implements IDataResourceController{
   }
 
   private DataResource getResourceByIdentifierOrRedirect(String identifier, Function<String, String> supplier){
-    //try to get resource with provided identifier
-    try{
-      long id = Long.parseLong(identifier);
-      LOGGER.trace("Numerical resource identifier: {}", id);
-      DataResource resource = dataResourceService.findById(id);
-      LOGGER.trace("Resource for identifier {} matching. Returning resource #{}.", id, resource.getId());
-      return resource;
-    } catch(NumberFormatException ex){
-      //no numerical identifier, continue
-    }
-
     String decodedIdentifier;
     try{
       LOGGER.trace("Performing getResourceByIdentifierOrRedirect({}, #Function).", identifier);
@@ -437,7 +423,7 @@ public class DataResourceController implements IDataResourceController{
     LOGGER.trace("Decoded resource identifier: {}", decodedIdentifier);
     DataResource resource = dataResourceService.findByAnyIdentifier(decodedIdentifier);
     //check if resource was found by resource identifier 
-    if(Objects.equal(decodedIdentifier, resource.getResourceIdentifier())){
+    if(Objects.equal(decodedIdentifier, resource.getId())){
       //resource was found by resource identifier...return and proceed
       LOGGER.trace("Resource for identifier {} found. Returning resource #{}.", decodedIdentifier, resource.getId());
       return resource;
@@ -445,10 +431,10 @@ public class DataResourceController implements IDataResourceController{
     //resource was found by another identifier...redirect
     String encodedIdentifier;
     try{
-      encodedIdentifier = URLEncoder.encode(resource.getResourceIdentifier(), "UTF-8");
+      encodedIdentifier = URLEncoder.encode(resource.getId(), "UTF-8");
     } catch(UnsupportedEncodingException ex){
-      LOGGER.error("Failed to encode resource identifier " + resource.getResourceIdentifier() + ".", ex);
-      throw new CustomInternalServerError("Failed to encode resource identifier " + resource.getResourceIdentifier() + ".");
+      LOGGER.error("Failed to encode resource identifier " + resource.getId() + ".", ex);
+      throw new CustomInternalServerError("Failed to encode resource identifier " + resource.getId() + ".");
     }
     LOGGER.trace("No resource for identifier {} found. Redirecting to resource with identifier {}.", identifier, encodedIdentifier);
     throw new ResourceElsewhereException(supplier.apply(encodedIdentifier));

@@ -43,8 +43,6 @@ import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
@@ -85,22 +83,17 @@ public class DataResource implements EtagSupport, Serializable{
     }
   }
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @SecureUpdate({"FORBIDDEN"})
-  @Searchable
-  private Long id;
   //mandatory
   @ApiModelProperty(required = true)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private PrimaryIdentifier identifier;
 
   //The internal resource identifier assigned once during creation
-  
+  @Id
   @ApiModelProperty(hidden = true)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
-  private String resourceIdentifier = null;
+  private String id = null;
 
   //vocab
   @ApiModelProperty(required = true)
@@ -216,7 +209,7 @@ public class DataResource implements EtagSupport, Serializable{
     result.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier());
     Identifier internal = Identifier.factoryInternalIdentifier();
     result.getAlternateIdentifiers().add(internal);
-    result.resourceIdentifier = internal.getValue();
+    result.id = internal.getValue();
     return result;
   }
 
@@ -225,7 +218,7 @@ public class DataResource implements EtagSupport, Serializable{
     result.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(doi));
     Identifier internal = Identifier.factoryInternalIdentifier(doi);
     result.getAlternateIdentifiers().add(internal);
-    result.resourceIdentifier = internal.getValue();
+    result.id = internal.getValue();
     return result;
   }
 
@@ -236,7 +229,7 @@ public class DataResource implements EtagSupport, Serializable{
     DataResource result = new DataResource();
     result.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier());
     result.getAlternateIdentifiers().add(Identifier.factoryInternalIdentifier(internalIdentifier));
-    result.resourceIdentifier = internalIdentifier;
+    result.id = internalIdentifier;
     return result;
   }
 
@@ -257,7 +250,6 @@ public class DataResource implements EtagSupport, Serializable{
     int hash = 5;
     hash = 41 * hash + Objects.hashCode(this.id);
     hash = 41 * hash + Objects.hashCode(this.identifier);
-    hash = 41 * hash + Objects.hashCode(this.resourceIdentifier);
     hash = 41 * hash + Objects.hashCode(this.creators);
     hash = 41 * hash + Objects.hashCode(this.titles);
     hash = 41 * hash + Objects.hashCode(this.publisher);
@@ -294,9 +286,7 @@ public class DataResource implements EtagSupport, Serializable{
       return false;
     }
     final DataResource other = (DataResource) obj;
-    if(!Objects.equals(this.resourceIdentifier, other.resourceIdentifier)){
-      return false;
-    }
+   
     if(!Objects.equals(this.publisher, other.publisher)){
       return false;
     }

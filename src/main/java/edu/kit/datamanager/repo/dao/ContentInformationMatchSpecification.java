@@ -46,7 +46,7 @@ public class ContentInformationMatchSpecification{
       Join<ContentInformation, DataResource> joinOptions = root.join("parentResource");
 
       Path<DataResource> p = root.get("parentResource");
-      Path<String> pid = p.get("resourceIdentifier");
+      Path<String> pid = p.get("id");
 
       if(!exactPath){
         return builder.and(builder.equal(pid, parentId), builder.like(root.get("relativePath"), path));

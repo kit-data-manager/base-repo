@@ -128,7 +128,7 @@ public class DataResourceServiceTest{
     Assert.assertEquals("testDoi", resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getValue());
     Assert.assertEquals(Identifier.IDENTIFIER_TYPE.INTERNAL, resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getIdentifierType());
 
-    Assert.assertEquals("testDoi", resource.getResourceIdentifier());
+    Assert.assertEquals("testDoi", resource.getId());
 
     //test without doi
     resource = createResourceWithoutDoi("internalId", "MyResource", "SimpleResource");
@@ -140,7 +140,7 @@ public class DataResourceServiceTest{
     Assert.assertEquals("internalId", resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getValue());
     Assert.assertEquals(Identifier.IDENTIFIER_TYPE.INTERNAL, resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getIdentifierType());
 
-    Assert.assertEquals("internalId", resource.getResourceIdentifier());
+    Assert.assertEquals("internalId", resource.getId());
 
     //test with null internal id
     resource = createResourceWithoutDoi("internalId", "MyResource", "SimpleResource");
@@ -163,7 +163,7 @@ public class DataResourceServiceTest{
     String internalIdentifier = resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getValue();
     Assert.assertEquals(Identifier.IDENTIFIER_TYPE.INTERNAL, resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getIdentifierType());
 
-    Assert.assertEquals(internalIdentifier, resource.getResourceIdentifier());
+    Assert.assertEquals(internalIdentifier, resource.getId());
   }
 
   @Test(expected = ResourceAlreadyExistException.class)

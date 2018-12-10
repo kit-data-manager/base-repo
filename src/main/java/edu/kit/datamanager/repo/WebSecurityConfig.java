@@ -82,8 +82,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
     httpSecurity.
             authorizeRequests().
             antMatchers("/api/v1").authenticated();
+   
     http.headers().cacheControl().disable();
-
   }
 
   @Bean
@@ -113,7 +113,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
     final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     CorsConfiguration config = new CorsConfiguration();
     config.setAllowCredentials(true);
-    config.addAllowedOrigin("http://localhost:3000"); // @Value: http://localhost:8080
+    config.addAllowedOrigin("*"); // @Value: http://localhost:8080
     config.addAllowedHeader("*");
     config.addAllowedMethod("*");
     config.addExposedHeader("Content-Range");

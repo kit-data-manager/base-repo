@@ -86,7 +86,7 @@ public class ContentInformation implements Serializable{
     }
 
     DataResource res = new DataResource();
-    res.setResourceIdentifier(parentId);
+    res.setId(parentId);
     result.setParentResource(res);
     return result;
   }

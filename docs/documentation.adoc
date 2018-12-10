@@ -17,13 +17,134 @@ v{version}, Tom Hombergs, {date}
 
 === Example Request
 
-include::{snippets}/test-create-resource/curl-request.adoc[]
+The creation: 
 
-include::{snippets}/test-create-resource/http-request.adoc[]
+include::{snippets}/create-resource/curl-request.adoc[]
 
-include::{snippets}/test-create-resource/http-response.adoc[]
+include::{snippets}/create-resource/http-request.adoc[]
 
-include::{snippets}/test-create-resource/request-body.adoc[]
+include::{snippets}/create-resource/http-response.adoc[]
 
-include::{snippets}/test-create-resource/response-body.adoc[]
+And now the get:
 
+include::{snippets}/get-resource/curl-request.adoc[]
+
+include::{snippets}/get-resource/http-request.adoc[]
+
+include::{snippets}/get-resource/http-response.adoc[]
+
+Let's change:
+
+include::{snippets}/patch-resource/curl-request.adoc[]
+
+include::{snippets}/patch-resource/http-request.adoc[]
+
+include::{snippets}/patch-resource/http-response.adoc[]
+
+What did we do:
+
+include::{snippets}/get-patched-resource/curl-request.adoc[]
+
+include::{snippets}/get-patched-resource/http-request.adoc[]
+
+include::{snippets}/get-patched-resource/http-response.adoc[]
+
+
+Let's change more:
+
+include::{snippets}/patch-resource-complex/curl-request.adoc[]
+
+include::{snippets}/patch-resource-complex/http-request.adoc[]
+
+include::{snippets}/patch-resource-complex/http-response.adoc[]
+
+Woah, this works:
+
+include::{snippets}/get-patched-resource-complex/curl-request.adoc[]
+
+include::{snippets}/get-patched-resource-complex/http-request.adoc[]
+
+include::{snippets}/get-patched-resource-complex/http-response.adoc[]
+
+Just use this id to get stuff:
+
+include::{snippets}/get-resource-by-alt-id/curl-request.adoc[]
+
+include::{snippets}/get-resource-by-alt-id/http-request.adoc[]
+
+include::{snippets}/get-resource-by-alt-id/http-response.adoc[]
+
+Upload files:
+
+include::{snippets}/upload-file/curl-request.adoc[]
+
+include::{snippets}/upload-file/http-request.adoc[]
+
+include::{snippets}/upload-file/http-response.adoc[]
+
+Learn about the file:
+
+include::{snippets}/get-content-metadata/curl-request.adoc[]
+
+include::{snippets}/get-content-metadata/http-request.adoc[]
+
+include::{snippets}/get-content-metadata/http-response.adoc[]
+
+Upload files with some metadata:
+
+include::{snippets}/upload-file-with-metadata/curl-request.adoc[]
+
+include::{snippets}/upload-file-with-metadata/http-request.adoc[]
+
+include::{snippets}/upload-file-with-metadata/http-response.adoc[]
+
+
+Upload files as reference:
+
+include::{snippets}/upload-file-with-reference/curl-request.adoc[]
+
+include::{snippets}/upload-file-with-reference/http-request.adoc[]
+
+include::{snippets}/upload-file-with-reference/http-response.adoc[]
+
+Learn about the file:
+
+include::{snippets}/get-content-metadata/curl-request.adoc[]
+
+include::{snippets}/get-content-metadata/http-request.adoc[]
+
+include::{snippets}/get-content-metadata/http-response.adoc[]
+
+Get the file:
+
+include::{snippets}/download-file/curl-request.adoc[]
+
+include::{snippets}/download-file/http-request.adoc[]
+
+include::{snippets}/download-file/http-response.adoc[]
+
+
+List all of them:
+
+include::{snippets}/get-content-listing/curl-request.adoc[]
+
+include::{snippets}/get-content-listing/http-request.adoc[]
+
+include::{snippets}/get-content-listing/http-response.adoc[]
+
+
+Let's forget:
+
+include::{snippets}/delete-resource/curl-request.adoc[]
+
+include::{snippets}/delete-resource/http-request.adoc[]
+
+include::{snippets}/delete-resource/http-response.adoc[]
+
+Never forget:
+
+include::{snippets}/get-deleted-resource/curl-request.adoc[]
+
+include::{snippets}/get-deleted-resource/http-request.adoc[]
+
+include::{snippets}/get-deleted-resource/http-response.adoc[]

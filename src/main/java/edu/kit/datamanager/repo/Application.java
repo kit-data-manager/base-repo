@@ -75,7 +75,7 @@ public class Application{
   @Bean(name = "OBJECT_MAPPER_BEAN")
   public ObjectMapper jsonObjectMapper(){
     return Jackson2ObjectMapperBuilder.json()
-            .serializationInclusion(JsonInclude.Include.NON_NULL) // Don’t include null values
+            .serializationInclusion(JsonInclude.Include.NON_EMPTY) // Don’t include null values
             .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS) //ISODate
             .modules(new JavaTimeModule())
             .build();
@@ -90,6 +90,7 @@ public class Application{
 //      }
 //    };
 //  }
+
   @Bean
   @Primary
   public RequestMappingHandlerAdapter adapter(){

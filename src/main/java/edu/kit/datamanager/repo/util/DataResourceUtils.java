@@ -141,13 +141,14 @@ public class DataResourceUtils{
       return PERMISSION.ADMINISTRATE;
     }
 
-    //quick check for service roles
+    //check for service roles
+    PERMISSION servicePermission = PERMISSION.NONE;
     if(AuthenticationHelper.hasAuthority(RepoServiceRole.SERVICE_ADMINISTRATOR.getValue())){
-      return PERMISSION.ADMINISTRATE;
+      servicePermission = PERMISSION.ADMINISTRATE;
     } else if(AuthenticationHelper.hasAuthority(RepoServiceRole.SERVICE_WRITE.getValue())){
-      return PERMISSION.WRITE;
+      servicePermission = PERMISSION.WRITE;
     } else if(AuthenticationHelper.hasAuthority(RepoServiceRole.SERVICE_READ.getValue())){
-      return PERMISSION.READ;
+      servicePermission = PERMISSION.READ;
     }
 
     //quick check for temporary roles
@@ -165,6 +166,12 @@ public class DataResourceUtils{
         }
       }
     }
+
+    //return service permission if higher, otherwise return maxPermission
+    if(servicePermission.atLeast(maxPermission)){
+      return servicePermission;
+    }
+
     return maxPermission;
   }
 

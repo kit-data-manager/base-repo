@@ -45,7 +45,7 @@ import lombok.Data;
 @Entity
 @ApiModel(description = "A data entry of a resource.")
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class Date{
 
   //Date types

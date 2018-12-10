@@ -54,6 +54,7 @@ public class Title{
       this.value = value;
     }
 
+    @Override
     public String getValue(){
       return value;
     }
@@ -72,7 +73,7 @@ public class Title{
   private TYPE titleType;
   @ApiModelProperty(value = "en", required = false)
   private String lang;
-
+ 
   public static Title createTitle(String value){
     Title t = new Title();
     t.value = value;

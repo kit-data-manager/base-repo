@@ -22,8 +22,10 @@ import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
 import edu.kit.datamanager.security.filter.NoopAuthenticationEventPublisher;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,6 +36,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 /**
  *
@@ -60,9 +65,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 
   @Override
   protected void configure(HttpSecurity http) throws Exception{
-    HttpSecurity httpSecurity = http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+    HttpSecurity httpSecurity = http .authorizeRequests()
+        .antMatchers(HttpMethod.OPTIONS, "/**").permitAll().and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .csrf().disable()
+            // .addFilterBefore(corsFilter(), SessionManagementFilter.class)
             .addFilterAfter(new JwtAuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class);
 
     if(!applicationProperties.isAuthEnabled()){
@@ -90,12 +97,58 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
   public void configure(WebSecurity web) throws Exception{
     web.httpFirewall(allowUrlEncodedSlashHttpFirewall());
   }
+
 //  @Bean
 //  CorsConfigurationSource corsConfigurationSource(){
 //    final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//    source.registerCorsConfiguration("/**", new CorsConfiguration().applyPermitDefaultValues());
+//    CorsConfiguration config = new CorsConfiguration();
+//    config.addAllowedOrigin("http://localhost:3000");
+//
+//    source.registerCorsConfiguration("/**", config);
 //    return source;
 //  }
+  
+  @Bean
+  public FilterRegistrationBean corsFilter() {
+    final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowCredentials(true);
+    config.addAllowedOrigin("http://localhost:3000"); // @Value: http://localhost:8080
+    config.addAllowedHeader("*");
+    config.addAllowedMethod("*");
+    config.addExposedHeader("Content-Range");
+    
+    source.registerCorsConfiguration("/**", config);
+    FilterRegistrationBean bean = new FilterRegistrationBean(new CorsFilter(source));
+    bean.setOrder(0);
+    return bean;
+  }
+  
+//  @Bean
+//  CorsConfigurationSource corsConfigurationSource(){
+//    CorsConfiguration configuration = new CorsConfiguration();
+//    configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+//    configuration.setAllowedMethods(Arrays.asList("GET", "POST, PATCH, DELETE, OPTIONS, HEAD"));
+//    configuration.setAllowedHeaders(Arrays.asList("content-range", "authorization", "location"));
+//    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//    source.registerCorsConfiguration("/**", configuration);
+//    return source;
+//  }
+//  @Bean
+//  CorsFilter corsFilter(){
+//    CorsFilter filter = new CorsFilter();
+//    return filter;
+//  }
+
+//  @Bean
+//    public WebMvcConfigurer corsConfigurer() {
+//        return new WebMvcConfigurerAdapter() {
+//            @Override
+//            public void addCorsMappings(CorsRegistry registry) {
+//                registry.addMapping("/greeting-javaconfig").allowedOrigins("http://localhost:9000");
+//            }
+//        };
+//    }
 //  @Bean
 //  public UserRepositoryImpl userRepositoryImpl(){
 //    return new UserRepositoryImpl();

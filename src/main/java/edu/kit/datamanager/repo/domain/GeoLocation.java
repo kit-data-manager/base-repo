@@ -20,12 +20,10 @@ import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import lombok.Data;
 

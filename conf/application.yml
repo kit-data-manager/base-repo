@@ -20,7 +20,7 @@ repo:
       enabled: false
    basepath:  file:///Users/jejkal/tmp 
    messaging:
-      enabled: true 
+      enabled: false 
       binding:
          exchange: repository_events
          queue: testQueue1

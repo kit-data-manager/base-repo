@@ -144,7 +144,6 @@ public class DataResourceController implements IDataResourceController{
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, request, response)).toString();
     });
-
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
     //filter resource if necessary and return it automatically
     filterAndAutoReturnResource(resource);
@@ -170,9 +169,12 @@ public class DataResourceController implements IDataResourceController{
             request);
 
     eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), request.getPageSize()));
+    //set content-range header for react-admin (index_start-index_end/total
+    int index_start = page.getNumber() * request.getPageSize();
+    int index_end = index_start + request.getPageSize();
 
+    response.addHeader("Content-Range", (index_start + "-" + index_end + "/" + page.getTotalElements()));
     filterAndAutoReturnResources(page.getContent());
-
     return ResponseEntity.ok().build();
   }
 
@@ -414,6 +416,16 @@ public class DataResourceController implements IDataResourceController{
 
   private DataResource getResourceByIdentifierOrRedirect(String identifier, Function<String, String> supplier){
     //try to get resource with provided identifier
+    try{
+      long id = Long.parseLong(identifier);
+      LOGGER.trace("Numerical resource identifier: {}", id);
+      DataResource resource = dataResourceService.findById(id);
+      LOGGER.trace("Resource for identifier {} matching. Returning resource #{}.", id, resource.getId());
+      return resource;
+    } catch(NumberFormatException ex){
+      //no numerical identifier, continue
+    }
+
     String decodedIdentifier;
     try{
       LOGGER.trace("Performing getResourceByIdentifierOrRedirect({}, #Function).", identifier);

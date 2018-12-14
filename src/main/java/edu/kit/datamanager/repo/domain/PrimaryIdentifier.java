@@ -18,31 +18,31 @@ package edu.kit.datamanager.repo.domain;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import edu.kit.datamanager.entities.Identifier;
-import javax.persistence.DiscriminatorValue;
+import io.swagger.annotations.ApiModelProperty;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 /**
  *
  * @author jejkal
  */
-@Entity(name = "PrimaryIdentifier")
-@DiscriminatorValue("PrimaryIdentifier")
+@Entity
 @Data
-@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PrimaryIdentifier extends Identifier{
+public class PrimaryIdentifier{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
+  @ApiModelProperty(value = "10.1234/foo", dataType = "String", required = true)
+  private String value;
+
+  private String identifierType = "DOI";
 
   public static PrimaryIdentifier factoryPrimaryIdentifier(){
     return factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER.getValue());
@@ -50,23 +50,12 @@ public class PrimaryIdentifier extends Identifier{
 
   public static PrimaryIdentifier factoryPrimaryIdentifier(String doiOrTbaConstant){
     PrimaryIdentifier result = new PrimaryIdentifier();
-    result.setIdentifierType(IDENTIFIER_TYPE.DOI);
     result.setValue(doiOrTbaConstant);
     return result;
   }
 
   public static PrimaryIdentifier factoryPrimaryIdentifier(UnknownInformationConstants unknownInformationConstant){
     return factoryPrimaryIdentifier(unknownInformationConstant.getValue());
-  }
-
-  @Override
-  public void setIdentifierType(IDENTIFIER_TYPE identifierType){
-    //does nothing as primary identifier is always doi
-  }
-
-  @Override
-  public IDENTIFIER_TYPE getIdentifierType(){
-    return IDENTIFIER_TYPE.DOI;
   }
 
   /**

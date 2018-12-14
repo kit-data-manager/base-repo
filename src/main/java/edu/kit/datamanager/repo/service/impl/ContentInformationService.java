@@ -20,8 +20,10 @@ import com.monitorjbl.json.JsonResult;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
+import edu.kit.datamanager.exceptions.FeatureNotImplementedException;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.ContentInformationMatchSpecification;
 import edu.kit.datamanager.repo.dao.ContentInformationTagSpecification;
@@ -316,5 +318,10 @@ public class ContentInformationService implements IContentInformationService{
   @Override
   public Health health(){
     return Health.up().withDetail("ContentInformation", dao.count()).build();
+  }
+
+  @Override
+  public ContentInformation put(ContentInformation c, ContentInformation c1, Collection<? extends GrantedAuthority> clctn) throws UpdateForbiddenException{
+    throw new FeatureNotImplementedException("PUT requests are not supported for this resource.");
   }
 }

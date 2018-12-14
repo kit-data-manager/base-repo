@@ -117,7 +117,9 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity<DataResource> create(@RequestBody DataResource resource, WebRequest request, final HttpServletResponse response){
+  public ResponseEntity<DataResource> create(@RequestBody DataResource resource,
+          final WebRequest request,
+          final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
     DataResource result = dataResourceService.create(resource,
             (String) AuthenticationHelper.getAuthentication().getPrincipal(),
@@ -139,7 +141,9 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity<DataResource> getById(@PathVariable("id") final String identifier, WebRequest request, final HttpServletResponse response){ 
+  public ResponseEntity<DataResource> getById(@PathVariable("id") final String identifier,
+          final WebRequest request,
+          final HttpServletResponse response){
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, request, response)).toString();
     });
@@ -151,14 +155,17 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity<List<DataResource>> findAll(Pageable pgbl, WebRequest request, final HttpServletResponse response, final UriComponentsBuilder uriBuilder){
+  public ResponseEntity<List<DataResource>> findAll(final Pageable pgbl,
+          final WebRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder uriBuilder){
     return findByExample(null, pgbl, request, response, uriBuilder);
   }
 
   @Override
   public ResponseEntity<List<DataResource>> findByExample(@RequestBody DataResource example,
-          Pageable pgbl,
-          WebRequest req,
+          final Pageable pgbl,
+          final WebRequest req,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
     PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
@@ -178,12 +185,15 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity patch(@PathVariable("id") final String identifier, @RequestBody JsonPatch patch, WebRequest request, final HttpServletResponse response){
+  public ResponseEntity patch(@PathVariable("id") final String identifier,
+          @RequestBody JsonPatch patch,
+          final WebRequest request,
+          final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
 
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patch(t, patch, request, response)).toString();
-    });//dataResourceService.findById(id);
+    });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
@@ -195,7 +205,29 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity delete(@PathVariable("id") final String identifier, WebRequest request, final HttpServletResponse response){
+  public ResponseEntity put(@PathVariable("id") final String identifier,
+          @RequestBody DataResource newResource,
+          final WebRequest request,
+          final HttpServletResponse response){
+    ControllerUtils.checkAnonymousAccess();
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
+    });
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
+
+    ControllerUtils.checkEtag(request, resource);
+    newResource.setId(resource.getId());
+
+    DataResource result = dataResourceService.put(resource, newResource, getUserAuthorities(resource));
+
+    //filter resource if necessary and return it automatically
+    filterAndAutoReturnResource(result);
+    //trigger response creation and set etag...the response body is set automatically
+    return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").body(result);
+  }
+
+  @Override
+  public ResponseEntity delete(@PathVariable("id") final String identifier, final WebRequest request, final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
 
     try{

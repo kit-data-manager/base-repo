@@ -16,6 +16,8 @@
 package edu.kit.datamanager.repo.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import edu.kit.datamanager.annotations.Searchable;
+import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.util.EnumUtils;
@@ -27,6 +29,9 @@ import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -35,12 +40,11 @@ import lombok.EqualsAndHashCode;
  *
  * @author jejkal
  */
-@Entity(name = "RelatedIdentifier")
-@DiscriminatorValue("RelatedIdentifier")
+@Entity()
 @Data
 @ApiModel(description = "A related identifier for a resource.")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RelatedIdentifier extends Identifier{
+public class RelatedIdentifier{
 
   public enum RELATION_TYPES implements BaseEnum{
     IS_CITED_BY("IsCitedBy"),
@@ -81,6 +85,14 @@ public class RelatedIdentifier extends Identifier{
     }
   }
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @SecureUpdate({"FORBIDDEN"})
+  @Searchable
+  private Long id;
+
+  @ApiModelProperty(value = "10.1234/foo", dataType = "String", required = true)
+  private String value;
   //vocab, e.g. IsMetadataFor...
   @ApiModelProperty(value = "Controlled vocabulary value describing the relation type, e.g. IS_PART_OF or IS_METADATA_FOR.", dataType = "String", required = true)
   @Enumerated(EnumType.STRING)

@@ -779,8 +779,7 @@ public class DataResourceControllerTest{
 
   @Test
   public void testPatchAlternateDuplicateIdentifier() throws Exception{
-
-    //first, add identifier to otherResource...
+   //first, add identifier to otherResource...
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
@@ -789,7 +788,7 @@ public class DataResourceControllerTest{
             "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers[0].value").value("will-be-duplicated"));
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers[1].value").value("will-be-duplicated"));
 
     //now change to sample resource and try to add identifier, too
     etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,

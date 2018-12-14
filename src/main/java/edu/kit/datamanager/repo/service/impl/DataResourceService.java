@@ -24,6 +24,7 @@ import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.repo.dao.AlternateIdentifierSpec;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.InternalIdentifierSpec;
@@ -97,10 +98,24 @@ public class DataResourceService implements IDataResourceService{
     logger.trace("Performing create({}, {}, {}, {}).", resource, callerPrincipal, callerFirstName, callerLastName);
 
     //check for provided DOI
-    if(resource.getIdentifier() == null || !resource.getIdentifier().hasDoi()){
+    boolean hasDoi = true;
+    if(resource.getIdentifier() == null){
+      hasDoi = false;
+    } else{
+      for(UnknownInformationConstants constant : UnknownInformationConstants.values()){
+        if(constant.getValue().equals(resource.getIdentifier().getValue())){
+          hasDoi = false;
+          break;
+        }
+      }
+    }
+
+    if(!hasDoi){
       logger.debug("No primary identifier assigned to resource. Using placeholder '{}'.", UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER);
       //set placeholder identifier
-      resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER));
+
+      //resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER));
+      resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER.getValue()));
       //check alternate identifiers for internal identifier
       boolean haveAlternateInternalIdentifier = false;
       for(Identifier alt : resource.getAlternateIdentifiers()){
@@ -125,10 +140,6 @@ public class DataResourceService implements IDataResourceService{
     } else{
       logger.debug("Primary identifier found. Setting resource identifier to primary identifier {}.", resource.getIdentifier().getValue());
       resource.setId(resource.getIdentifier().getValue());
-     
-      //assure that externally provided identifier has correct type
-      resource.getIdentifier().setIdentifierType(Identifier.IDENTIFIER_TYPE.DOI);
-
     }
     logger.trace("Checking for existing resource with identifier {}.", resource.getId());
     //check resource by identifier
@@ -352,39 +363,95 @@ public class DataResourceService implements IDataResourceService{
   @Transactional(readOnly = false)
   public void patch(DataResource resource, JsonPatch patch, Collection<? extends GrantedAuthority> userGrants){
     logger.trace("Performing patch({}, {}, {}).", "DataResource#" + resource.getId(), patch, userGrants);
-    List<String> identifierListBefore = new ArrayList<>();
-    identifierListBefore.add(resource.getIdentifier().getValue());
-    resource.getAlternateIdentifiers().forEach((alt) -> {
-      identifierListBefore.add(alt.getValue());
-    });
+
+    List<String> identifierListBefore = getUniqueIdentifiers(resource);
     logger.trace("Resource identifiers before patch: {}", identifierListBefore);
+
     DataResource updated = PatchUtil.applyPatch(resource, patch, DataResource.class, userGrants);
-
-    List<String> identifierListAfter = new ArrayList<>();
-    identifierListAfter.add(updated.getIdentifier().getValue());
-    updated.getAlternateIdentifiers().forEach((alt) -> {
-      identifierListAfter.add(alt.getValue());
-    });
+    List<String> identifierListAfter = getUniqueIdentifiers(updated);
     logger.trace("Resource identifiers after patch: {}", identifierListAfter);
-    identifierListAfter.removeAll(identifierListBefore);
-    logger.trace("New/updated resource identifiers: {}", identifierListAfter);
 
-    logger.trace("Patch successfully applied. Checking for conflicting identifiers.");
+    checkUniqueIdentifiers(identifierListBefore, identifierListAfter);
 
-    String[] afterList = identifierListAfter.toArray(new String[]{});
-    long cnt = getDao().count(PrimaryIdentifierSpec.toSpecification(afterList).or(AlternateIdentifierSpec.toSpecification(afterList).or(InternalIdentifierSpec.toSpecification(afterList))));
-    logger.trace("Found {} existing resources conflicting with patched identifier {}.", cnt, resource.getId());
-    if(cnt > 0){
-      logger.error("Number of conflicting identifiers with identifiers {} is neq 0. Throwing ResourceAlreadyExistException.", identifierListAfter);
-      throw new ResourceAlreadyExistException("There is at least one resource with one of the following identifiers: " + identifierListAfter);
-    }
-    logger.trace("No identifier conflict detected. Persisting resource.");
     //AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
     getDao().save(updated);
     // AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
 
     logger.trace("Sending UPDATE event.");
     messagingService.send(DataResourceMessage.factoryUpdateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
+  }
+
+  @Override
+  @Transactional(readOnly = false)
+  public DataResource put(DataResource resource, DataResource newResource, Collection<? extends GrantedAuthority> userGrants) throws UpdateForbiddenException{
+    logger.trace("Performing put({}, {}, {}).", "DataResource#" + resource.getId(), "DataResource#" + newResource.getId(), userGrants);
+    List<String> identifierListBefore = getUniqueIdentifiers(resource);
+    logger.trace("Resource identifiers before update: {}", identifierListBefore);
+    List<String> identifierListAfter = getUniqueIdentifiers(newResource);
+    logger.trace("Resource identifiers after update: {}", identifierListAfter);
+
+    checkUniqueIdentifiers(identifierListBefore, identifierListAfter);
+
+    //check if any forbidden field has been updated
+    //use PatchUtil as it does exactly this check
+    if(!PatchUtil.canUpdate(resource, newResource, userGrants)){
+      throw new UpdateForbiddenException("Update not applicable. At least one unmodifiable field has been changed.");
+    }
+
+    //AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
+    DataResource result = getDao().save(newResource);
+    // AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
+
+    logger.trace("Sending UPDATE event.");
+    messagingService.send(DataResourceMessage.factoryUpdateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
+    return result;
+  }
+
+  /**
+   * Get all identifiers of a resource that have to be unique, e.g. primary and
+   * alternate identifiers.
+   *
+   * @param resource The resource.
+   *
+   * @return A list of identifiers.
+   */
+  private List<String> getUniqueIdentifiers(DataResource resource){
+    List<String> identifiers = new ArrayList<>();
+    if(resource.getIdentifier() != null){
+      identifiers.add(resource.getIdentifier().getValue());
+    }
+    resource.getAlternateIdentifiers().forEach((alt) -> {
+      identifiers.add(alt.getValue());
+    });
+    return identifiers;
+  }
+
+  /**
+   * Check if there is a resource identified with one identifiers from list
+   * 'after' not in 'before'. If at least one resource was found, a
+   * ResourceAlreadyExistsException is throws avoiding any update of the
+   * resource with the new list of identifiers.
+   *
+   * @param before The list of unique identifiers before an update.
+   * @param after The list of unique identifiers after an update.
+   */
+  private void checkUniqueIdentifiers(List<String> before, List<String> after){
+    logger.trace("Removing assigned identifiers {} from list of checked identifiers {}.", before, after);
+    after.removeAll(before);
+    logger.trace("Remaining new or updated resource identifiers: {}", after);
+
+    if(after.isEmpty()){
+      return;
+    }
+    String[] afterList = after.toArray(new String[]{});
+    logger.trace("Checking for conflicting identifiers.");
+    long cnt = getDao().count(PrimaryIdentifierSpec.toSpecification(afterList).or(AlternateIdentifierSpec.toSpecification(afterList).or(InternalIdentifierSpec.toSpecification(afterList))));
+    logger.trace("Found {} resources conflicting with at least one identifier of: {}.", cnt, afterList);
+    if(cnt > 0){
+      logger.error("Number of conflicting identifiers with identifiers {} is neq 0. Throwing ResourceAlreadyExistException.", after);
+      throw new ResourceAlreadyExistException("There is at least one resource with one of the following identifiers: " + after);
+    }
+    logger.trace("No identifier conflict detected. Persisting resource.");
   }
 
   @Override

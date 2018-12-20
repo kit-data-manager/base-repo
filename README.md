@@ -55,11 +55,11 @@ Finally, the actual microservice can be built. As a result, a fat jar containing
 
 ### Setup
 Before you are able to start the repository microservice, you have to modify the application properties according to your local setup. 
-Therefor, copy the file 'settings/application.yml' to your project folder and customize it. Special attentioned should be payed to the
+Therefor, copy the file 'settings/application.properties' to your project folder and customize it. Special attentioned should be payed to the
 properties in the 'datasource' section as well as the 'jwtSecret', which has to match the 'jwtSecret' provided in the configuration of 
 an associated KIT DM authentication microservice.
 
-As soon as 'application.yml' is completed, you may start the repository microservice by executing the following command inside the project folder, 
+As soon as 'application.properties' is completed, you may start the repository microservice by executing the following command inside the project folder, 
 e.g. where the service has been built before:
 
 ```
@@ -78,7 +78,7 @@ user@localhost:/home/user/base-repo$ java -jar build/libs/base-repo.jar
 
 ```
 
-If your 'application.yml' is not located inside the project folder you can provide it using the command line argument --spring.config.location=<PATH_TO_APPLICATION.YML>
+If your 'application.properties' is not located inside the project folder you can provide it using the command line argument --spring.config.location=<PATH_TO_APPLICATION.YML>
 As soon as the microservice is started, you can browse to 
 
 http://localhost:8090/swagger-ui.html

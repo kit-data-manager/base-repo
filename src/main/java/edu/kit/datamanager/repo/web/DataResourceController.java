@@ -59,7 +59,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
-import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -76,7 +75,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.UriComponentsBuilder;
-
+import org.apache.http.client.utils.URIBuilder;
 /**
  *
  * @author jejkal
@@ -496,7 +495,7 @@ public class DataResourceController implements IDataResourceController{
 
   private void filterAndAutoReturnResource(DataResource resource){
     Match match = match();
-    if(!DataResourceUtils.hasPermission(resource, PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+    if(!AuthenticationHelper.isAuthenticatedAsService() && !DataResourceUtils.hasPermission(resource, PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
       LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
       //exclude ACLs if not administrate or administrator permissions are set
       match = match.exclude("acls");
@@ -510,7 +509,8 @@ public class DataResourceController implements IDataResourceController{
 
   private void filterAndAutoReturnResources(List<DataResource> resources){
     Match match = match();
-    if(!AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
+
+    if(!AuthenticationHelper.isAuthenticatedAsService() && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
       LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
       //exclude ACLs if not administrate or administrator permissions are set
       match = match.exclude("acls");

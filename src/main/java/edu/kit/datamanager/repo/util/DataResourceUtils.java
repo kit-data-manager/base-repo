@@ -115,7 +115,7 @@ public class DataResourceUtils{
       }
     }
 
-    LOGGER.debug("Checking if caller permission {} mets required permission {}.", callerPermission, requiredPermission);
+    LOGGER.debug("Checking if caller permission {} meets required permission {}.", callerPermission, requiredPermission);
     if(!callerPermission.atLeast(requiredPermission)){
       LOGGER.debug("Caller permission {} does not met required permission {}. Resource access NOT granted.", requiredPermission);
       throw new AccessForbiddenException("Resource access restricted by acl.");
@@ -160,6 +160,7 @@ public class DataResourceUtils{
     List<String> principalIds = AuthenticationHelper.getAuthorizationIdentities();
     PERMISSION maxPermission = PERMISSION.NONE;
     for(AclEntry entry : resource.getAcls()){
+      //TODO: #7 wildcard checks?
       if(principalIds.contains(entry.getSid())){
         if(entry.getPermission().ordinal() > maxPermission.ordinal()){
           maxPermission = entry.getPermission();

@@ -90,7 +90,9 @@ public class RelatedIdentifier{
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-
+  @ApiModelProperty(value = "Controlled vocabulary, e.g. INTERNAL or DOI.", required = true)
+  @Enumerated(EnumType.STRING)
+  private Identifier.IDENTIFIER_TYPE identifierType;
   @ApiModelProperty(value = "10.1234/foo", dataType = "String", required = true)
   private String value;
   //vocab, e.g. IsMetadataFor...

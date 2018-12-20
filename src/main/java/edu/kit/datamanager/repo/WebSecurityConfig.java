@@ -117,6 +117,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
     config.addAllowedHeader("*");
     config.addAllowedMethod("*");
     config.addExposedHeader("Content-Range");
+    config.addExposedHeader("ETag");
     
     source.registerCorsConfiguration("/**", config);
     FilterRegistrationBean bean = new FilterRegistrationBean(new CorsFilter(source));

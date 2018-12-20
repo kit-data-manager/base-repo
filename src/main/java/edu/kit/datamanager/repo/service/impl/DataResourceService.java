@@ -398,6 +398,29 @@ public class DataResourceService implements IDataResourceService{
       throw new UpdateForbiddenException("Update not applicable. At least one unmodifiable field has been changed.");
     }
 
+    if(newResource.getAcls() == null || newResource.getAcls().isEmpty()){
+      logger.warn("Empty ACL provided for update. Using former value.");
+      newResource.setAcls(resource.getAcls());
+    }
+
+    if(newResource.getTitles() == null || newResource.getTitles().isEmpty()){
+      logger.warn("Empty title list provided for update. Using former value.");
+      newResource.setTitles(resource.getTitles());
+    }
+    if(newResource.getCreators() == null || newResource.getCreators().isEmpty()){
+      logger.warn("Empty creators list provided for update. Using former value.");
+      newResource.setCreators(resource.getCreators());
+    }
+    if(newResource.getPublicationYear() == null){
+      logger.warn("Empty publication year provided for update. Using former value.");
+      newResource.setPublicationYear(resource.getPublicationYear());
+    }
+
+    if(newResource.getPublisher() == null){
+      logger.warn("Empty publisher provided for update. Using former value.");
+      newResource.setPublisher(resource.getPublisher());
+    }
+
     //AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
     DataResource result = getDao().save(newResource);
     // AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});

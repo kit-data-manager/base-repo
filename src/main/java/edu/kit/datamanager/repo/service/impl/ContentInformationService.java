@@ -18,6 +18,7 @@ package edu.kit.datamanager.repo.service.impl;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.monitorjbl.json.JsonResult;
 import edu.kit.datamanager.entities.RepoUserRole;
+import edu.kit.datamanager.entities.messaging.DataResourceMessage;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.FeatureNotImplementedException;
@@ -32,7 +33,9 @@ import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.PathUtils;
+import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.util.AuthenticationHelper;
+import edu.kit.datamanager.util.ControllerUtils;
 import edu.kit.datamanager.util.PatchUtil;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -79,21 +82,9 @@ public class ContentInformationService implements IContentInformationService{
 //  private EntityManager em;
   @Autowired
   private ApplicationProperties applicationProperties;
+  @Autowired
+  private IMessagingService messagingService;
 
-//  @Override
-//  @Transactional(readOnly = true)
-//  public Page<ContentInformation> getContentInformation(Long id, String relativePath, String tag, Pageable pgbl){
-//    logger.trace("Performing getContentInformation({}, {}, {}, {}).", id, relativePath, tag, pgbl);
-//
-//    //wrong header added!
-//    // eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(ContentInformation.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), pageSize));
-//    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(id, relativePath, false));
-//    if(tag != null){
-//      logger.debug("Content information tag {} provided. Using TagSpecification.", tag);
-//      spec = ContentInformationTagSpecification.andIfTag(spec, tag);
-//    }
-//    return dao.findAll(spec, pgbl);
-//  }
   @Override
   @Transactional(readOnly = true)
   public ContentInformation getContentInformation(String identifier, String relativePath){
@@ -270,6 +261,9 @@ public class ContentInformationService implements IContentInformationService{
         logger.warn("Failed to remove previously existing content from " + toRemove + ". Manual removal required.", ex);
       }
     }
+
+    logger.trace("Sending CREATE event.");
+    messagingService.send(DataResourceMessage.factoryCreateDataMessage(resource.getId(), result.getRelativePath(), result.getContentUri(), result.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
     return result;
   }
 
@@ -303,12 +297,16 @@ public class ContentInformationService implements IContentInformationService{
     logger.trace("Patch successfully applied. Persisting patched resource.");
     getDao().save(updated);
     logger.trace("Resource successfully persisted.");
+    logger.trace("Sending UPDATE event.");
+    messagingService.send(DataResourceMessage.factoryUpdateDataMessage(resource.getParentResource().getId(), updated.getRelativePath(), updated.getContentUri(), updated.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
   }
 
   @Override
   public void delete(ContentInformation resource){
     logger.trace("Performing delete({}).", "ContentInformation#" + resource.getId());
     getDao().delete(resource);
+    logger.trace("Sending DELETE event.");
+    messagingService.send(DataResourceMessage.factoryDeleteDataMessage(resource.getParentResource().getId(), resource.getRelativePath(), resource.getContentUri(), resource.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
   }
 
   protected IContentInformationDao getDao(){

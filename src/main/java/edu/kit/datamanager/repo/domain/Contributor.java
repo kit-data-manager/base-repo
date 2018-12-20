@@ -31,8 +31,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import lombok.Data;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 
 /**
  *
@@ -73,6 +71,7 @@ public class Contributor{
       this.value = value;
     }
 
+    @Override
     public String getValue(){
       return value;
     }

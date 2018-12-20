@@ -131,6 +131,7 @@ public class DataResource implements EtagSupport, Serializable{
   @ApiModelProperty(value = "One or more contributors that have contributed to the resource (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  @JoinColumn(name = "resource_id")
   private Set<Contributor> contributors = new HashSet<>();
 
   @ApiModelProperty(value = "One or more dates related to the resource, e.g. creation or publication date (recommended).", required = false)

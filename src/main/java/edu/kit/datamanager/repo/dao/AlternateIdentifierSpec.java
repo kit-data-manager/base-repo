@@ -31,18 +31,20 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class AlternateIdentifierSpec{
 
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final String... primaryIdentifier){
-    specifications = specifications.and(toSpecification(primaryIdentifier));
+  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final String... identifierValues){
+    specifications = specifications.and(toSpecification(identifierValues));
     return specifications;
   }
 
-  public static Specification<DataResource> toSpecification(final String... primaryIdentifier){
+  public static Specification<DataResource> toSpecification(final String... identifierValues){
 
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
+      //join dataresource table with alternate identifiers table
       Join<DataResource, AlternateIdentifier> altJoin = root.join("alternateIdentifiers", JoinType.INNER);
-      return builder.and(builder.notEqual(altJoin.get("identifierType"), Identifier.IDENTIFIER_TYPE.INTERNAL), altJoin.get("value").in((Object[]) primaryIdentifier));
+      //get all alternate identifiers NOT of type INTERNAL with one of the provided values
+      return builder.and(builder.notEqual(altJoin.get("identifierType"), Identifier.IDENTIFIER_TYPE.INTERNAL), altJoin.get("value").in((Object[]) identifierValues));
     };
   }
 }

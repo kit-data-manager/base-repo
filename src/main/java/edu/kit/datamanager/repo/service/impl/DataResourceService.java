@@ -30,6 +30,7 @@ import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.InternalIdentifierSpec;
 import edu.kit.datamanager.repo.dao.PermissionSpecification;
 import edu.kit.datamanager.repo.dao.PrimaryIdentifierSpec;
+import edu.kit.datamanager.repo.dao.ResourceTypeSpec;
 import edu.kit.datamanager.repo.dao.StateSpecification;
 import edu.kit.datamanager.repo.domain.Agent;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -310,7 +311,7 @@ public class DataResourceService implements IDataResourceService{
     Specification<DataResource> spec;
     if(example != null){
       logger.trace("Adding permission specification and example specification to query.");
-      spec = Specification.where(PermissionSpecification.toSpecification(sids, permission)).and(new ByExampleSpecification(em).byExample(example));
+      spec = Specification.where(PermissionSpecification.toSpecification(sids, permission)).and(new ByExampleSpecification(em).byExample(example).and(ResourceTypeSpec.toSpecification(example.getResourceType())));
     } else{
       logger.trace("Adding permission specification to query.");
       spec = Specification.where(PermissionSpecification.toSpecification(sids, permission));
@@ -325,7 +326,7 @@ public class DataResourceService implements IDataResourceService{
     Specification<DataResource> spec = null;
     if(example != null){
       logger.trace("Adding example specification to query.");
-      spec = Specification.where(new ByExampleSpecification(em).byExample(example));
+      spec = Specification.where(new ByExampleSpecification(em).byExample(example).and(ResourceTypeSpec.toSpecification(example.getResourceType())));
     }
 
     return doFind(spec, pgbl, pIncludeRevoked);

@@ -21,6 +21,7 @@ import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.util.PathUtils;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Calendar;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,20 +33,23 @@ public class PathUtilsTest{
 
   @Test
   public void testGetDatUri() throws Exception{
+    // get current year
+    int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+
     DataResource resource = DataResource.factoryNewDataResource("test123");
     ApplicationProperties props = new ApplicationProperties();
     //test with trailing slash
     props.setBasepath(new URL("file:///tmp/"));
     System.out.println(PathUtils.getDataUri(resource, "folder/file.txt", props));
-    System.out.println(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/2018/test123/folder/file.txt_"));
+    System.out.println(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/" + currentYear + "/test123/folder/file.txt_"));
 
-    Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/2018/test123/folder/file.txt_"));
+    Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/" + currentYear + "/test123/folder/file.txt_"));
     //test w/o trailing slash
     props.setBasepath(new URL("file:///tmp"));
-    Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/2018/test123/folder/file.txt_"));
+    Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/" + currentYear + "/test123/folder/file.txt_"));
     //test with UTF-8 chars
     props.setBasepath(new URL("file:///fôldęr/"));
-    Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/" + URLEncoder.encode("fôldęr", "UTF-8") + "/2018/test123/folder/file.txt_"));
+    Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/" + URLEncoder.encode("fôldęr", "UTF-8") + "/" + currentYear + "/test123/folder/file.txt_"));
   }
 
   @Test(expected = CustomInternalServerError.class)

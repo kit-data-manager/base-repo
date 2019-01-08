@@ -19,7 +19,6 @@ import edu.kit.datamanager.entities.Identifier;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import edu.kit.datamanager.annotations.Searchable;
@@ -63,7 +62,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ApiModel(description = "Data resource element")
 @Data
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class DataResource implements EtagSupport, Serializable{
 
   @Autowired
@@ -93,7 +91,6 @@ public class DataResource implements EtagSupport, Serializable{
   //mandatory
   @ApiModelProperty(required = true)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private PrimaryIdentifier identifier;
 
   //vocab
@@ -124,36 +121,30 @@ public class DataResource implements EtagSupport, Serializable{
   //recommended
   @ApiModelProperty(value = "One or more subjects describing the resource (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @JoinColumn(name = "resource_id")
   private Set<Subject> subjects = new HashSet<>();
 
   @ApiModelProperty(value = "One or more contributors that have contributed to the resource (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @JoinColumn(name = "resource_id")
   private Set<Contributor> contributors = new HashSet<>();
 
   @ApiModelProperty(value = "One or more dates related to the resource, e.g. creation or publication date (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @JoinColumn(name = "resource_id")
   private Set<Date> dates = new HashSet<>();
 
   @ApiModelProperty(value = "One or more related identifiers the can be used to identify related resources, e.g. metadata, parts or derived resources (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @JoinColumn(name = "resource_id")
   private Set<RelatedIdentifier> relatedIdentifiers = new HashSet<>();
 
   @ApiModelProperty(value = "One or more description entries providing additional information, e.g. abstract or technical information (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private Set<Description> descriptions = new HashSet<>();
 
   @ApiModelProperty(value = "One or more geolocation entries providing information about the location of the resource, e.g. storage or aquisition location (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @JoinColumn(name = "resource_id")
   private Set<GeoLocation> geoLocations = new HashSet<>();
 
@@ -164,17 +155,14 @@ public class DataResource implements EtagSupport, Serializable{
 
   @ApiModelProperty(value = "One or more alternate identifiers the can be used to identify the resources in addition to the primary identifier.", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private Set<Identifier> alternateIdentifiers = new HashSet<>();
 
   @ApiModelProperty(value = "Unstructured size information about the resource or its contents.", example = "15 files, 10 page, 100 bytes", required = false)
   @ElementCollection(fetch = FetchType.EAGER)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private Set<String> sizes = new HashSet<>();
 
   @ApiModelProperty(value = "Format information about the resource or its contents. Preferably, mime types or file extensions are used.", example = "text/plain, xml, application/pdf", required = false)
   @ElementCollection(fetch = FetchType.EAGER)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private Set<String> formats = new HashSet<>();
 
   //e.g. major.minor
@@ -185,13 +173,11 @@ public class DataResource implements EtagSupport, Serializable{
   //e.g. CC-0
   @ApiModelProperty(value = "Intellectual property information.", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @JoinColumn(name = "resource_id")
   private Set<Scheme> rights = new HashSet<>();
 
   @ApiModelProperty(value = "Funding information, e.g. funder, award number and title.", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @JoinColumn(name = "resource_id")
   private Set<FundingReference> fundingReferences = new HashSet<>();
 
@@ -212,7 +198,6 @@ public class DataResource implements EtagSupport, Serializable{
 
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @SecureUpdate({"ROLE_ADMINISTRATOR", "PERMISSION_ADMINISTRATE"})
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @JoinColumn(name = "resource_id")
   private Set<AclEntry> acls = new HashSet<>();
 

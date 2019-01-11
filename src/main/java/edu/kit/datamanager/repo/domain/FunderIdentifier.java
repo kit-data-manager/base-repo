@@ -15,11 +15,8 @@
  */
 package edu.kit.datamanager.repo.domain;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.entities.Identifier;
-import edu.kit.datamanager.util.EnumUtils;
-import java.util.Objects;
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -35,7 +32,6 @@ import lombok.EqualsAndHashCode;
 @DiscriminatorValue("FunderIdentifier")
 @Data
 @EqualsAndHashCode(callSuper = false)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class FunderIdentifier extends Identifier{
 
   public enum FUNDER_TYPE implements BaseEnum{

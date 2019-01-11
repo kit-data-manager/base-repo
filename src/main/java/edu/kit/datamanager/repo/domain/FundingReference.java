@@ -16,7 +16,6 @@
 package edu.kit.datamanager.repo.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import io.swagger.annotations.ApiModel;
@@ -37,7 +36,6 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ApiModel(description = "A resource's funding information.")
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class FundingReference{
 
   @Id

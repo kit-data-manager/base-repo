@@ -39,7 +39,6 @@ import lombok.Data;
 @Entity
 @ApiModel(description = "A contributor to a resource.")
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Contributor{
 
   public enum TYPE implements BaseEnum{

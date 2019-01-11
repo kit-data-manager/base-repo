@@ -16,7 +16,6 @@
 package edu.kit.datamanager.repo.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
@@ -40,7 +39,6 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @ApiModel(description = "The title of a resource.")
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Title{
 
   public enum TYPE implements BaseEnum{

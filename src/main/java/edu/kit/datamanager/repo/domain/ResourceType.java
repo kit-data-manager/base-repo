@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.repo.domain;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
@@ -38,7 +37,6 @@ import lombok.Data;
 @Entity
 @Data
 @ApiModel(description = "The type of a resource.")
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResourceType{
 
   public enum TYPE_GENERAL implements BaseEnum{

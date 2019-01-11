@@ -130,7 +130,7 @@ public class DataResourceControllerDocumentationTest{
     String location = this.mockMvc.perform(post("/api/v1/dataresources/").contentType("application/json").content(mapper.writeValueAsString(resource))).
             andExpect(status().isCreated()).
             andDo(document("create-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).
-            andReturn().getResponse().getHeader("Location");;
+            andReturn().getResponse().getHeader("Location");
 
     Assert.assertNotNull(location);
 

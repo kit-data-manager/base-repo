@@ -44,10 +44,10 @@ import org.springframework.http.MediaType;
  * @author jejkal
  */
 @Entity
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @EqualsAndHashCode(callSuper = false)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ContentInformation implements Serializable{
 
   @Id

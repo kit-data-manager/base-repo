@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.repo.domain;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
@@ -23,7 +22,6 @@ import edu.kit.datamanager.util.EnumUtils;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.Objects;
-import static java.util.Objects.hash;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -39,7 +37,6 @@ import lombok.Data;
 @Entity
 @ApiModel(description = "A description entry of a resource.")
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Description{
 
   public enum TYPE implements BaseEnum{

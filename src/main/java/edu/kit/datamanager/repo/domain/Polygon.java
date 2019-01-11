@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.repo.domain;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import io.swagger.annotations.ApiModel;
@@ -38,7 +37,6 @@ import lombok.Data;
 @Entity
 @Data
 @ApiModel(description = "Geo location information as polygon. A polygon must consist of 4 or more points.")
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Polygon{
 
   @Id

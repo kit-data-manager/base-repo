@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.repo.domain;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
@@ -25,7 +24,6 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.Objects;
 import javax.persistence.CascadeType;
-import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -34,7 +32,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 /**
  *
@@ -43,7 +40,6 @@ import lombok.EqualsAndHashCode;
 @Entity()
 @Data
 @ApiModel(description = "A related identifier for a resource.")
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RelatedIdentifier{
 
   public enum RELATION_TYPES implements BaseEnum{

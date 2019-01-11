@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.repo.domain;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import io.swagger.annotations.ApiModel;
@@ -34,7 +33,6 @@ import lombok.Data;
 @Entity
 @Data
 @ApiModel(description = "A subject of a resource, which can either be free text or a value URI.")
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Subject{
 
   @Id

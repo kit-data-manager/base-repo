@@ -16,7 +16,6 @@
 package edu.kit.datamanager.repo.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import io.swagger.annotations.ApiModel;
@@ -39,7 +38,6 @@ import lombok.Data;
 @ApiModel(description = "An agent related to the creation or modification of a resource, e.g. the creator or a contributor.")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Agent{
 
   @Id
@@ -53,7 +51,6 @@ public class Agent{
   private String givenName;
   @ApiModelProperty(value = "Affiliation of the user, e.g. home institution.", example = "Karlsruhe Institute of Techology", required = false)
   @ElementCollection
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private Set<String> affiliations = new HashSet<>();
 
   public static Agent factoryAgent(String givenName, String familyName, String[] affiliations){

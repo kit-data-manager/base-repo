@@ -34,6 +34,7 @@ import edu.kit.datamanager.util.AuthenticationHelper;
 import java.util.Calendar;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.mockito.ArgumentMatchers.any;
@@ -56,6 +57,7 @@ import org.springframework.test.context.transaction.TransactionalTestExecutionLi
  *
  * @author jejkal
  */
+@Ignore
 @RunWith(PowerMockRunner.class)
 @PowerMockRunnerDelegate(SpringJUnit4ClassRunner.class)
 @PowerMockIgnore({"javax.crypto.*", "javax.management.*"})

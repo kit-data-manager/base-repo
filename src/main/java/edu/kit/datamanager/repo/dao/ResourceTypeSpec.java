@@ -37,24 +37,23 @@ public class ResourceTypeSpec{
   }
 
   public static Specification<DataResource> toSpecification(final ResourceType resourceType){
+    Specification<DataResource> newSpec = Specification.where(null);
+    if(resourceType == null || (resourceType.getTypeGeneral() == null && resourceType.getValue() == null)){
+      return newSpec;
+    }
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
-      if(resourceType != null && !(resourceType.getTypeGeneral() == null && resourceType.getValue() == null)){
-        if(resourceType.getTypeGeneral() != null && resourceType.getValue() != null){
-          Join<DataResource, Resource.AlternateIdentifiers.AlternateIdentifier> altJoin = root.join("resourceType", JoinType.INNER);
-          return builder.and(builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral()), builder.equal(altJoin.get("value"), resourceType.getValue()));
-        } else if(resourceType.getTypeGeneral() != null && resourceType.getValue() == null){
-          Join<DataResource, Resource.AlternateIdentifiers.AlternateIdentifier> altJoin = root.join("resourceType", JoinType.INNER);
-          return builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral());
-        } else if(resourceType.getTypeGeneral() == null && resourceType.getValue() != null){
-          Join<DataResource, Resource.AlternateIdentifiers.AlternateIdentifier> altJoin = root.join("resourceType", JoinType.INNER);
-          return builder.equal(altJoin.get("value"), resourceType.getValue());
-        }
+      Join<DataResource, Resource.AlternateIdentifiers.AlternateIdentifier> altJoin = root.join("resourceType", JoinType.INNER);
+
+      if(resourceType.getTypeGeneral() != null && resourceType.getValue() == null){
+        return builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral());
+      } else if(resourceType.getTypeGeneral() == null && resourceType.getValue() != null){
+        return builder.equal(altJoin.get("value"), resourceType.getValue());
       }
 
-      //type or both attributes are null...
-      return builder.isTrue(root.isNotNull());
+      //both are not null
+      return builder.and(builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral()), builder.equal(altJoin.get("value"), resourceType.getValue()));
     };
   }
 }

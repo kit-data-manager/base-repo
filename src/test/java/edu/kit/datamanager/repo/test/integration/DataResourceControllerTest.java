@@ -46,19 +46,15 @@ import edu.kit.datamanager.repo.domain.Subject;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.commons.lang3.time.DateUtils;
 import org.hamcrest.Matchers;
 import static org.hamcrest.Matchers.equalTo;
 import org.junit.Assert;
@@ -91,6 +87,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  *
@@ -171,6 +168,7 @@ public class DataResourceControllerTest{
     sampleResource.getDescriptions().add(Description.factoryDescription("This is a description", Description.TYPE.OTHER, "en"));
     sampleResource.getTitles().add(Title.createTitle("Title", Title.TYPE.OTHER));
     sampleResource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"KIT"}));
+    sampleResource.getCreators().add(Agent.factoryAgent("Johanna", "Doe", new String[]{"FZJ"}));
     sampleResource.getContributors().add(Contributor.factoryContributor(Agent.factoryAgent("Jane", "Doe", new String[]{"KIT"}), Contributor.TYPE.DATA_MANAGER));
     sampleResource.getDates().add(Date.factoryDate(Instant.now(), Date.DATE_TYPE.CREATED));
     sampleResource.setEmbargoDate(Instant.now().plus(Duration.ofDays(365)));
@@ -264,6 +262,31 @@ public class DataResourceControllerTest{
 
     this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(2)));
+  }
+
+  @Test
+  public void testFindDataResourcesByExampleWithCreatorAsUser() throws Exception{
+    DataResource example = new DataResource();
+    example.setState(null);
+    example.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"KIT"}));
+    ObjectMapper mapper = createObjectMapper();
+
+    //search for John Doe from KIT
+    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(2)));
+
+    //search for family name Doe
+    example.getCreators().clear();
+    example.getCreators().add(Agent.factoryAgent(null, "Doe"));
+    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(2)));
+
+    //search for family name Doe and affiliation FZJ
+    example.getCreators().clear();
+    example.getCreators().add(Agent.factoryAgent("Johanna", null, new String[]{"FZJ"}));
+    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+
   }
 
   @Test
@@ -779,7 +802,7 @@ public class DataResourceControllerTest{
 
   @Test
   public void testPatchAlternateDuplicateIdentifier() throws Exception{
-   //first, add identifier to otherResource...
+    //first, add identifier to otherResource...
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
@@ -788,7 +811,7 @@ public class DataResourceControllerTest{
             "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers[1].value").value("will-be-duplicated"));
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(content().string(Matchers.containsString("will-be-duplicated")));
 
     //now change to sample resource and try to add identifier, too
     etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,

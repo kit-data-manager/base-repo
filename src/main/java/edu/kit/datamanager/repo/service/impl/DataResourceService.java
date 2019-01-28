@@ -28,7 +28,6 @@ import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.repo.dao.AlternateIdentifierSpec;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.InternalIdentifierSpec;
-import edu.kit.datamanager.repo.dao.PermissionSpecification;
 import edu.kit.datamanager.repo.dao.PrimaryIdentifierSpec;
 import edu.kit.datamanager.repo.dao.ResourceTypeSpec;
 import edu.kit.datamanager.repo.dao.StateSpecification;
@@ -38,6 +37,7 @@ import edu.kit.datamanager.repo.domain.PrimaryIdentifier;
 import edu.kit.datamanager.repo.domain.UnknownInformationConstants;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
+import edu.kit.datamanager.repo.util.SpecUtils;
 import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
@@ -144,7 +144,11 @@ public class DataResourceService implements IDataResourceService{
     }
     logger.trace("Checking for existing resource with identifier {}.", resource.getId());
     //check resource by identifier
-    long cnt = getDao().count(PrimaryIdentifierSpec.toSpecification(resource.getId()).or(AlternateIdentifierSpec.toSpecification(resource.getId()).or(InternalIdentifierSpec.toSpecification(resource.getId()))));
+    long cnt = getDao().count(
+            AlternateIdentifierSpec.toSpecification(resource.getId()).
+                    or(PrimaryIdentifierSpec.toSpecification(resource.getId())).
+                    or(InternalIdentifierSpec.toSpecification(resource.getId()))
+    );
     logger.trace("Found {} existing resources conflicting with provided identifier {}.", cnt, resource.getId());
     if(cnt != 0){
       logger.error("Number of conflicting identifiers with identifier {} is neq 0. Throwing ResourceAlreadyExistException.", resource.getId());
@@ -297,6 +301,10 @@ public class DataResourceService implements IDataResourceService{
       page = findAll(example, pgbl, true);
     } else{
       //query based on membership
+      if(example != null && DataResource.State.REVOKED.equals(example.getState())){
+        logger.debug("Removing 'REVOKED' state from example due to unprivileged request.");
+        example.setState(null);
+      }
       logger.trace("Non-Administrator access detected. Calling findAllFiltered({}, {}, {}, {}, {}).", example, callerIdentities, PERMISSION.READ, pgbl, Boolean.FALSE);
       page = findAllFiltered(example, callerIdentities, PERMISSION.READ, pgbl, false);
     }
@@ -308,28 +316,15 @@ public class DataResourceService implements IDataResourceService{
   @Override
   public Page<DataResource> findAllFiltered(DataResource example, List<String> sids, PERMISSION permission, Pageable pgbl, boolean includeRevoked){
     logger.trace("Performing findAllFiltered({}, {}, {}, {}, {}).", example, sids, permission, pgbl, includeRevoked);
-    Specification<DataResource> spec;
-    if(example != null){
-      logger.trace("Adding permission specification and example specification to query.");
-      spec = Specification.where(PermissionSpecification.toSpecification(sids, permission)).and(new ByExampleSpecification(em).byExample(example).and(ResourceTypeSpec.toSpecification(example.getResourceType())));
-    } else{
-      logger.trace("Adding permission specification to query.");
-      spec = Specification.where(PermissionSpecification.toSpecification(sids, permission));
-    }
-
-    return doFind(spec, pgbl, includeRevoked);
+    Specification<DataResource> spec = SpecUtils.getByExampleSpec(example, em, sids, permission);
+    return doFind(spec, example, pgbl, includeRevoked);
   }
 
   @Override
   public Page<DataResource> findAll(DataResource example, Pageable pgbl, boolean pIncludeRevoked){
     logger.trace("Performing findAll({}, {}, {}).", example, pgbl, pIncludeRevoked);
-    Specification<DataResource> spec = null;
-    if(example != null){
-      logger.trace("Adding example specification to query.");
-      spec = Specification.where(new ByExampleSpecification(em).byExample(example).and(ResourceTypeSpec.toSpecification(example.getResourceType())));
-    }
-
-    return doFind(spec, pgbl, pIncludeRevoked);
+    Specification<DataResource> spec = SpecUtils.getByExampleSpec(example, em, null, null);
+    return doFind(spec, example, pgbl, pIncludeRevoked);
   }
 
   @Override
@@ -342,20 +337,46 @@ public class DataResourceService implements IDataResourceService{
    * Private helper used by findAll and findAllFiltered.
    */
   @Transactional(readOnly = true)
-  private Page<DataResource> doFind(Specification<DataResource> spec, Pageable pgbl, boolean includeRevoked){
+  private Page<DataResource> doFind(Specification<DataResource> spec, DataResource example, Pageable pgbl, boolean includeRevoked){
     logger.trace("Performing doFind({}, {}, {}).", spec, pgbl, includeRevoked);
-    if(!includeRevoked){
-      logger.trace("Adding StateSpecification in order to exclude revoked resources.");
-      if(spec == null){
-        logger.trace("Specification is currently null. Setting specification to StateSpecification.");
-        //spec is currently null, therefore only the StateSpec is used
-        spec = StateSpecification.toSpecification();
+
+    List<DataResource.State> states = new ArrayList<>();
+    logger.trace("Checking example for state information.");
+    if(example != null && example.getState() != null){
+      //example is set...check if example state should be used
+      if(includeRevoked || !DataResource.State.REVOKED.equals(example.getSubjects())){
+        logger.trace("Adding state {} from example.", example.getState());
+        //we either are allowed to include revoked state or the state is not 'REVOKED', add state from example
+        states.add(example.getState());
       } else{
-        logger.trace("Appending StateSpecification via AND operator.");
-        //spec is not null, connect StateSpec by AND
-        spec = spec.and(StateSpecification.toSpecification());
+        logger.debug("Ignoring state {} from example as 'includeRevoked' is set {}.", example.getState(), includeRevoked);
       }
     }
+
+    if(states.isEmpty()){
+      logger.trace("No state element received from example. Adding default states VOLATILE and FIXED.");
+      //No state obtained from example...adding default states VOLATILE and FIXED
+      states.add(DataResource.State.VOLATILE);
+      states.add(DataResource.State.FIXED);
+    }
+
+    if(includeRevoked){
+      logger.trace("Flag 'includeRevoked' is enabled. Adding states REVOKED.");
+      //Add REVOKED state in case this is allowed (e.g. admin access)
+      states.add(DataResource.State.REVOKED);
+    }
+
+    logger.trace("Adding state spec for states {}.", states);
+    if(spec == null){
+      logger.trace("Specification is currently null. Setting specification to StateSpecification.");
+      //spec is currently null, therefore only the StateSpec is used
+      spec = StateSpecification.toSpecification(states);
+    } else{
+      logger.trace("Appending StateSpecification via AND operator.");
+      //spec is not null, connect StateSpec by AND
+      spec = spec.and(StateSpecification.toSpecification(states));
+    }
+
     logger.trace("Querying DAO implementation using final spec and pageable information {}.", pgbl);
     return getDao().findAll(spec, pgbl);
   }

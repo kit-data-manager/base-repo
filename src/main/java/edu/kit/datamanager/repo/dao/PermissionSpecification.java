@@ -40,6 +40,10 @@ public class PermissionSpecification{
   }
 
   public static Specification<DataResource> toSpecification(final List<String> sids, final PERMISSION permission){
+    Specification<DataResource> newSpec = Specification.where(null);
+    if(sids == null || sids.isEmpty() || permission == null){
+      return newSpec;
+    }
 
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);

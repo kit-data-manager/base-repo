@@ -33,7 +33,10 @@ public class PrimaryIdentifierSpec{
   }
 
   public static Specification<DataResource> toSpecification(final String... primaryIdentifier){
-
+    Specification<DataResource> newSpec = Specification.where(null);
+    if(primaryIdentifier == null || primaryIdentifier.length == 0){
+      return newSpec;
+    }
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 

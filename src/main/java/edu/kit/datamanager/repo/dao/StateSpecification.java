@@ -16,6 +16,7 @@
 package edu.kit.datamanager.repo.dao;
 
 import edu.kit.datamanager.repo.domain.DataResource;
+import java.util.List;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
@@ -27,15 +28,19 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class StateSpecification{
 
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications){
-    specifications = specifications.and(toSpecification());
+  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, List<DataResource.State> states){
+    specifications = specifications.and(toSpecification(states));
     return specifications;
   }
 
-  public static Specification<DataResource> toSpecification(){
+  public static Specification<DataResource> toSpecification(List<DataResource.State> states){
+    Specification<DataResource> newSpec = Specification.where(null);
+    if(states == null || states.isEmpty()){
+      return newSpec;
+    }
 
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
-      return builder.and(root.get("state").in(DataResource.State.FIXED, DataResource.State.VOLATILE));
+      return builder.and(root.get("state").in(states));
     };
   }
 }

@@ -37,7 +37,11 @@ public class AlternateIdentifierSpec{
   }
 
   public static Specification<DataResource> toSpecification(final String... identifierValues){
-
+    Specification<DataResource> newSpec = Specification.where(null);
+    if(identifierValues == null || identifierValues.length == 0){
+      return newSpec;
+    }
+    
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 

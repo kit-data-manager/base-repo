@@ -36,17 +36,12 @@ public class ContentInformationMatchSpecification{
   }
 
   public static Specification<ContentInformation> toSpecification(final String parentId, final String path, final boolean exactPath){
-//
-//    ExampleMatcher m = ExampleMatcher.matching().withMatcher("tst1234", ExampleMatcher.GenericPropertyMatchers.endsWith());
-//        Example<DataResource> ex = Example.of(DataResource.factoryDataResourceWithDoi("test123"), m);
-
     return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
       Join<ContentInformation, DataResource> joinOptions = root.join("parentResource");
 
-      Path<DataResource> p = root.get("parentResource");
-      Path<String> pid = p.get("id");
+      Path<String> pid = root.get("parentResource").get("id");
 
       if(!exactPath){
         return builder.and(builder.equal(pid, parentId), builder.like(root.get("relativePath"), path));

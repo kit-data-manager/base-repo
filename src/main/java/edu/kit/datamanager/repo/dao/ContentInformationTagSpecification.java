@@ -28,30 +28,21 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class ContentInformationTagSpecification{
 
-  public static Specification<ContentInformation> andIfTags(Specification<ContentInformation> specifications, final String[] tags){
+  public static Specification<ContentInformation> andIfTags(Specification<ContentInformation> specifications, final String... tags){
     specifications = specifications.and(toSpecification(tags));
     return specifications;
   }
 
-  public static Specification<ContentInformation> andIfTag(Specification<ContentInformation> specifications, final String tag){
-    return andIfTags(specifications, new String[]{tag});
-  }
-
-  public static Specification<ContentInformation> toSpecification(final String[] tags){
-
+  public static Specification<ContentInformation> toSpecification(final String... tags){
+    Specification<ContentInformation> newSpec = Specification.where(null);
+    if(tags == null || tags.length == 0){
+      return newSpec;
+    }
+    
     return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
       return builder.and(root.join("tags").in(Arrays.asList(tags)));
-    };
-  }
-
-  public static Specification<ContentInformation> toSpecification(final String tag){
-
-    return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
-      query.distinct(true);
-
-      return builder.and(root.join("tags").in(Arrays.asList(tag)));
     };
   }
 }

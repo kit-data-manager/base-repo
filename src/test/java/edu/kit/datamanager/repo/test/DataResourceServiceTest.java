@@ -50,6 +50,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
 import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
 
@@ -57,8 +58,7 @@ import org.springframework.test.context.transaction.TransactionalTestExecutionLi
  *
  * @author jejkal
  */
-@Ignore
-@RunWith(PowerMockRunner.class)
+@RunWith(SpringRunner.class)
 @PowerMockRunnerDelegate(SpringJUnit4ClassRunner.class)
 @PowerMockIgnore({"javax.crypto.*", "javax.management.*"})
 @PrepareForTest(AuthenticationHelper.class)
@@ -141,8 +141,12 @@ public class DataResourceServiceTest{
     Assert.assertEquals(1, resource.getAlternateIdentifiers().size());
     Assert.assertEquals("internalId", resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getValue());
     Assert.assertEquals(Identifier.IDENTIFIER_TYPE.INTERNAL, resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getIdentifierType());
-
     Assert.assertEquals("internalId", resource.getId());
+
+    //test unknown information constant as doi
+    resource = createResourceWithDoi(UnknownInformationConstants.EXPLICITLY_AND_MEANINGFUL_EMPTY.getValue(), "MyResource", "SimpleResource");
+     resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
+    Assert.assertEquals(UnknownInformationConstants.EXPLICITLY_AND_MEANINGFUL_EMPTY.getValue(), resource.getIdentifier().getValue());
 
     //test with null internal id
     resource = createResourceWithoutDoi("internalId", "MyResource", "SimpleResource");
@@ -166,6 +170,15 @@ public class DataResourceServiceTest{
     Assert.assertEquals(Identifier.IDENTIFIER_TYPE.INTERNAL, resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getIdentifierType());
 
     Assert.assertEquals(internalIdentifier, resource.getId());
+  }
+
+  @Test
+  public void testFindById(){
+    DataResource resource = createResourceWithDoi("simpleDoi", "MyResource", "SimpleResource");
+    resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
+    DataResource found = service.findById("simpleDoi");
+    Assert.assertNotNull(found);
+    Assert.assertEquals("simpleDoi", found.getId());
   }
 
   @Test(expected = ResourceAlreadyExistException.class)
@@ -201,6 +214,7 @@ public class DataResourceServiceTest{
   }
 
   @Test
+  @Ignore
   public void testCreateResourceWithWithFullAuthentication() throws JsonProcessingException{
     mockJwtUserAuthentication();
     DataResource resource = createResourceWithDoi("testDoi", "My Resource", "SimpleResource");
@@ -231,7 +245,7 @@ public class DataResourceServiceTest{
     resource = DataResource.factoryDataResourceWithDoi(pid);
 
     if(title != null){
-      resource.getTitles().add(Title.createTitle(title, Title.TYPE.TRANSLATED_TITLE));
+      resource.getTitles().add(Title.factoryTitle(title, Title.TYPE.TRANSLATED_TITLE));
     }
     if(type != null){
       resource.setResourceType(ResourceType.createResourceType(type));
@@ -245,7 +259,7 @@ public class DataResourceServiceTest{
     resource = DataResource.factoryNewDataResource(iid);
 
     if(title != null){
-      resource.getTitles().add(Title.createTitle(title, Title.TYPE.TRANSLATED_TITLE));
+      resource.getTitles().add(Title.factoryTitle(title, Title.TYPE.TRANSLATED_TITLE));
     }
     if(type != null){
       resource.setResourceType(ResourceType.createResourceType(type));

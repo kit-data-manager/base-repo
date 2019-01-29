@@ -120,7 +120,7 @@ public class DataResourceControllerDocumentationTest{
   @Test
   public void documentBasicAccess() throws Exception{
     DataResource resource = new DataResource();
-    resource.getTitles().add(Title.createTitle("Most basic resource for testing", Title.TYPE.OTHER));
+    resource.getTitles().add(Title.factoryTitle("Most basic resource for testing", Title.TYPE.OTHER));
     resource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"Karlsruhe Institute of Technology"}));
     resource.setResourceType(ResourceType.createResourceType("testingSample", ResourceType.TYPE_GENERAL.DATASET));
     ObjectMapper mapper = new ObjectMapper();

@@ -54,7 +54,6 @@ public class DataResourceUtilsTest{
   @Before
   public void setup(){
     PowerMockito.mockStatic(AuthenticationHelper.class);
-
     mockJwtUserAuthentication(RepoUserRole.USER);
   }
 

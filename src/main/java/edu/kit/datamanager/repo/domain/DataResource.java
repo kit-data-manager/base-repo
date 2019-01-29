@@ -50,6 +50,7 @@ import javax.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,7 +211,7 @@ public class DataResource implements EtagSupport, Serializable{
     return result;
   }
 
-  public static DataResource factoryDataResourceWithDoi(String doi){
+  public static DataResource factoryDataResourceWithDoi(@NonNull String doi){
     DataResource result = new DataResource();
     result.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(doi));
     Identifier internal = Identifier.factoryInternalIdentifier(doi);
@@ -219,10 +220,7 @@ public class DataResource implements EtagSupport, Serializable{
     return result;
   }
 
-  public static DataResource factoryNewDataResource(String internalIdentifier){
-    if(internalIdentifier == null){
-      throw new IllegalArgumentException("Internal identifier must not be null.");
-    }
+  public static DataResource factoryNewDataResource(@NonNull String internalIdentifier){
     DataResource result = new DataResource();
     result.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier());
     result.getAlternateIdentifiers().add(Identifier.factoryInternalIdentifier(internalIdentifier));

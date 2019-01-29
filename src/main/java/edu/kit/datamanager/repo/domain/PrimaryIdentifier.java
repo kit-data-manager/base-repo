@@ -23,6 +23,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import lombok.Data;
+import lombok.NonNull;
 
 /**
  *
@@ -46,13 +47,13 @@ public class PrimaryIdentifier{
     return factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER.getValue());
   }
 
-  public static PrimaryIdentifier factoryPrimaryIdentifier(String doiOrTbaConstant){
+  public static PrimaryIdentifier factoryPrimaryIdentifier(@NonNull String doiOrTbaConstant){
     PrimaryIdentifier result = new PrimaryIdentifier();
     result.setValue(doiOrTbaConstant);
     return result;
   }
 
-  public static PrimaryIdentifier factoryPrimaryIdentifier(UnknownInformationConstants unknownInformationConstant){
+  public static PrimaryIdentifier factoryPrimaryIdentifier(@NonNull UnknownInformationConstants unknownInformationConstant){
     return factoryPrimaryIdentifier(unknownInformationConstant.getValue());
   }
 

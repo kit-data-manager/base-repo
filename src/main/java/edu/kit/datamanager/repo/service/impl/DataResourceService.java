@@ -98,13 +98,17 @@ public class DataResourceService implements IDataResourceService{
   public DataResource create(DataResource resource, String callerPrincipal, String callerFirstName, String callerLastName){
     logger.trace("Performing create({}, {}, {}, {}).", resource, callerPrincipal, callerFirstName, callerLastName);
 
+    //reset id as external assignment of ids is not allowed
+    resource.setId(null);
     //check for provided DOI
     boolean hasDoi = true;
+    boolean hasOtherIdentifier = false;
     if(resource.getIdentifier() == null){
       hasDoi = false;
     } else{
       for(UnknownInformationConstants constant : UnknownInformationConstants.values()){
         if(constant.getValue().equals(resource.getIdentifier().getValue())){
+          hasOtherIdentifier = true;
           hasDoi = false;
           break;
         }
@@ -115,10 +119,12 @@ public class DataResourceService implements IDataResourceService{
       logger.debug("No primary identifier assigned to resource. Using placeholder '{}'.", UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER);
       //set placeholder identifier
 
-      //resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER));
-      resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER.getValue()));
+      if(!hasOtherIdentifier){
+        resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER.getValue()));
+      }
+      
       //check alternate identifiers for internal identifier
-      boolean haveAlternateInternalIdentifier = false;
+      boolean hasAlternateInternalIdentifier = false;
       for(Identifier alt : resource.getAlternateIdentifiers()){
         if(Identifier.IDENTIFIER_TYPE.INTERNAL.equals(alt.getIdentifierType())){
           if(alt.getValue() == null){
@@ -127,19 +133,19 @@ public class DataResourceService implements IDataResourceService{
           }
           logger.debug("Setting resource identifier to provided internal identifier with value {}.", alt.getValue());
           resource.setId(alt.getValue());
-          haveAlternateInternalIdentifier = true;
+          hasAlternateInternalIdentifier = true;
           break;
         }
       }
 
-      if(!haveAlternateInternalIdentifier){
+      if(!hasAlternateInternalIdentifier){
         String altId = UUID.randomUUID().toString();
         logger.debug("No primary identifier assigned to resource and no alternate identifier of type INTERNAL was found. Assigning alternate INTERNAL identifier {}.", altId);
         resource.getAlternateIdentifiers().add(Identifier.factoryInternalIdentifier(altId));
         resource.setId(altId);
       }
     } else{
-      logger.debug("Primary identifier found. Setting resource identifier to primary identifier {}.", resource.getIdentifier().getValue());
+      logger.debug("Primary or other identifier found. Setting resource identifier to primary identifier {}.", resource.getIdentifier().getValue());
       resource.setId(resource.getIdentifier().getValue());
     }
     logger.trace("Checking for existing resource with identifier {}.", resource.getId());

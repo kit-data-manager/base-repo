@@ -72,14 +72,14 @@ public class Title{
   @ApiModelProperty(value = "en", required = false)
   private String lang;
  
-  public static Title createTitle(String value){
+  public static Title factoryTitle(String value){
     Title t = new Title();
     t.value = value;
     t.titleType = TYPE.TRANSLATED_TITLE;
     return t;
   }
 
-  public static Title createTitle(String value, TYPE type){
+  public static Title factoryTitle(String value, TYPE type){
     Title t = new Title();
     t.titleType = type;
     t.value = value;

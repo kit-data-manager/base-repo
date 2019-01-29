@@ -31,11 +31,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class AlternateIdentifierSpec{
 
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final String... identifierValues){
-    specifications = specifications.and(toSpecification(identifierValues));
-    return specifications;
-  }
-
   public static Specification<DataResource> toSpecification(final String... identifierValues){
     Specification<DataResource> newSpec = Specification.where(null);
     if(identifierValues == null || identifierValues.length == 0){

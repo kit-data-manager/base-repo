@@ -17,7 +17,6 @@ package edu.kit.datamanager.repo.dao;
 
 import edu.kit.datamanager.repo.domain.Agent;
 import edu.kit.datamanager.repo.domain.DataResource;
-import edu.kit.datamanager.repo.util.SpecUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -38,11 +37,6 @@ import org.springframework.data.jpa.domain.Specification;
 public class CreatorSpecification{
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreatorSpecification.class);
-
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final Set<Agent> creators){
-    specifications = specifications.and(toSpecification(creators));
-    return specifications;
-  }
 
   public static Specification<DataResource> toSpecification(final Set<Agent> creators){
     Specification<DataResource> newSpec = Specification.where(null);

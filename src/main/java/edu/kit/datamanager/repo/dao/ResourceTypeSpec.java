@@ -31,11 +31,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class ResourceTypeSpec{
 
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final ResourceType resourceType){
-    specifications = specifications.and(toSpecification(resourceType));
-    return specifications;
-  }
-
   public static Specification<DataResource> toSpecification(final ResourceType resourceType){
     Specification<DataResource> newSpec = Specification.where(null);
     if(resourceType == null || (resourceType.getTypeGeneral() == null && resourceType.getValue() == null)){

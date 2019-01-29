@@ -28,10 +28,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class ContentInformationTagSpecification{
 
-  public static Specification<ContentInformation> andIfTags(Specification<ContentInformation> specifications, final String... tags){
-    specifications = specifications.and(toSpecification(tags));
-    return specifications;
-  }
 
   public static Specification<ContentInformation> toSpecification(final String... tags){
     Specification<ContentInformation> newSpec = Specification.where(null);

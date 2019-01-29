@@ -28,11 +28,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class StateSpecification{
 
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, List<DataResource.State> states){
-    specifications = specifications.and(toSpecification(states));
-    return specifications;
-  }
-
   public static Specification<DataResource> toSpecification(List<DataResource.State> states){
     Specification<DataResource> newSpec = Specification.where(null);
     if(states == null || states.isEmpty()){

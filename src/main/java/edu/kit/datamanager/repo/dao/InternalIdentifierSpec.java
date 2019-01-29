@@ -28,10 +28,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class InternalIdentifierSpec{
 
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final String... primaryIdentifier){
-    specifications = specifications.and(toSpecification(primaryIdentifier));
-    return specifications;
-  }
 
   public static Specification<DataResource> toSpecification(final String... identifier){
     Specification<DataResource> newSpec = Specification.where(null);

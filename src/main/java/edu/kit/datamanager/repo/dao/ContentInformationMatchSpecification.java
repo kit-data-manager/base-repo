@@ -30,11 +30,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class ContentInformationMatchSpecification{
 
-  public static Specification<ContentInformation> andIfPermission(Specification<ContentInformation> specifications, final String parentId, final String path, boolean exactPath){
-    specifications = specifications.and(toSpecification(parentId, path, exactPath));
-    return specifications;
-  }
-
   public static Specification<ContentInformation> toSpecification(final String parentId, final String path, final boolean exactPath){
     return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);

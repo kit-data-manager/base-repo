@@ -34,11 +34,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class PermissionSpecification{
 
-  public static Specification<DataResource> andIfPermission(Specification<DataResource> specifications, final List<String> sids, PERMISSION permission){
-    specifications = specifications.and(toSpecification(sids, permission));
-    return specifications;
-  }
-
   public static Specification<DataResource> toSpecification(final List<String> sids, final PERMISSION permission){
     Specification<DataResource> newSpec = Specification.where(null);
     if(sids == null || sids.isEmpty() || permission == null){

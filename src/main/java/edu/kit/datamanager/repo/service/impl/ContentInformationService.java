@@ -284,7 +284,7 @@ public class ContentInformationService implements IContentInformationService{
     Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(parentId, relativePath, false));
     if(tags != null && !tags.isEmpty()){
       logger.debug("Content information tags {} provided. Using TagSpecification.", tags);
-      spec = ContentInformationTagSpecification.andIfTags(spec, tags.toArray(new String[]{}));
+      spec = spec.and(ContentInformationTagSpecification.toSpecification(tags.toArray(new String[]{})));
     }
     return dao.findAll(spec, pgbl);
   }

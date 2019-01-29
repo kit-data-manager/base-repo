@@ -68,6 +68,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithSecurityContextTestExecutionListener;
 import org.springframework.test.context.ActiveProfiles;
@@ -80,6 +81,7 @@ import org.springframework.test.context.web.ServletTestExecutionListener;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -286,8 +288,21 @@ public class DataResourceControllerTest{
     example.getCreators().add(Agent.factoryAgent("Johanna", null, new String[]{"FZJ"}));
     this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
-
   }
+  
+  @Test
+  public void testFindUsingUnsupportedField() throws Exception{
+    DataResource example = new DataResource();
+    example.setState(null);
+    example.getContributors().add(Contributor.factoryContributor(Agent.factoryAgent("John", "Doe", new String[]{"KIT"}), Contributor.TYPE.OTHER));
+    ObjectMapper mapper = createObjectMapper();
+
+    //search for John Doe from KIT
+    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isNotImplemented());  
+  }
+  
+  
 
   @Test
   public void testFindDataResourcesByExampleWithInvalidPageNumber() throws Exception{
@@ -763,7 +778,7 @@ public class DataResourceControllerTest{
   public void testPatchResourceWithoutETag() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + revokedResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isPreconditionFailed());
+            "Bearer " + adminToken).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isPreconditionRequired());
   }
 
   @Test
@@ -853,6 +868,71 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"replace\",\"path\": \"/invalid\",\"value\": \"0\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isUnprocessableEntity());
+  }
+
+  /**
+   * PUT TESTS*
+   */
+  @Test
+  public void testPutResourceAsAdmin() throws Exception{
+    MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse();
+
+    String etag = response.getHeader("ETag");
+    String resourceString = response.getContentAsString();
+
+    ObjectMapper mapper = createObjectMapper();
+    DataResource resource = mapper.readValue(resourceString, DataResource.class);
+
+    resource.setPublisher("OtherPub");
+    this.mockMvc.perform(put("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publisher").value("OtherPub"));
+  }
+
+  @Test
+  public void testPutResourceAsAnonymous() throws Exception{
+    MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse();
+
+    String etag = response.getHeader("ETag");
+    String resourceString = response.getContentAsString();
+
+    ObjectMapper mapper = createObjectMapper();
+    DataResource resource = mapper.readValue(resourceString, DataResource.class);
+
+    resource.setPublisher("Anonymous");
+    this.mockMvc.perform(put("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void testPutResourceUnauthorized() throws Exception{
+    MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse();
+
+    String etag = response.getHeader("ETag");
+    String resourceString = response.getContentAsString();
+
+    ObjectMapper mapper = createObjectMapper();
+    DataResource resource = mapper.readValue(resourceString, DataResource.class);
+
+    resource.setPublisher("Guest");
+    this.mockMvc.perform(put("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + guestToken).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isForbidden());
+  }
+
+  @Test
+  public void testPutResourceWithoutEtag() throws Exception{
+    MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse();
+
+    String resourceString = response.getContentAsString();
+
+    ObjectMapper mapper = createObjectMapper();
+    DataResource resource = mapper.readValue(resourceString, DataResource.class);
+
+    resource.setPublisher("OtherPub");
+    this.mockMvc.perform(put("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isPreconditionRequired());
   }
 
   /**

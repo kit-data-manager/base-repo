@@ -16,16 +16,20 @@
 package edu.kit.datamanager.repo.util;
 
 import edu.kit.datamanager.dao.ByExampleSpecification;
+import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
+import edu.kit.datamanager.exceptions.FeatureNotImplementedException;
 import edu.kit.datamanager.repo.dao.AlternateIdentifierSpec;
 import edu.kit.datamanager.repo.dao.CreatorSpecification;
 import edu.kit.datamanager.repo.dao.PermissionSpecification;
 import edu.kit.datamanager.repo.dao.PrimaryIdentifierSpec;
 import edu.kit.datamanager.repo.dao.ResourceTypeSpec;
-import edu.kit.datamanager.repo.dao.StateSpecification;
 import edu.kit.datamanager.repo.domain.DataResource;
+import io.jsonwebtoken.lang.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.EntityManager;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
@@ -49,13 +53,56 @@ public class SpecUtils{
     }
 
     if(example != null){
+      LOGGER.trace("Checking for unsupported fields in example resource.");
+      checkForUnsupportedFields(example);
+
       LOGGER.trace("Creating permission and example specification.");
       if(result != null){
         result = result.and(new ByExampleSpecification(em).byExample(example).and(ResourceTypeSpec.toSpecification(example.getResourceType()))).and(CreatorSpecification.toSpecification(example.getCreators()));
+        if(example.getIdentifier() != null && example.getIdentifier().getValue() != null){
+          result = result.and(PrimaryIdentifierSpec.toSpecification(example.getIdentifier().getValue()));
+        }
+
+        if(example.getAlternateIdentifiers() != null){
+          List<String> altIds = new ArrayList<>();
+          example.getAlternateIdentifiers().stream().filter((id) -> (id.getValue() != null)).forEachOrdered((id) -> {
+            altIds.add(id.getValue());
+          });
+          result = result.and(AlternateIdentifierSpec.toSpecification(altIds.toArray(new String[]{})));
+        }
+
       } else{
         result = new ByExampleSpecification(em).byExample(example).and(ResourceTypeSpec.toSpecification(example.getResourceType()));
       }
     }
     return result;
+  }
+
+  /**
+   * Check for assigned attributes and if they are supported by search. If not,
+   * throw a FeatureNotImplementedException.
+   *
+   * @param resource The resource to check.
+   *
+   * @throws FeatureNotImplementedException If at least one unsupported field is
+   * assigned at 'resource'.
+   */
+  private static void checkForUnsupportedFields(DataResource resource) throws FeatureNotImplementedException{
+    if(!CollectionUtils.isEmpty(resource.getAcls())
+            || !CollectionUtils.isEmpty(resource.getContributors())
+            || !CollectionUtils.isEmpty(resource.getDates()) 
+            || !CollectionUtils.isEmpty(resource.getDescriptions()) 
+            || !CollectionUtils.isEmpty(resource.getFormats())
+            || !CollectionUtils.isEmpty(resource.getFundingReferences()) 
+            || !CollectionUtils.isEmpty(resource.getGeoLocations())
+            || !CollectionUtils.isEmpty(resource.getRelatedIdentifiers())
+            || !CollectionUtils.isEmpty(resource.getRights())
+            || !CollectionUtils.isEmpty(resource.getSizes()) 
+            || !CollectionUtils.isEmpty(resource.getSubjects())){
+      LOGGER.warn("Found unsupported field assigned in example {}. Throwing FeatureNotImplementedException exception.", resource);
+      throw new FeatureNotImplementedException("Searching is not yet implemented for one of the provided resource attributes. "
+              + "Currently, only support for identifiers, resourceType, creators and all primitive attributes is available.");
+    }
+
   }
 }

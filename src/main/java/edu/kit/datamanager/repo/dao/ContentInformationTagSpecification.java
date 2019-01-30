@@ -28,13 +28,18 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class ContentInformationTagSpecification{
 
+  /**
+   * Hidden constructor.
+   */
+  ContentInformationTagSpecification(){
+  }
 
   public static Specification<ContentInformation> toSpecification(final String... tags){
     Specification<ContentInformation> newSpec = Specification.where(null);
     if(tags == null || tags.length == 0){
       return newSpec;
     }
-    
+
     return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 

@@ -38,6 +38,12 @@ public class CreatorSpecification{
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreatorSpecification.class);
 
+  /**
+   * Hidden constructor.
+   */
+  CreatorSpecification(){
+  }
+
   public static Specification<DataResource> toSpecification(final Set<Agent> creators){
     Specification<DataResource> newSpec = Specification.where(null);
 

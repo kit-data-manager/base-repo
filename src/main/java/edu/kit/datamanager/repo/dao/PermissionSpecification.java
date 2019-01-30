@@ -34,6 +34,12 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class PermissionSpecification{
 
+  /**
+   * Hidden constructor.
+   */
+  PermissionSpecification(){
+  }
+
   public static Specification<DataResource> toSpecification(final List<String> sids, final PERMISSION permission){
     Specification<DataResource> newSpec = Specification.where(null);
     if(sids == null || sids.isEmpty() || permission == null){

@@ -28,6 +28,12 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class StateSpecification{
 
+  /**
+   * Hidden constructor.
+   */
+  StateSpecification(){
+  }
+
   public static Specification<DataResource> toSpecification(List<DataResource.State> states){
     Specification<DataResource> newSpec = Specification.where(null);
     if(states == null || states.isEmpty()){

@@ -31,6 +31,12 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class ResourceTypeSpec{
 
+  /**
+   * Hidden constructor.
+   */
+  ResourceTypeSpec(){
+  }
+
   public static Specification<DataResource> toSpecification(final ResourceType resourceType){
     Specification<DataResource> newSpec = Specification.where(null);
     if(resourceType == null || (resourceType.getTypeGeneral() == null && resourceType.getValue() == null)){

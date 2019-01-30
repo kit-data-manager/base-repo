@@ -16,6 +16,8 @@
 package edu.kit.datamanager.repo.test;
 
 import edu.kit.datamanager.exceptions.BadArgumentException;
+import edu.kit.datamanager.exceptions.CustomInternalServerError;
+import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.domain.ContentInformation;
@@ -29,7 +31,6 @@ import java.io.ByteArrayInputStream;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -38,6 +39,8 @@ import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -95,6 +98,20 @@ public class ContentInformationServiceTest{
     ContentInformation found = service.findById(Long.toString(info.getId()));
     Assert.assertNotNull(found);
     Assert.assertEquals(info.getId(), found.getId());
+  }
+
+  @Test(expected = ResourceNotFoundException.class)
+  public void testFindByUnknownId(){
+    ContentInformation found = service.findById("256712");
+    Assert.fail("Test should have already failed.");
+  }
+
+  @Test(expected = CustomInternalServerError.class)
+  public void testFindAllWithoutPerent(){
+    ContentInformation info = createContentInformation("test123", "file.txt", "tag1");
+    info.setParentResource(null);
+    Page<ContentInformation> found = service.findAll(info, PageRequest.of(0, 10));
+    Assert.fail("Test should have already failed.");
   }
 
   @Test(expected = BadArgumentException.class)

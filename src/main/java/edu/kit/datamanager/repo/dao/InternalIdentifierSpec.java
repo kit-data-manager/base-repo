@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.repo.dao;
 
-import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -28,6 +27,11 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class InternalIdentifierSpec{
 
+  /**
+   * Hidden constructor.
+   */
+  InternalIdentifierSpec(){
+  }
 
   public static Specification<DataResource> toSpecification(final String... identifier){
     Specification<DataResource> newSpec = Specification.where(null);

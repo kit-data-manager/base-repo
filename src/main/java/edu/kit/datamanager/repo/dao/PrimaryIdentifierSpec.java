@@ -27,6 +27,11 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class PrimaryIdentifierSpec{
 
+  /**
+   * Hidden constructor.
+   */
+  PrimaryIdentifierSpec(){
+  }
 
   public static Specification<DataResource> toSpecification(final String... primaryIdentifier){
     Specification<DataResource> newSpec = Specification.where(null);

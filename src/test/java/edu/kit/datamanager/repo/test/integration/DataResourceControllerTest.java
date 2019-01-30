@@ -174,6 +174,7 @@ public class DataResourceControllerTest{
     sampleResource.getContributors().add(Contributor.factoryContributor(Agent.factoryAgent("Jane", "Doe", new String[]{"KIT"}), Contributor.TYPE.DATA_MANAGER));
     sampleResource.getDates().add(Date.factoryDate(Instant.now(), Date.DATE_TYPE.CREATED));
     sampleResource.setEmbargoDate(Instant.now().plus(Duration.ofDays(365)));
+    sampleResource.setResourceType(ResourceType.createResourceType("photo", ResourceType.TYPE_GENERAL.IMAGE));
     sampleResource.setLanguage("en");
     sampleResource.setPublisher("me");
     sampleResource.setPublicationYear("2018");
@@ -289,7 +290,30 @@ public class DataResourceControllerTest{
     this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
   }
-  
+
+  @Test
+  public void testFindUsingResourceType() throws Exception{
+    DataResource example = new DataResource();
+    example.setState(null);
+    example.setResourceType(ResourceType.createResourceType(null, ResourceType.TYPE_GENERAL.IMAGE));
+    ObjectMapper mapper = createObjectMapper();
+
+    //search for resource type IMAGE
+    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+
+    //search for resource type value 'photo'
+    example.setResourceType(ResourceType.createResourceType("photo", null));
+    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+
+    //search for resource type with no value
+    example.setResourceType(ResourceType.createResourceType(null, null));
+    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(2)));
+
+  }
+
   @Test
   public void testFindUsingUnsupportedField() throws Exception{
     DataResource example = new DataResource();
@@ -299,10 +323,8 @@ public class DataResourceControllerTest{
 
     //search for John Doe from KIT
     this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isNotImplemented());  
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isNotImplemented());
   }
-  
-  
 
   @Test
   public void testFindDataResourcesByExampleWithInvalidPageNumber() throws Exception{

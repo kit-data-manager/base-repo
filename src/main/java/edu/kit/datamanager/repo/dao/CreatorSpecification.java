@@ -41,7 +41,7 @@ public class CreatorSpecification{
   /**
    * Hidden constructor.
    */
-  CreatorSpecification(){
+  private CreatorSpecification(){
   }
 
   public static Specification<DataResource> toSpecification(final Set<Agent> creators){

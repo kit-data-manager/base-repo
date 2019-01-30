@@ -30,7 +30,7 @@ public class InternalIdentifierSpec{
   /**
    * Hidden constructor.
    */
-  InternalIdentifierSpec(){
+  private InternalIdentifierSpec(){
   }
 
   public static Specification<DataResource> toSpecification(final String... identifier){

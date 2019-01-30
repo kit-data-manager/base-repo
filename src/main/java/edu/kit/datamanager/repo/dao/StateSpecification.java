@@ -31,7 +31,7 @@ public class StateSpecification{
   /**
    * Hidden constructor.
    */
-  StateSpecification(){
+  private StateSpecification(){
   }
 
   public static Specification<DataResource> toSpecification(List<DataResource.State> states){

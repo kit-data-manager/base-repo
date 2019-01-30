@@ -33,7 +33,7 @@ public class ContentInformationMatchSpecification{
   /**
    * Hidden constructor.
    */
-  ContentInformationMatchSpecification(){
+  private ContentInformationMatchSpecification(){
   }
 
   public static Specification<ContentInformation> toSpecification(final String parentId, final String path, final boolean exactPath){

@@ -30,7 +30,7 @@ public class PrimaryIdentifierSpec{
   /**
    * Hidden constructor.
    */
-  PrimaryIdentifierSpec(){
+  private PrimaryIdentifierSpec(){
   }
 
   public static Specification<DataResource> toSpecification(final String... primaryIdentifier){

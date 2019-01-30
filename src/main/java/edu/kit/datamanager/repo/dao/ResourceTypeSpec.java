@@ -34,7 +34,7 @@ public class ResourceTypeSpec{
   /**
    * Hidden constructor.
    */
-  ResourceTypeSpec(){
+  private ResourceTypeSpec(){
   }
 
   public static Specification<DataResource> toSpecification(final ResourceType resourceType){

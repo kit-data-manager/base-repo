@@ -31,7 +31,7 @@ public class ContentInformationTagSpecification{
   /**
    * Hidden constructor.
    */
-  ContentInformationTagSpecification(){
+  private ContentInformationTagSpecification(){
   }
 
   public static Specification<ContentInformation> toSpecification(final String... tags){

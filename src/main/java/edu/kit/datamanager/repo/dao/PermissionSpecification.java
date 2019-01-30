@@ -37,7 +37,7 @@ public class PermissionSpecification{
   /**
    * Hidden constructor.
    */
-  PermissionSpecification(){
+  private PermissionSpecification(){
   }
 
   public static Specification<DataResource> toSpecification(final List<String> sids, final PERMISSION permission){

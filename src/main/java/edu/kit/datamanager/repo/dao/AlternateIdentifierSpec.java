@@ -34,7 +34,7 @@ public class AlternateIdentifierSpec{
   /**
    * Hidden constructor.
    */
-  AlternateIdentifierSpec(){
+  private  AlternateIdentifierSpec(){
   }
 
   public static Specification<DataResource> toSpecification(final String... identifierValues){

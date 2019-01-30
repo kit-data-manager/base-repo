@@ -35,25 +35,28 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.mockito.ArgumentMatchers.any;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.powermock.api.mockito.PowerMockito;
 import static org.powermock.api.mockito.PowerMockito.when;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.springframework.security.core.Authentication;
 
 /**
  *
  * @author jejkal
  */
-@Ignore
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(AuthenticationHelper.class)
-@PowerMockIgnore({"javax.crypto.*"})
+@PowerMockIgnore({"javax.crypto.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "org.w3c.dom.*"})
+
 public class DataResourceUtilsTest{
 
   @Before
   public void setup(){
-    PowerMockito.mockStatic(AuthenticationHelper.class);
     mockJwtUserAuthentication(RepoUserRole.USER);
   }
 
@@ -68,6 +71,9 @@ public class DataResourceUtilsTest{
     res = DataResource.factoryNewDataResource("internal_identifier");
     //clear alternate identifiers (should never happen)
     res.getAlternateIdentifiers().clear();
+    //use only 'OTHER' alternate identifier (should also never happen)
+    Assert.assertNull(DataResourceUtils.getInternalIdentifier(res));
+    res.getAlternateIdentifiers().add(Identifier.factoryIdentifier("other", Identifier.IDENTIFIER_TYPE.OTHER));
     Assert.assertNull(DataResourceUtils.getInternalIdentifier(res));
   }
 
@@ -308,6 +314,14 @@ public class DataResourceUtilsTest{
             addSimpleClaim("email", "test@mail.org").
             addSimpleClaim("groupid", "USERS").
             getJwtAuthenticationToken("test123");
+
+    PowerMockito.mockStatic(AuthenticationHelper.class, new Answer<Authentication>(){
+      @Override
+      public Authentication answer(InvocationOnMock invocation) throws Throwable{
+        return userToken;
+      }
+    });
+
     PowerMockito.mockStatic(AuthenticationHelper.class);
     when(AuthenticationHelper.getAuthentication()).thenReturn(userToken);
     when(AuthenticationHelper.hasAuthority(any(String.class))).thenCallRealMethod();
@@ -321,6 +335,14 @@ public class DataResourceUtilsTest{
     JwtAuthenticationToken serviceToken = JwtBuilder.createServiceToken("metadata_extractor", role).
             addSimpleClaim("groupid", "USERS").
             getJwtAuthenticationToken("test123");
+
+    PowerMockito.mockStatic(AuthenticationHelper.class, new Answer<Authentication>(){
+      @Override
+      public Authentication answer(InvocationOnMock invocation) throws Throwable{
+        return serviceToken;
+      }
+    });
+
     PowerMockito.mockStatic(AuthenticationHelper.class);
     when(AuthenticationHelper.getAuthentication()).thenReturn(serviceToken);
     when(AuthenticationHelper.hasAuthority(any(String.class))).thenCallRealMethod();
@@ -333,6 +355,14 @@ public class DataResourceUtilsTest{
   private void mockJwtTemporaryAuthentication(ScopedPermission[] perms) throws JsonProcessingException{
     JwtAuthenticationToken temporaryToken = JwtBuilder.createTemporaryToken("test@mail.org", perms).
             getJwtAuthenticationToken("test123");
+
+    PowerMockito.mockStatic(AuthenticationHelper.class, new Answer<Authentication>(){
+      @Override
+      public Authentication answer(InvocationOnMock invocation) throws Throwable{
+        return temporaryToken;
+      }
+    });
+
     PowerMockito.mockStatic(AuthenticationHelper.class);
     when(AuthenticationHelper.getAuthentication()).thenReturn(temporaryToken);
     when(AuthenticationHelper.hasAuthority(any(String.class))).thenCallRealMethod();

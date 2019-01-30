@@ -75,9 +75,15 @@ dependencies {
    testCompile("org.springframework:spring-test")
    testCompile("org.springframework.security:spring-security-test")
    
-   testCompile("org.mockito:mockito-core:2.20.0")
-   testCompile("org.powermock:powermock-module-junit4:1.7.4")
-   testCompile("org.powermock:powermock-api-mockito2:1.7.4")
+    //Java 11 Support 
+   testCompile("org.mockito:mockito-core:2.18.0")
+   testCompile("org.powermock:powermock-module-junit4:2.0.0-beta.5")
+   testCompile("org.powermock:powermock-api-mockito2:2.0.0-beta.5")
+
+  
+//   testCompile("org.mockito:mockito-core:2.20.0")
+//   testCompile("org.powermock:powermock-module-junit4:1.7.4")
+//   testCompile("org.powermock:powermock-api-mockito2:1.7.4")
 
    testCompile('org.springframework.restdocs:spring-restdocs-mockmvc:2.0.2.RELEASE')
    

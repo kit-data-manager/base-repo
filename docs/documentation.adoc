@@ -1,5 +1,5 @@
-= My REST API
-v{version}, Tom Hombergs, {date}
+= KIT Data Manager API Documentation
+v{version}, KIT Data Manager Development Team, {date}
 :doctype: book
 :icons: font
 :source-highlighter: highlightjs
@@ -11,21 +11,70 @@ v{version}, Tom Hombergs, {date}
 
 [introduction]
 == Introduction
-... some warm introductory words... .
 
-== Creating a Project
+In this documentation, the basics of the KIT Data Manager RESTful API are described. You will be guided through the first steps of creating a data resource,
+listing existing resources and modifying a single resource on the metadata-level. Furthermore, the same operations on the data level are explained by example. 
 
-=== Example Request
+This documentation assumes, that you have an instance of the KIT Data Manager 2.0 repository system installed locally. If the repository is running on another
+host or port you should change hostname and/or port accordingly. Furthermore, the examples assume that you are using the repository without authentication
+and authorization, which is provided by another service. If you plan to use this optional service, please refer to its documentation first to see how the 
+examples in this documentation have to be modified in order to work with authentication. Typically, this should be achieved by simple adding an additional header
+entry.
 
-The creation: 
+The example structure is identical for all examples below. Each example starts with a CURL command that can be run by copy&paste to your console/terminal window.
+The second part shows the HTTP request sent to the server including arguments and required headers. Finally, the third block shows the response comming from the server.
+In between, special characteristics of the calls are explained together with additional, optional arguments or alternative responses.
+
+[NOTE]
+For technical reasons, all metadata resources shown in the examples contain all fields, e.g. also empty lists or fields with value 'null'. You may ignore most of them
+as long as they are not needed. Some of them will be assigned by the server, others remain empty or null as long as you don't assign any value to them. 
+All fields mandatory at creation time are explained in the resource creation example.
+
+=== Data Resource Handling
+
+In this first section, the handling of data resources on the metadata level is explained. It all starts with creating your first data resource. The resource model of 
+KIT Data Manager is based on the DataCite standard. Thus, also the mandatory elements defined by this standard are mandatory at creation time. The following elements
+are expected to be provided by the user: 
+
+[point]
+- Title: At least one title element with arbitrary type (optional) and value must be present.
+- ResourceType: The resource type must be assigned by the user. 
+- Creators: At least one creator must be present. If no creator is provided by the user, the server will use caller information for adding a creator.
+- Dates: One date of type CREATION must be part of every resource. If no such date is provided, the server will use the current date.
+- Publisher: The publisher of the resource must be set. If not, the server will use caller information.
+- PublicationYear: The publication year should be available. If not, the server will use the current year.
+
+In addition, mentioning how the server handles identifiers might be relevant. There are a couple of identifiers that can be assigned to the resource. The main 
+identifier is stored in the field 'identifier'. This field is allowed to hold a single identifier of type 'DOI' in case the resource has a valid DOI or a placeholder.
+If the resource has a DOI assigned, this DOI will become the main identifier of the resource. If no 'identifier' is assigned or if the value of 'identifier' represents
+a valid placeholder, the list of 'alternateIdentifiers' is checked for an element of type 'INTERNAL'. If one is provided by the user, the value of this element will
+be the resource identifier as long as its a unique value. If no alternate identifier of type 'INTERNAL' is available, the server creates one with a UUID as value and uses
+this value as resource identifier. Summarizing, this means: 
+
+- If your resource has a DOI, provide the DOI as 'identifier'.
+- If your resource has no DOI, but should have a defined identifier, provide the identifier as 'alternateIdentifier' of type 'INTERNAL'.
+- If your resource has no DOI and its identifier can be arbitrary, omit any identifier field and leave it to the server to assign an identifier.
+
+==== Creating a Data Resource
+
+The following example shows the creation of the first resource only providing mandatory fields:
 
 include::{snippets}/create-resource/curl-request.adoc[]
 
+You can see, that most of the sent document is empty. Only title, creator and resourceType are provided by the user. HTTP-wise the call looks as follows: 
+
 include::{snippets}/create-resource/http-request.adoc[]
+
+As Content-Type only 'application/json' is supported and should be provided. The two other headers are typically set by the HTTP client. After validating the 
+provided document, adding missing information where possible and persisting the created resource, the result is sent back to the user and will look that way:
 
 include::{snippets}/create-resource/http-response.adoc[]
 
-And now the get:
+You can easily see, that the result looks different from the original document. A few elements, e.g. identifier, alternateIdentifiers, publisher, publicationYear, dates, acls and state
+received a value by the server. Furthermore, you'll find an ETag header with the current ETag of the resource. This value must is by POST, GET, PUT and PATCH calls and must be provided for 
+all calls modifying the resource, e.g. PATCH, PUT and DELETE, in order to avoid conflicting changes.
+
+==== Getting a Data Resource
 
 include::{snippets}/get-resource/curl-request.adoc[]
 

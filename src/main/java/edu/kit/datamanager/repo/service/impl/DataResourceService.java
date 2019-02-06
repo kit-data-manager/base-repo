@@ -16,7 +16,6 @@
 package edu.kit.datamanager.repo.service.impl;
 
 import com.github.fge.jsonpatch.JsonPatch;
-import edu.kit.datamanager.dao.ByExampleSpecification;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.messaging.DataResourceMessage;
@@ -29,7 +28,6 @@ import edu.kit.datamanager.repo.dao.AlternateIdentifierSpec;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.InternalIdentifierSpec;
 import edu.kit.datamanager.repo.dao.PrimaryIdentifierSpec;
-import edu.kit.datamanager.repo.dao.ResourceTypeSpec;
 import edu.kit.datamanager.repo.dao.StateSpecification;
 import edu.kit.datamanager.repo.domain.Agent;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -523,6 +521,8 @@ public class DataResourceService implements IDataResourceService{
   @Override
   public Health health(){
     logger.trace("Obtaining health information.");
+    
+    
     return Health.up().withDetail("DataResources", getDao().count()).build();
   }
 

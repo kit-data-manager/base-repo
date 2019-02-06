@@ -42,6 +42,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -315,7 +317,33 @@ public class ContentInformationService implements IContentInformationService{
 
   @Override
   public Health health(){
-    return Health.up().withDetail("ContentInformation", dao.count()).build();
+    logger.trace("Obtaining health information.");
+    boolean repositoryPathAvailable = true;
+    URL basePath = applicationProperties.getBasepath();
+    try{
+      Path basePathAsPath = Paths.get(basePath.toURI());
+      Path probe = Paths.get(basePathAsPath.toString(), "probe.txt");
+      try{
+        probe = Files.createFile(probe);
+        Files.write(probe, "Success".getBytes());
+      } catch(Throwable t){
+        logger.error("Failed to check repository folder at " + basePath + ". Returning negative health status.", t);
+        repositoryPathAvailable = false;
+      } finally{
+        try{
+          Files.deleteIfExists(probe);
+        } catch(Throwable ignored){
+        }
+      }
+    } catch(URISyntaxException ex){
+      logger.error("Invalid base path uri of " + basePath + ".", ex);
+      repositoryPathAvailable = false;
+    }
+    if(repositoryPathAvailable){
+      return Health.up().withDetail("ContentInformation", dao.count()).build();
+    } else{
+      return Health.down().withDetail("ContentInformation", 0).build();
+    }
   }
 
   @Override

@@ -341,7 +341,7 @@ public class DataResourceController implements IDataResourceController{
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
     String path = getContentPathFromRequest(request);
-
+  
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(t, pgbl, request, response, uriBuilder)).toString();
     });//dataResourceService.findById(id);

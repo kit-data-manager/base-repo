@@ -38,6 +38,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.JUnitRestDocumentation;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
@@ -53,6 +55,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -150,7 +153,16 @@ public class DataResourceControllerDocumentationTest{
     this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent()).andDo(document("patch-resource-complex", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
 
     //get the resource again together with the current ETag
-    etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-patched-resource-complex", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse().getHeader("ETag");
+    MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-patched-resource-complex", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse();
+
+    //perform PUT operation 
+    etag = response.getHeader("ETag");
+    String resourceString = response.getContentAsString();
+    DataResource resourceToPut = mapper.readValue(resourceString, DataResource.class);
+    resourceToPut.setPublisher("KIT Data Manager");
+    this.mockMvc.perform(put("/api/v1/dataresources/" + resourceId).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resourceToPut))).andDo(print()).andExpect(status().isOk()).andDo(document("put-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+
+    etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-put-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse().getHeader("ETag");
 
     //try to GET the resource using the alternate identifier added a second ago
     this.mockMvc.perform(get("/api/v1/dataresources/" + "resource-1-231118")).andExpect(status().isSeeOther()).andDo(document("get-resource-by-alt-id", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));

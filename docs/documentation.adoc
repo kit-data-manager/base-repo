@@ -286,6 +286,27 @@ example.
 
 include::{snippets}/upload-file-with-reference/http-response.adoc[]
 
+==== Listing Content Information
+
+If you just uploaded the data you still have the data access URL in the Location header of the upload response. However, if you are not the uploader you have to check first, which files are associated with a 
+resource in order to obtain a data access URL before download. This can be done by submitting an HTTP GET request to an arbitraty 'virtual folder' as shown in the next example.
+
+include::{snippets}/get-content-listing/curl-request.adoc[]
+
+This request will return all content information associated with the addressed resource as we perform a listing of the root data folder. By providing the Accept header with a value 'application/vnd.datamanager.content-information+json'
+we ask for ContentInformation metadata as we've learned before. Currently, it is NOT possible to access a 'virtual folder' without providing this header.  
+
+include::{snippets}/get-content-listing/http-request.adoc[]
+
+In the response we get all ContentInformation entries starting with the accessed path. As we provided the root path of the resource's data, we receive all three content elements we've uploaded until now. 
+
+include::{snippets}/get-content-listing/http-response.adoc[]
+
+Listing ContentInformation also support pagination. Furthermore, the results are sorted by their depth within the entire hierarchy of the resource's content. This means, when listing the root folder of a complex content hierarchy, 
+you'll first receive all elements directly located at the root folder followed by all elements located in folders of the first hierarchy level and so on.
+
+In addition, you can provide a tag as query argument in order to return only elements having this tag assigned. This allows you to overlay different hierarchies easily and perform a very selective listing of elements.
+
 ==== Downloading Data from a Data Resource
 
 After explaining how metadata and data are put into the system, let's give a brief overview on downloading content. Actually, it's just adding the file URL received during upload to the browser address bar or 
@@ -301,32 +322,59 @@ include::{snippets}/download-file/http-request.adoc[]
 
 include::{snippets}/download-file/http-response.adoc[]
 
+If the content is not located at the repository but referenced from remotely, there are plenty of possible responses depending on the availability of the referenced content. While accessing references content,
+the repository tries to issue an HTTP GET to the content URI. Depending on the response status received from the remote service, the repository responds as follows:
 
+[cols="m,n", options="header"]
+|============================================================================================================================
+|Response from Remote Service|Response by Repository
+|None|-|SERVICE_UNAVAILABLE (503)
+|OK (200)|-|SEE_OTHER (303) with Content URI in 'Location' header
+|MOVED_PERMANENTLY (301), FOUND (302), SEE_OTHER (303),TEMPORARY_REDIRECT (307), PERMANENT_REDIRECT (308) with 'Location' header|Previous response status with Content URI in 'Location' header
+|MOVED_PERMANENTLY (301), FOUND (302), SEE_OTHER (303),TEMPORARY_REDIRECT (307), PERMANENT_REDIRECT (308) without 'Location' header|INTERNAL_SERVER_ERROR (500)
+|All other status codes including UNAUTHORIZED (401) and FORBIDDEN (403)|NO_CONTENT (204) with Content URI in 'Content-Location' header
+|============================================================================================================================
+ 
+In all cases where the Location header is set, your HTTP client may redirect you immediately to the correct URL, so you probably won't recognize any difference compared to direct data access. If you receive status
+ SERVICE_UNAVAILABLE (503) or INTERNAL_SERVER_ERROR (500) there is (currently) no chance to receive the data you've requested. If you receive status NO_CONTENT (204) you should check for the Content-Location header in order
+to try to access the data manually. There are two situations where manual access might be promising: 
 
+1. The remote server returned HTTP UNAUTHORIZED (401) or FORBIDDEN (403) as access requires custom authentication. If you own appropriate credentials, you can access the content after proper authentication.
+2. If the content is not accessed via HTTP(s) you may use a custom data access client capable of opening a data stream to the content URI.
 
+==== Deleting Data Resources
 
-
-List all of them:
-
-include::{snippets}/get-content-listing/curl-request.adoc[]
-
-include::{snippets}/get-content-listing/http-request.adoc[]
-
-include::{snippets}/get-content-listing/http-response.adoc[]
-
-
-Let's forget:
+Finally, after presenting several creation and access scenarios, let's briefly cover the removal of resources. First things first, it is NOT possible to permanently remove resources via the RESTful API. The DELETE operation
+is implemented in a way of revoking resources to make them invisible to users, but as they might be references internally or externally, they are never removed from the system unless using additional tools. The following request
+shows how a DELETE operation is performed on an existing resource.
 
 include::{snippets}/delete-resource/curl-request.adoc[]
 
+You can see that you need the resource URL as well as the current ETag.
+
 include::{snippets}/delete-resource/http-request.adoc[]
+
+The server responds with status HTTP NO_CONTENT (204) in an idempotent way. This means, that if you call DELETE again, also status 204 will be returned but without any side effects. 
 
 include::{snippets}/delete-resource/http-response.adoc[]
 
-Never forget:
+Afterwards, the resource is assumed to be revoked. The state is changed to REVOKED and no user will be able to see or access the resource. A request to the resource URL will result in an HTTP status NOT_FOUND (404).
+However, revoked resources are still visible to the owner(s) of the resource (person(s) possessing ADMINISTATE permission) or the system administrator (person(s) possessing the ADMINISTRATOR role). They can still see
+and also modify the resource, e.g. in order to change back the state to VOLATILE or FIXED in order to 'undo' the deletion.
+
+If no authentication is enabled, which is assumed by this documentation, the deletion of resources only changes the state to REVOKED. The system account used for authentication-less access is automatically the owner
+of all resources, which grants this account the access even to revoked resources. This is shown in the following example.
 
 include::{snippets}/get-deleted-resource/curl-request.adoc[]
 
+We are trying a normal HTTP GET to the resource we just deleted. According to the description above, we should receive a positive response showing us a resource with state REVOKED.
+
 include::{snippets}/get-deleted-resource/http-request.adoc[]
 
+The response looks as expected. The resource we've deleted with the changed state. 
+
 include::{snippets}/get-deleted-resource/http-response.adoc[]
+
+[WARN]
+In contrast to deleting entire resource, deleting single content elements is permanent. If you send a DELETE request to a data URL of a resource, the associated file and all metadata associated with the particular 
+element are deleted. This operation is not reversible and you should double check before deleting a content element.

@@ -1,4 +1,4 @@
-= KIT Data Manager API Documentation
+= KIT Data Manager API Documentation - Repository Service
 v{version}, KIT Data Manager Development Team, {date}
 :doctype: book
 :icons: font
@@ -12,10 +12,10 @@ v{version}, KIT Data Manager Development Team, {date}
 [introduction]
 == Introduction
 
-In this documentation, the basics of the KIT Data Manager RESTful API are described. You will be guided through the first steps of creating a data resource,
+In this documentation, the basics of the KIT Data Manager RESTful API of the Repository Service are described. You will be guided through the first steps of creating a data resource,
 listing existing resources and modifying a single resource on the metadata-level. Furthermore, the same operations on the data level are explained by example. 
 
-This documentation assumes, that you have an instance of the KIT Data Manager 2.0 repository system installed locally. If the repository is running on another
+This documentation assumes, that you have an instance of the KIT Data Manager 2.0 Repository Service installed locally. If the repository is running on another
 host or port you should change hostname and/or port accordingly. Furthermore, the examples assume that you are using the repository without authentication
 and authorization, which is provided by another service. If you plan to use this optional service, please refer to its documentation first to see how the 
 examples in this documentation have to be modified in order to work with authentication. Typically, this should be achieved by simple adding an additional header
@@ -115,7 +115,7 @@ will be returned.
 
 include::{snippets}/patch-resource/http-response.adoc[]
 
-[INFO]
+[NOTE]
 If you want to apply multiple patch operations you do not have to send one request per operation. Instead you can submit an array of patch operations within one single request. In case of a positive response of HTTP 204, 
 all patch operations have been applied.
 
@@ -225,7 +225,7 @@ This will be the URL where the file is uploaded to and from where it can be down
 to provide this content type while uploading data, otherwise the upload will fail. Finally, there is the file to upload. For the curl command, it must be provided in the way shown in the example with the -F 
 command line option, the argument name 'file' and the reference to the local file, in this example '@randomFile.txt'. How you provide this argument depends on the client or the API you are using.
 
-[INFO]
+[NOTE]
 In the example, the local source file and the destination file name at the server are both 'randomFile.txt'. This is not necessarily required. There can be used an arbitrary name for the file on the server
 independent from the original file name.
 
@@ -375,6 +375,6 @@ The response looks as expected. The resource we've deleted with the changed stat
 
 include::{snippets}/get-deleted-resource/http-response.adoc[]
 
-[WARN]
+[WARNING]
 In contrast to deleting entire resource, deleting single content elements is permanent. If you send a DELETE request to a data URL of a resource, the associated file and all metadata associated with the particular 
 element are deleted. This operation is not reversible and you should double check before deleting a content element.

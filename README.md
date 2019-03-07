@@ -77,13 +77,15 @@ user@localhost:/home/user/base-repo$ java -jar build/libs/base-repo.jar
 
 ```
 
-If your 'application.properties' is not located inside the project folder you can provide it using the command line argument --spring.config.location=<PATH_TO_APPLICATION.YML>
+If your 'application.properties' is not located inside the project folder you can provide it using the command line argument --spring.config.location=<PATH_TO_APPLICATION.PROPERTIES>
 As soon as the microservice is started, you can browse to 
 
 http://localhost:8090/swagger-ui.html
 
 in order to see available RESTful endpoints and their documentation. Furthermore, you can use this Web interface to test single API calls in order to get familiar with the 
-service.
+service. A small documentation guiding you through the first steps of using the RESTful API you can find at
+
+http://localhost:8090/static/docs/documentation.html
 
 ## More Information
 

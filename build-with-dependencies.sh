@@ -6,6 +6,7 @@ echo "Building service-base library"
 cd libraries/service-base 
 ./gradlew clean check install
 cd ../../
+echo "Building message consumer library"
 cd libraries/generic-message-consumer
 ./gradlew clean check install
 cd ../../

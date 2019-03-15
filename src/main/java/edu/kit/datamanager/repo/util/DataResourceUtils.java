@@ -110,6 +110,8 @@ public class DataResourceUtils{
         case VOLATILE:
           LOGGER.trace("Resource state is {}. No special access check necessary.", resource.getState());
           break;
+        case GONE:
+          throw new ResourceNotFoundException("The resource never was or is not longer available.");
         default:
           LOGGER.warn("Unhandled resource state {} detected. Not applying any special access checks.", resource.getState());
       }

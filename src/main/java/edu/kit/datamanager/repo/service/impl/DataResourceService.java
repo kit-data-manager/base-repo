@@ -120,7 +120,7 @@ public class DataResourceService implements IDataResourceService{
       if(!hasOtherIdentifier){
         resource.setIdentifier(PrimaryIdentifier.factoryPrimaryIdentifier(UnknownInformationConstants.TO_BE_ASSIGNED_OR_ANNOUNCED_LATER.getValue()));
       }
-      
+
       //check alternate identifiers for internal identifier
       boolean hasAlternateInternalIdentifier = false;
       for(Identifier alt : resource.getAlternateIdentifiers()){
@@ -507,9 +507,16 @@ public class DataResourceService implements IDataResourceService{
   @Transactional(readOnly = false)
   public void delete(DataResource resource){
     logger.trace("Performing delete({}).", "DataResource#" + resource.getId());
-    logger.debug("Setting resource state to {}.", DataResource.State.REVOKED);
-    resource.setState(DataResource.State.REVOKED);
-    logger.trace("Persisting revoked resource.");
+
+    DataResource.State newState = DataResource.State.REVOKED;
+
+    if(DataResource.State.REVOKED.equals(resource.getState())){
+      logger.trace("DELETE was called on revoked resource. Setting new state to {}.", DataResource.State.GONE);
+      newState = DataResource.State.GONE;
+    }
+    logger.debug("Setting resource state to {}.", newState);
+    resource.setState(newState);
+    logger.trace("Persisting resource.");
     getDao().save(resource);
     logger.trace("Resource successfully persisted.");
   }
@@ -521,8 +528,7 @@ public class DataResourceService implements IDataResourceService{
   @Override
   public Health health(){
     logger.trace("Obtaining health information.");
-    
-    
+
     return Health.up().withDetail("DataResources", getDao().count()).build();
   }
 

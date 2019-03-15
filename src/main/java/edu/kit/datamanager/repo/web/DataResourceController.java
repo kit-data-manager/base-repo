@@ -232,14 +232,15 @@ public class DataResourceController implements IDataResourceController{
     try{
       DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
         return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).delete(t, request, response)).toString();
-      });//dataResourceService.findById(id);
-
+      });
       LOGGER.trace("Resource found. Checking for permission {} or role {}.", PERMISSION.ADMINISTRATE, RepoUserRole.ADMINISTRATOR);
       if(DataResourceUtils.hasPermission(resource, PERMISSION.ADMINISTRATE) || AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.getValue())){
         LOGGER.trace("Permissions found. Continuing with DELETE operation.");
         ControllerUtils.checkEtag(request, resource);
-
-        dataResourceService.delete(resource);
+        if(!DataResource.State.REVOKED.equals(resource.getState()) || AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.getValue()) || AuthenticationHelper.isPrincipal("SELF")){
+          //call delete if resource not revoked (to revoke it) or if it is revoked and role is administrator or caller is repository itself (to set state to GONE)
+          dataResourceService.delete(resource);
+        }
       } else{
         throw new UpdateForbiddenException("Insufficient permissions. ADMINISTRATE permission or ROLE_ADMINISTRATOR required.");
       }
@@ -268,7 +269,7 @@ public class DataResourceController implements IDataResourceController{
     //check data resource and permissions
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileUpload(t, file, contentInformation, force, request, response, uriBuilder)).toString();
-    });//dataResourceService.findById(id);
+    });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
@@ -299,7 +300,7 @@ public class DataResourceController implements IDataResourceController{
     //check resource and permission
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleMetadataAccess(t, tag, pgbl, request, response, uriBuilder)).toString();
-    });//dataResourceService.findById(id);
+    });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
@@ -341,10 +342,10 @@ public class DataResourceController implements IDataResourceController{
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
     String path = getContentPathFromRequest(request);
-  
+
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(t, pgbl, request, response, uriBuilder)).toString();
-    });//dataResourceService.findById(id);
+    });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
@@ -379,7 +380,7 @@ public class DataResourceController implements IDataResourceController{
 
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchMetadata(t, patch, request, response)).toString();
-    });//dataResourceService.findById(id);
+    });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 

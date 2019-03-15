@@ -75,7 +75,8 @@ public class DataResource implements EtagSupport, Serializable{
   public enum State implements BaseEnum{
     VOLATILE,
     FIXED,
-    REVOKED;
+    REVOKED,
+    GONE;
 
     @Override
     public String getValue(){

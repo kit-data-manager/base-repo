@@ -1,0 +1,17 @@
+[source,http,options="nowrap"]
+----
+{
+"principal":"SELF",
+"sender":"localhost",
+"timestamp":1551963353619,
+"entityId":"test123",
+"action":"create",
+"subCategory":"data",
+"metadata":
+{
+"contentPath":"folder/image.png",
+"contentUri":"file:///mnt/data/repository/2019/test123/image.png_1234412332",
+"contentType":"image/png"
+}
+}
+----

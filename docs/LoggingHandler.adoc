@@ -1,0 +1,25 @@
+[source,options="nowrap"]
+----
+@Component
+public class LoggingMessageHandler implements IMessageHandler{
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(LoggingMessageHandler.class);
+
+  @Override
+  public RESULT handle(BasicMessage message){
+    LOGGER.debug("Successfully received message {}.", message);
+	//Typically, we should now return 'RESULT.SUCCEEDED' as we successfully processed the message.
+    //However, as we actually did not touch the message we pretend to reject the message. Thus, 
+    //the message receiver won't expect the message to be handled successfully if this sample
+    //handler is the only working handler installed, while all other handlers are failing.
+    return RESULT.REJECTED;
+  }
+
+  @Override
+  public boolean configure(){
+    //no configuration necessary
+    return true;
+  }
+
+}
+----

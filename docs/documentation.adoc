@@ -398,9 +398,6 @@ in the database.
 In contrast to deleting entire resource, deleting single content elements is permanent. If you send a DELETE request to a data URL of a resource, the associated file and all metadata associated with the particular 
 element are deleted. This operation is not reversible and you should double check before deleting a content element.
 
-
-
-
 = Messaging and Event Message Handling
 
 == Introduction
@@ -451,7 +448,7 @@ in the following table. Typically, no additional repository-specific configurati
 |repo.messaging.hostnamea|The hostname where the RabbitMQ instance is running at.|A valid hostname [localhost]
 |repo.messaging.port|The port on which the RabbitMQ instance is running at.|A numeric port number [5672]
 |repo.messaging.binding.exchange|The RabbitMQ exchange to which all messages are sent.|A string uniquely identifying the exchange [repository_events]
-|repo.messaging.binding.queue|The queue name collecting all messages of the exchange.|A string uniquely identifying the queue [repoEventQueue]
+|repo.messaging.binding.queue|The name of the queue collecting all messages of the exchange. This queue is used for all handlers installed at the repository itself. External consumers may create an own quene.|A string uniquely identifying the queue [repoEventQueue]
 |repo.messaging.binding.routingKeys|The routing key (category.[subcategory] of messages) sent to the configured queue.|A String containing the category (e.g. 'dataresource') and subcategory (e.g. '#' for all) [dataresources.#]
 |repo.schedule.rate|The schedule rate in milliseconds at which the repository checks for new messages.|A numeric amount of milliseconds [1000]
 |============================================================================================================================
@@ -472,4 +469,22 @@ This interface offers three methods, whereas two have to be implemented:
 
 1. getHandlerIdentifier(): This method allows to (optionally) return a custom handler identifier, e.g. a unique name and implementation version. By default, the class name is returned.
 2. configure(): This method is called at instantiation time and allows loading and validating handler-specific properties. The handler will be available only if configure() returns 'true'. Otherwise, the handler is deactivated.
-3. handle(BasicMessage message): This method is called 
+3. handle(BasicMessage message): This method is called for each and every message received by the repository's message queue. Thus, a handler should decide first if the message should be handled or not. If not, it might be rejected.
+
+include::LoggingHandler.adoc[]
+
+The code snippet above shows the implementation of the aforementioned interface for the sample-handler. You can see that no configuration is needed for this handler, 'getHandlerIdentifier' is not overwritten, therefore the default identifier
+is 'LoggingMessageHandler' and the only thing which is done is logging the message. One remarkable thing of this sample is the return value of the 'handle' method. As described in the code comment, we return REJECTED in order to not mark the 
+message as 'handled' in the scheduler. The reason for doing this can be clarified by the following description of the scheduling process:
+
+1. The scheduler polls every second (default, can be changed in application.properties) for the next message in the queue.
+2. The message is presented to all successfully configured handlers.
+3. The first handler which returns 'SUCCEEDED' activates a flag 'messageHandledByOne'. 
+4. If a handler returns 'FAILED', the message and the handler name are preserved in a file called 'failed_message_handles.csv' for later processing. If this succeeds once, the flag 'messageHandledByOne' is also set.
+5. If 'REJECTED' is returned by a handler, the scheduler proceeds to the next handler without setting the flag 'messageHandledByOne' nor preserving the message.
+6. If the flag 'messageHandledByOne' is not set after all handlers were called, the message is logged to the logfile as debug entry and will be discarded.
+
+Thus, if we in our sample handler wouldn't return 'REJECTED', our status would influence how the scheduler deals with the message based on our response, which is nothing we want for a handler only logging the message.
+
+After implementing a custom message handler you have to build a jar file and place it, together with all required dependencies, in the extensions folder of your KIT DM 2.0 installation. If your handler needs any configuration, 
+it is recommended to place it in the current working directory at service startup, which is typically the folder where 'base-repo.jar' is located.

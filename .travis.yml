@@ -3,7 +3,7 @@ jdk:
 - openjdk11
 install: true
 script:
-- sh ./build-with-dependencies.sh
+- ./gradlew -Ptravis build
 after_success:
 - "./gradlew coveralls"
 before_cache:

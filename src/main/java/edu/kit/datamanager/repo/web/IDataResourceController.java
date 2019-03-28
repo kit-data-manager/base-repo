@@ -16,6 +16,7 @@
 package edu.kit.datamanager.repo.web;
 
 import com.github.fge.jsonpatch.JsonPatch;
+import edu.kit.datamanager.controller.IControllerAuditSupport;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.controller.IGenericResourceController;
 import edu.kit.datamanager.repo.domain.ContentInformation;
@@ -41,7 +42,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  *
  * @author jejkal
  */
-public interface IDataResourceController extends IGenericResourceController<DataResource>{
+public interface IDataResourceController extends IGenericResourceController<DataResource>, IControllerAuditSupport{
 
   @ApiOperation(value = "Upload data for a data resource.", notes = "This endpoint allows to upload or assign data and content metadata related to the uploaded file to a resource identified by its id. "
           + "Uploaded data will be stored at the configured backend, typically the local hard disk. Furthermore, it is possible to register data stored elsewhere by providing only a content URI within the content metadata."
@@ -52,7 +53,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "has successfully finished. If the overwritten element only contains a reference URI, the entry is just replaced by the user provided entry.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.POST)
   @ResponseBody
-  public ResponseEntity handleFileUpload(@ApiParam(value = "The numeric resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity handleFileUpload(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           @ApiParam(value = "The file to upload. If no file is uploaded, a metadata document must be provided containing a reference URI to the externally hosted data.", required = false) @RequestPart(name = "file", required = false) MultipartFile file,
           @ApiParam(value = "Json representation of a content information metadata document. Providing this metadata document is optional unless no file is uploaded.", required = false) @RequestPart(name = "metadata", required = false) ContentInformation contentInformation,
           @ApiParam(value = "Flag to indicate, that existing content at the same location should be overwritten.", required = false) @RequestParam(name = "force", defaultValue = "false") boolean force,
@@ -74,7 +75,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
   })
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET, produces = "application/vnd.datamanager.content-information+json")
   @ResponseBody
-  public ResponseEntity handleMetadataAccess(@ApiParam(value = "The numeric resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity handleMetadataAccess(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           @ApiParam(value = "A single tag assigned to certain content elements. Tags allow easy structuring and filtering of content associated to a resource.", required = false) @RequestParam(name = "tag", required = false) String tag,
           final Pageable pgbl,
           final WebRequest request,
@@ -91,7 +92,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
 
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET)
   @ResponseBody
-  public ResponseEntity handleFileDownload(@ApiParam(value = "The numeric resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity handleFileDownload(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
@@ -102,7 +103,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE. Users having WRITE permissions to the associated resource are only allowed to modify contained metadata elements or tags assigned to the content element.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
   @ResponseBody
-  public ResponseEntity patchMetadata(@ApiParam(value = "The numeric resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity patchMetadata(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           @ApiParam(value = "Json representation of a json patch document. The document must comply with RFC 6902 specified by the IETF.", required = true) @RequestBody JsonPatch patch,
           final WebRequest request,
           final HttpServletResponse response);
@@ -112,7 +113,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.DELETE)
   @ResponseBody
-  public ResponseEntity deleteContent(@ApiParam(value = "The numeric resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity deleteContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           final WebRequest request,
           final HttpServletResponse response);
 }

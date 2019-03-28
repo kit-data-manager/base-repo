@@ -19,6 +19,7 @@ import edu.kit.datamanager.configuration.GenericApplicationProperties;
 import java.net.URL;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,5 +32,7 @@ import org.springframework.stereotype.Component;
 public class ApplicationProperties extends GenericApplicationProperties{
 
   private URL basepath;
+  @Value("${repo.audit.enabled:FALSE}")
+  private boolean auditEnabled;
 
 }

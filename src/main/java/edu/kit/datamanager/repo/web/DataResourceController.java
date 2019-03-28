@@ -43,6 +43,7 @@ import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.ResourceElsewhereException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.exceptions.UpdateForbiddenException;
+import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IContentProvider;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
@@ -58,6 +59,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +78,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.apache.http.client.utils.URIBuilder;
+
 /**
  *
  * @author jejkal
@@ -92,6 +95,8 @@ public class DataResourceController implements IDataResourceController{
 
   @Autowired
   private final IDataResourceService dataResourceService;
+  @Autowired
+  private final IAuditService<DataResource> auditService;
 
   @Autowired
   private final IContentInformationService contentInformationService;
@@ -109,10 +114,11 @@ public class DataResourceController implements IDataResourceController{
    * @param contentInformationService Content information service instance added
    * e.g. via dependency injection.
    */
-  public DataResourceController(IDataResourceService dataResourceService, IContentInformationService contentInformationService){
+  public DataResourceController(IDataResourceService dataResourceService, IAuditService<DataResource> auditService, IContentInformationService contentInformationService){
     super();
     this.dataResourceService = dataResourceService;
     this.contentInformationService = contentInformationService;
+    this.auditService = auditService;
   }
 
   @Override
@@ -128,9 +134,11 @@ public class DataResourceController implements IDataResourceController{
       LOGGER.trace("Creating controller link for resource identifier {}.", result.getId());
       //do some hacking in order to properly escape the resource identifier
       //if escaping in beforehand, ControllerLinkBuilder will escape again, which invalidated the link
-      String uriLink = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", request, response)).toString();
+      String uriLink = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", 1l, request, response)).toString();
       //replace placeholder with escaped identifier in order to ensure single-escaping
       uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getId(), "UTF-8"));
+      uriLink = uriLink.substring(0, uriLink.lastIndexOf("?"));
+
       LOGGER.trace("Created resource link is: {}", uriLink);
       return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").body(result);
     } catch(UnsupportedEncodingException ex){
@@ -141,16 +149,45 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity<DataResource> getById(@PathVariable("id") final String identifier,
+          @RequestParam(name = "version", required = false) final Long version,
           final WebRequest request,
           final HttpServletResponse response){
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, request, response)).toString();
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, version, (t) -> {
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
     });
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
     //filter resource if necessary and return it automatically
     filterAndAutoReturnResource(resource);
-    //trigger response creation and set etag...the response body is set automatically
-    return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
+
+    long currentVersion = auditService.getCurrentVersion(identifier);
+
+    if(currentVersion > 0){
+      //trigger response creation and set etag...the response body is set automatically
+      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header("Version", Long.toString(currentVersion)).build();
+    } else{
+      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
+    }
+  }
+
+  @Override
+  public ResponseEntity getAuditInformation(@PathVariable("id") final String resourceIdentifier, Pageable pgbl, WebRequest request, HttpServletResponse response, UriComponentsBuilder ucb){
+    LOGGER.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
+    DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, null, request, response)).toString();
+    });
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+
+    Optional<String> auditInformation = dataResourceService.getAuditInformationAsJson(resourceIdentifier, pgbl);
+
+    if(!auditInformation.isPresent()){
+      LOGGER.trace("No audit information found for resource {}. Returning empty JSON array.", resourceIdentifier);
+      return ResponseEntity.ok().body("[]");
+    }
+
+    long currentVersion = auditService.getCurrentVersion(resourceIdentifier);
+
+    LOGGER.trace("Audit information found, returning result.");
+    return ResponseEntity.ok().header("Resource-Version", Long.toString(currentVersion)).body(auditInformation.get());
   }
 
   @Override
@@ -190,7 +227,7 @@ public class DataResourceController implements IDataResourceController{
           final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
 
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patch(t, patch, request, response)).toString();
     });
 
@@ -209,7 +246,7 @@ public class DataResourceController implements IDataResourceController{
           final WebRequest request,
           final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
     });
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
@@ -230,7 +267,7 @@ public class DataResourceController implements IDataResourceController{
     ControllerUtils.checkAnonymousAccess();
 
     try{
-      DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+      DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
         return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).delete(t, request, response)).toString();
       });
       LOGGER.trace("Resource found. Checking for permission {} or role {}.", PERMISSION.ADMINISTRATE, RepoUserRole.ADMINISTRATOR);
@@ -267,7 +304,7 @@ public class DataResourceController implements IDataResourceController{
       throw new BadArgumentException("Provided path is invalid. Path must not be empty and must not end with a slash.");
     }
     //check data resource and permissions
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileUpload(t, file, contentInformation, force, request, response, uriBuilder)).toString();
     });
 
@@ -298,7 +335,7 @@ public class DataResourceController implements IDataResourceController{
           final UriComponentsBuilder uriBuilder){
     String path = getContentPathFromRequest(request);
     //check resource and permission
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleMetadataAccess(t, tag, pgbl, request, response, uriBuilder)).toString();
     });
 
@@ -343,7 +380,7 @@ public class DataResourceController implements IDataResourceController{
           final UriComponentsBuilder uriBuilder){
     String path = getContentPathFromRequest(request);
 
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(t, pgbl, request, response, uriBuilder)).toString();
     });
 
@@ -378,7 +415,7 @@ public class DataResourceController implements IDataResourceController{
 
     String path = getContentPathFromRequest(request);
 
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchMetadata(t, patch, request, response)).toString();
     });
 
@@ -401,7 +438,7 @@ public class DataResourceController implements IDataResourceController{
     String path = getContentPathFromRequest(request);
 
     //check resource and permission
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, (t) -> {
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).deleteContent(t, request, response)).toString();
     });
 
@@ -443,17 +480,17 @@ public class DataResourceController implements IDataResourceController{
     return ResponseEntity.noContent().build();
   }
 
-  private DataResource getResourceByIdentifierOrRedirect(String identifier, Function<String, String> supplier){
+  private DataResource getResourceByIdentifierOrRedirect(String identifier, Long version, Function<String, String> supplier){
     String decodedIdentifier;
     try{
-      LOGGER.trace("Performing getResourceByIdentifierOrRedirect({}, #Function).", identifier);
+      LOGGER.trace("Performing getResourceByIdentifierOrRedirect({}, {}, #Function).", identifier, version);
       decodedIdentifier = URLDecoder.decode(identifier, "UTF-8");
     } catch(UnsupportedEncodingException ex){
       LOGGER.error("Failed to decode resource identifier " + identifier + ".", ex);
       throw new CustomInternalServerError("Failed to decode provided identifier " + identifier + ".");
     }
     LOGGER.trace("Decoded resource identifier: {}", decodedIdentifier);
-    DataResource resource = dataResourceService.findByAnyIdentifier(decodedIdentifier);
+    DataResource resource = dataResourceService.findByAnyIdentifier(decodedIdentifier, version);
     //check if resource was found by resource identifier 
     if(Objects.equal(decodedIdentifier, resource.getId())){
       //resource was found by resource identifier...return and proceed
@@ -470,7 +507,6 @@ public class DataResourceController implements IDataResourceController{
     }
     LOGGER.trace("No resource for identifier {} found. Redirecting to resource with identifier {}.", identifier, encodedIdentifier);
     throw new ResourceElsewhereException(supplier.apply(encodedIdentifier));
-
   }
 
   private String getContentPathFromRequest(WebRequest request){

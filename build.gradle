@@ -1,9 +1,13 @@
 buildscript {
    repositories { 
+      mavenLocal()
       jcenter()
+      mavenCentral()
+
    }
    dependencies {
       classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.5.RELEASE")
+      //classpath 'org.kordamp.gradle:stats-gradle-plugin:0.2.2'
    }
 }
 
@@ -18,8 +22,8 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
+//apply plugin: 'org.kordamp.gradle.stats'
 
-apply from: 'gradle/build_dependencies.gradle'
 
 jar {
    baseName = 'base-repo'
@@ -46,9 +50,11 @@ lombok {
 
 if (project.hasProperty('travis')) {
    println 'Using travis profile for building ' + project.getName()
+   apply from: 'gradle/build_dependencies.gradle'
    apply from: 'gradle/profile-travis.gradle'
 } else if (project.hasProperty('release') || project.hasProperty('clean-release')) {
    println 'Using release profile for building ' + project.getName()
+   apply from: 'gradle/build_dependencies.gradle'
    apply from: 'gradle/profile-release.gradle'   
 }
 
@@ -64,7 +70,9 @@ dependencies {
    compile("com.monitorjbl:spring-json-view:0.16")
    compile("org.postgresql:postgresql:42.2.1")
    compile("org.apache.tika:tika-core:1.18") 
+   compile ("org.javers:javers-core:5.3.2")
 
+   
    //Java 11 Support 
    compile('javax.xml.bind:jaxb-api:2.2.11')
    compile('com.sun.xml.bind:jaxb-core:2.2.11')

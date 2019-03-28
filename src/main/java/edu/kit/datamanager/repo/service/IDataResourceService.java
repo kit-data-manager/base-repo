@@ -20,6 +20,7 @@ import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.service.IGenericService;
+import edu.kit.datamanager.service.IServiceAuditSupport;
 import java.util.List;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.data.domain.Page;
@@ -29,7 +30,7 @@ import org.springframework.data.domain.Pageable;
  *
  * @author jejkal
  */
-public interface IDataResourceService extends IGenericService<DataResource>, HealthIndicator{
+public interface IDataResourceService extends IGenericService<DataResource>, IServiceAuditSupport, HealthIndicator{
 
   /**
    * Create a new data resource using the provided template. Where possible,
@@ -95,14 +96,27 @@ public interface IDataResourceService extends IGenericService<DataResource>, Hea
    * matches, the resource is returned. If no identifier matches, the
    * implementation should throw an exception mapping to HTTP 404.
    *
-   * The result can be requested in a paginated form using the pgbl argument.
-   *
    * @param identifier The identifier used to query for a single resource.
    *
    * @return A single resource if one was found. This method should never return
    * null. If no resource could be found, an exception is expected to be thrown.
    */
   DataResource findByAnyIdentifier(String identifier);
+
+  /**
+   * This method enhances findByAnyIdentifier by version support. Implementing
+   * the method is optional, by default the result of findByAnyIdentifier(String
+   * identifier) is returned.
+   *
+   * @param identifier The identifier used to query for a single resource.
+   * @param version The requested version of the resource.
+   *
+   * @return A single resource if one was found. This method should never return
+   * null. If no resource could be found, an exception is expected to be thrown.
+   */
+  default DataResource findByAnyIdentifier(String identifier, Long version){
+    return findByAnyIdentifier(identifier);
+  }
 
   /**
    * Basic find by example method. An implementation of this method is not

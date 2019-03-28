@@ -15,7 +15,12 @@
  */
 package edu.kit.datamanager.repo.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.JsonPatch;
+import com.google.gson.JsonObject;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.messaging.DataResourceMessage;
@@ -24,6 +29,7 @@ import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.exceptions.UpdateForbiddenException;
+import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.AlternateIdentifierSpec;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.InternalIdentifierSpec;
@@ -36,6 +42,7 @@ import edu.kit.datamanager.repo.domain.UnknownInformationConstants;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.repo.util.SpecUtils;
+import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
@@ -50,6 +57,7 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
@@ -73,7 +81,13 @@ public class DataResourceService implements IDataResourceService{
   private Logger logger;
 
   @Autowired
+  private ApplicationProperties applicationProperties;
+
+  @Autowired
   private IMessagingService messagingService;
+
+  @Autowired
+  private IAuditService<DataResource> auditService;
 
   @PersistenceContext
   private EntityManager em;
@@ -253,6 +267,9 @@ public class DataResourceService implements IDataResourceService{
     logger.trace("Persisting created resource.");
     resource = getDao().save(resource);
 
+    logger.trace("Capturing audit information.");
+    auditService.captureAuditInformation(resource, AuthenticationHelper.getPrincipal());
+
     logger.trace("Sending CREATE event.");
     messagingService.send(DataResourceMessage.factoryCreateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
     return resource;
@@ -275,7 +292,14 @@ public class DataResourceService implements IDataResourceService{
   @Override
   @Transactional(readOnly = true)
   public DataResource findByAnyIdentifier(final String resourceIdentifier){
-    logger.trace("Performing findOne(resourceIdentifier == '{}').", resourceIdentifier);
+    logger.trace("Performing findByAnyIdentifier({}).", resourceIdentifier);
+    return findByAnyIdentifier(resourceIdentifier, null);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public DataResource findByAnyIdentifier(final String resourceIdentifier, Long version){
+    logger.trace("Performing findByAnyIdentifier({}, {}).", resourceIdentifier, version);
     Optional<DataResource> result = getDao().findOne(InternalIdentifierSpec.toSpecification(resourceIdentifier));
 
     if(!result.isPresent()){
@@ -291,12 +315,27 @@ public class DataResourceService implements IDataResourceService{
         throw new ResourceNotFoundException("Data resource with identifier " + resourceIdentifier + " was not found.");
       }
     }
+    DataResource resource = result.get();
+    if(Objects.nonNull(version)){
+      logger.trace("Obtained resource for identifier {}. Checking for shadow of version {}.");
+      Optional<DataResource> optAuditResult = auditService.getResourceByVersion(resource.getId(), version);
+      if(optAuditResult.isPresent()){
+        logger.trace("Shadow successfully obtained. Returning version {} of resource with id {}.", version, resourceIdentifier);
+        return optAuditResult.get();
+      } else{
+        logger.info("Version {} of resource {} not found. Returning HTTP 404 (NOT_FOUND).", version, resourceIdentifier);
+        throw new ResourceNotFoundException("Data resource with identifier " + resourceIdentifier + " is not available in version " + version + ".");
 
-    return result.get();
+      }
+    }
+
+    return resource;
   }
 
   @Override
-  public Page<DataResource> findByExample(DataResource example, List<String> callerIdentities, boolean callerIsAdministrator, Pageable pgbl){
+  public Page<DataResource> findByExample(DataResource example, List<String> callerIdentities,
+          boolean callerIsAdministrator, Pageable pgbl
+  ){
     logger.trace("Performing findByExample({}, {}).", example, pgbl);
     Page<DataResource> page;
     if(callerIsAdministrator){
@@ -318,21 +357,27 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  public Page<DataResource> findAllFiltered(DataResource example, List<String> sids, PERMISSION permission, Pageable pgbl, boolean includeRevoked){
+  public Page<DataResource> findAllFiltered(DataResource example, List<String> sids,
+          PERMISSION permission, Pageable pgbl,
+          boolean includeRevoked
+  ){
     logger.trace("Performing findAllFiltered({}, {}, {}, {}, {}).", example, sids, permission, pgbl, includeRevoked);
     Specification<DataResource> spec = SpecUtils.getByExampleSpec(example, em, sids, permission);
     return doFind(spec, example, pgbl, includeRevoked);
   }
 
   @Override
-  public Page<DataResource> findAll(DataResource example, Pageable pgbl, boolean pIncludeRevoked){
+  public Page<DataResource> findAll(DataResource example, Pageable pgbl,
+          boolean pIncludeRevoked
+  ){
     logger.trace("Performing findAll({}, {}, {}).", example, pgbl, pIncludeRevoked);
     Specification<DataResource> spec = SpecUtils.getByExampleSpec(example, em, null, null);
     return doFind(spec, example, pgbl, pIncludeRevoked);
   }
 
   @Override
-  public Page<DataResource> findAll(DataResource resource, Pageable pgbl){
+  public Page<DataResource> findAll(DataResource resource, Pageable pgbl
+  ){
     logger.trace("Performing findAll({}).", "DataResource#" + resource.getId());
     return findAll(resource, pgbl, false);
   }
@@ -341,7 +386,9 @@ public class DataResourceService implements IDataResourceService{
    * Private helper used by findAll and findAllFiltered.
    */
   @Transactional(readOnly = true)
-  private Page<DataResource> doFind(Specification<DataResource> spec, DataResource example, Pageable pgbl, boolean includeRevoked){
+  private Page<DataResource> doFind(Specification<DataResource> spec, DataResource example,
+          Pageable pgbl, boolean includeRevoked
+  ){
     logger.trace("Performing doFind({}, {}, {}).", spec, pgbl, includeRevoked);
 
     List<DataResource.State> states = new ArrayList<>();
@@ -387,7 +434,9 @@ public class DataResourceService implements IDataResourceService{
 
   @Override
   @Transactional(readOnly = false)
-  public void patch(DataResource resource, JsonPatch patch, Collection<? extends GrantedAuthority> userGrants){
+  public void patch(DataResource resource, JsonPatch patch,
+          Collection<? extends GrantedAuthority> userGrants
+  ){
     logger.trace("Performing patch({}, {}, {}).", "DataResource#" + resource.getId(), patch, userGrants);
 
     List<String> identifierListBefore = getUniqueIdentifiers(resource);
@@ -399,9 +448,10 @@ public class DataResourceService implements IDataResourceService{
 
     checkUniqueIdentifiers(identifierListBefore, identifierListAfter);
 
-    //AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
-    getDao().save(updated);
-    // AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
+    DataResource result = getDao().save(updated);
+
+    logger.trace("Capturing audit information.");
+    auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());
 
     logger.trace("Sending UPDATE event.");
     messagingService.send(DataResourceMessage.factoryUpdateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
@@ -409,7 +459,8 @@ public class DataResourceService implements IDataResourceService{
 
   @Override
   @Transactional(readOnly = false)
-  public DataResource put(DataResource resource, DataResource newResource, Collection<? extends GrantedAuthority> userGrants) throws UpdateForbiddenException{
+  public DataResource put(DataResource resource, DataResource newResource,
+          Collection<? extends GrantedAuthority> userGrants) throws UpdateForbiddenException{
     logger.trace("Performing put({}, {}, {}).", "DataResource#" + resource.getId(), "DataResource#" + newResource.getId(), userGrants);
     List<String> identifierListBefore = getUniqueIdentifiers(resource);
     logger.trace("Resource identifiers before update: {}", identifierListBefore);
@@ -424,36 +475,42 @@ public class DataResourceService implements IDataResourceService{
       throw new UpdateForbiddenException("Update not applicable. At least one unmodifiable field has been changed.");
     }
 
+    String errorMessage = null;
     if(newResource.getAcls() == null || newResource.getAcls().isEmpty()){
-      logger.warn("Empty ACL provided for update. Using former value.");
-      newResource.setAcls(resource.getAcls());
+      errorMessage = "Empty ACL provided for update.";
     }
 
     if(newResource.getTitles() == null || newResource.getTitles().isEmpty()){
-      logger.warn("Empty title list provided for update. Using former value.");
-      newResource.setTitles(resource.getTitles());
+      errorMessage = "Empty title list provided for update.";
     }
     if(newResource.getCreators() == null || newResource.getCreators().isEmpty()){
-      logger.warn("Empty creators list provided for update. Using former value.");
-      newResource.setCreators(resource.getCreators());
+      errorMessage = "Empty creators list provided for update.";
     }
     if(newResource.getPublicationYear() == null){
-      logger.warn("Empty publication year provided for update. Using former value.");
-      newResource.setPublicationYear(resource.getPublicationYear());
+      errorMessage = "Empty publication year provided for update.";
     }
-
     if(newResource.getPublisher() == null){
-      logger.warn("Empty publisher provided for update. Using former value.");
-      newResource.setPublisher(resource.getPublisher());
+      errorMessage = "Empty publisher provided for update.";
     }
 
-    //AclEntry[] acls_before = updated.getAcls().toArray(new AclEntry[]{});
+    if(!Objects.isNull(errorMessage)){
+      throw new BadArgumentException(errorMessage);
+    }
+
     DataResource result = getDao().save(newResource);
-    // AclEntry[] acls_after = updated.getAcls().toArray(new AclEntry[]{});
+
+    logger.trace("Capturing audit information.");
+    auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());
 
     logger.trace("Sending UPDATE event.");
     messagingService.send(DataResourceMessage.factoryUpdateMessage(resource.getId(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
     return result;
+  }
+
+  @Override
+  public Optional<String> getAuditInformationAsJson(String resourceIdentifier, Pageable pgbl){
+    logger.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
+    return auditService.getAuditInformationAsJson(resourceIdentifier, pgbl.getPageNumber(), pgbl.getPageSize());
   }
 
   /**
@@ -516,9 +573,12 @@ public class DataResourceService implements IDataResourceService{
     }
     logger.debug("Setting resource state to {}.", newState);
     resource.setState(newState);
+
     logger.trace("Persisting resource.");
-    getDao().save(resource);
-    logger.trace("Resource successfully persisted.");
+    DataResource result = getDao().save(resource);
+
+    logger.trace("Capturing audit information.");
+    auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());
   }
 
   protected IDataResourceDao getDao(){
@@ -529,7 +589,7 @@ public class DataResourceService implements IDataResourceService{
   public Health health(){
     logger.trace("Obtaining health information.");
 
-    return Health.up().withDetail("DataResources", getDao().count()).build();
+    return Health.up().withDetail("DataResources", getDao().count()).withDetail("Audit enabled?", applicationProperties.isAuditEnabled()).build();
   }
 
 }

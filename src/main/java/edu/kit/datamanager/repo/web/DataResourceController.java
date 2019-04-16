@@ -163,7 +163,7 @@ public class DataResourceController implements IDataResourceController{
 
     if(currentVersion > 0){
       //trigger response creation and set etag...the response body is set automatically
-      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header("Version", Long.toString(currentVersion)).build();
+      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header("Resource-Version", Long.toString(currentVersion)).build();
     } else{
       return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
     }

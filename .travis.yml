@@ -3,7 +3,7 @@ jdk:
 - openjdk11
 install: true
 script:
-- ./gradlew -Ptravis build
+- ./gradlew -Ptravis clean check jacocoTestReport
 after_success:
 - "./gradlew coveralls"
 before_cache:

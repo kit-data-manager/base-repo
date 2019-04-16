@@ -46,6 +46,7 @@ import edu.kit.datamanager.repo.domain.Subject;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
+import edu.kit.datamanager.service.IAuditService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -57,6 +58,9 @@ import java.util.Set;
 import java.util.UUID;
 import org.hamcrest.Matchers;
 import static org.hamcrest.Matchers.equalTo;
+import org.hamcrest.collection.IsArrayContaining;
+import org.hamcrest.core.AnyOf;
+import org.hamcrest.core.StringContains;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -115,6 +119,8 @@ public class DataResourceControllerTest{
   private IDataResourceService dataResourceService;
   @Autowired
   private IContentInformationDao contentInformationDao;
+  @Autowired
+  private IAuditService<ContentInformation> contentInformationAuditService;
 
   @Autowired
   private ApplicationProperties applicationProperties;
@@ -386,12 +392,6 @@ public class DataResourceControllerTest{
   public void testGetAclWithAdministratePermissions() throws Exception{
     this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.acls").exists());
-  }
-
-  @Test
-  public void testRemoveAclWithNonAdminUser() throws Exception{
-    this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.acls").doesNotExist());
   }
 
   /**
@@ -845,7 +845,7 @@ public class DataResourceControllerTest{
             "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers[1].value").value("another-identifier"));
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers", Matchers.hasSize(2)));
   }
 
   @Test
@@ -1393,7 +1393,8 @@ public class DataResourceControllerTest{
     tags.add("testing");
     cinfo.setTags(tags);
     cinfo.setContentUri(temp.toUri().toString());
-    contentInformationDao.save(cinfo);
+    cinfo = contentInformationDao.save(cinfo);
+    contentInformationAuditService.captureAuditInformation(cinfo, "admin");
 
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");

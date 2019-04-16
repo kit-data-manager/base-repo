@@ -97,8 +97,9 @@ public interface IContentInformationService extends IGenericService<ContentInfor
    * @param identifier The resource identifier of the parent resource.
    * @param relativePath The relative path information stored in the content
    * information resource.
+   * @param version The version of the content information.
    *
    * @return The ContentInformation resource.
    */
-  ContentInformation getContentInformation(String identifier, String relativePath);
+  ContentInformation getContentInformation(String identifier, String relativePath, Long version);
 }

@@ -317,7 +317,7 @@ public class DataResourceService implements IDataResourceService{
     }
     DataResource resource = result.get();
     if(Objects.nonNull(version)){
-      logger.trace("Obtained resource for identifier {}. Checking for shadow of version {}.");
+      logger.trace("Obtained resource for identifier {}. Checking for shadow of version {}.", resourceIdentifier, version);
       Optional<DataResource> optAuditResult = auditService.getResourceByVersion(resource.getId(), version);
       if(optAuditResult.isPresent()){
         logger.trace("Shadow successfully obtained. Returning version {} of resource with id {}.", version, resourceIdentifier);
@@ -577,6 +577,7 @@ public class DataResourceService implements IDataResourceService{
     logger.trace("Persisting resource.");
     DataResource result = getDao().save(resource);
 
+    //capture state change, not a delete operation as the resource is not physically deleted
     logger.trace("Capturing audit information.");
     auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());
   }

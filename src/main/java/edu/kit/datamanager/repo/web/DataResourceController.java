@@ -122,7 +122,7 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity<DataResource> create(@RequestBody DataResource resource,
+  public ResponseEntity<DataResource> create(@RequestBody final DataResource resource,
           final WebRequest request,
           final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
@@ -170,7 +170,11 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity getAuditInformation(@PathVariable("id") final String resourceIdentifier, Pageable pgbl, WebRequest request, HttpServletResponse response, UriComponentsBuilder ucb){
+  public ResponseEntity getAuditInformation(@PathVariable("id") final String resourceIdentifier,
+          final Pageable pgbl,
+          final WebRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder ucb){
     LOGGER.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
     DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, null, request, response)).toString();
@@ -222,7 +226,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity patch(@PathVariable("id") final String identifier,
-          @RequestBody JsonPatch patch,
+          @RequestBody final JsonPatch patch,
           final WebRequest request,
           final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
@@ -242,7 +246,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity put(@PathVariable("id") final String identifier,
-          @RequestBody DataResource newResource,
+          @RequestBody final DataResource newResource,
           final WebRequest request,
           final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
@@ -263,7 +267,9 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity delete(@PathVariable("id") final String identifier, final WebRequest request, final HttpServletResponse response){
+  public ResponseEntity delete(@PathVariable("id") final String identifier,
+          final WebRequest request,
+          final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
 
     try{
@@ -290,9 +296,9 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity handleFileUpload(@PathVariable(value = "id") final String identifier,
+  public ResponseEntity createContent(@PathVariable(value = "id") final String identifier,
           @RequestPart(name = "file", required = false) MultipartFile file,
-          @RequestPart(name = "metadata", required = false) ContentInformation contentInformation,
+          @RequestPart(name = "metadata", required = false) final ContentInformation contentInformation,
           @RequestParam(name = "force", defaultValue = "false") boolean force,
           final WebRequest request,
           final HttpServletResponse response,
@@ -305,12 +311,12 @@ public class DataResourceController implements IDataResourceController{
     }
     //check data resource and permissions
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileUpload(t, file, contentInformation, force, request, response, uriBuilder)).toString();
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).createContent(t, file, contentInformation, force, request, response, uriBuilder)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
-    URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(resource.getId(), PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
+    URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContent(resource.getId(), PageRequest.of(0, 1), request, response, uriBuilder)).toUri();
 
     try{
       contentInformationService.create(contentInformation, resource, path, (file != null) ? file.getInputStream() : null, force);
@@ -327,16 +333,17 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity handleMetadataAccess(@PathVariable(value = "id") final String identifier,
-          @RequestParam(name = "tag", required = false) String tag,
+  public ResponseEntity getContentMetadata(@PathVariable(value = "id") final String identifier,
+          @RequestParam(name = "tag", required = false) final String tag,
+          @RequestParam(name = "version", required = false) final Long version,
           final Pageable pgbl,
-          WebRequest request,
+          final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
     String path = getContentPathFromRequest(request);
     //check resource and permission
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleMetadataAccess(t, tag, pgbl, request, response, uriBuilder)).toString();
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, tag, version, pgbl, request, response, uriBuilder)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
@@ -365,7 +372,8 @@ public class DataResourceController implements IDataResourceController{
       return ResponseEntity.ok().build();
     } else{
       LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
-      ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path);
+      ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, version);
+
       filterAndAutoReturnContentInformation(contentInformation);
       LOGGER.trace("Obtained single content information result.");
       return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
@@ -373,7 +381,7 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity handleFileDownload(@PathVariable(value = "id") final String identifier,
+  public ResponseEntity getContent(@PathVariable(value = "id") final String identifier,
           final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
@@ -381,14 +389,14 @@ public class DataResourceController implements IDataResourceController{
     String path = getContentPathFromRequest(request);
 
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).handleFileDownload(t, pgbl, request, response, uriBuilder)).toString();
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContent(t, pgbl, request, response, uriBuilder)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
     LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getId());
     //try to obtain single content element matching path exactly
-    ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path);
+    ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, null);
     //obtain data uri and check for content to exist
     String dataUri = contentInformation.getContentUri();
     URI uri = URI.create(dataUri);
@@ -406,9 +414,8 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity patchMetadata(@PathVariable(value = "id")
-          final String identifier,
-          @RequestBody JsonPatch patch,
+  public ResponseEntity patchContentMetadata(@PathVariable(value = "id") final String identifier,
+          final @RequestBody JsonPatch patch,
           final WebRequest request,
           final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
@@ -416,14 +423,14 @@ public class DataResourceController implements IDataResourceController{
     String path = getContentPathFromRequest(request);
 
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchMetadata(t, patch, request, response)).toString();
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
     ControllerUtils.checkEtag(request, resource);
 
-    ContentInformation toUpdate = contentInformationService.getContentInformation(resource.getId(), path);
+    ContentInformation toUpdate = contentInformationService.getContentInformation(resource.getId(), path, null);
 
     contentInformationService.patch(toUpdate, patch, getUserAuthorities(resource));
 
@@ -432,7 +439,9 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity deleteContent(@PathVariable(value = "id")
-          final String identifier, WebRequest request, HttpServletResponse response){
+          final String identifier,
+          final WebRequest request,
+          final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
 
     String path = getContentPathFromRequest(request);
@@ -480,7 +489,12 @@ public class DataResourceController implements IDataResourceController{
     return ResponseEntity.noContent().build();
   }
 
-  private DataResource getResourceByIdentifierOrRedirect(String identifier, Long version, Function<String, String> supplier){
+  /**
+   * Helper methods for internal use.*
+   */
+  private DataResource getResourceByIdentifierOrRedirect(String identifier,
+          Long version,
+          Function<String, String> supplier){
     String decodedIdentifier;
     try{
       LOGGER.trace("Performing getResourceByIdentifierOrRedirect({}, {}, #Function).", identifier, version);

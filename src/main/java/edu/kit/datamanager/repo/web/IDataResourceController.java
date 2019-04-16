@@ -53,7 +53,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "has successfully finished. If the overwritten element only contains a reference URI, the entry is just replaced by the user provided entry.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.POST)
   @ResponseBody
-  public ResponseEntity handleFileUpload(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity createContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           @ApiParam(value = "The file to upload. If no file is uploaded, a metadata document must be provided containing a reference URI to the externally hosted data.", required = false) @RequestPart(name = "file", required = false) MultipartFile file,
           @ApiParam(value = "Json representation of a content information metadata document. Providing this metadata document is optional unless no file is uploaded.", required = false) @RequestPart(name = "metadata", required = false) ContentInformation contentInformation,
           @ApiParam(value = "Flag to indicate, that existing content at the same location should be overwritten.", required = false) @RequestParam(name = "force", defaultValue = "false") boolean force,
@@ -69,14 +69,15 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "If not element with the exact content path exists, HTTP NOT_FOUND is returned. The user may provide custom sort criteria for ordering the returned elements. If no sort criteria is provided, the default sorting is "
           + "applied which returning all matching elements in ascending order by hierarchy depth and alphabetically by their relative path.")
   @ApiImplicitParams(value = {
-    @ApiImplicitParam(name = "page", dataType = "integer", paramType = "query", value = "Results page you want to retrieve (0..N)")
-    , @ApiImplicitParam(name = "size", dataType = "integer", paramType = "query", value = "Number of records per page.")
-    , @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query", value = "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.")
+    @ApiImplicitParam(name = "page", dataType = "integer", paramType = "query", value = "Results page you want to retrieve (0..N)"),
+    @ApiImplicitParam(name = "size", dataType = "integer", paramType = "query", value = "Number of records per page."),
+    @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query", value = "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.")
   })
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET, produces = "application/vnd.datamanager.content-information+json")
   @ResponseBody
-  public ResponseEntity handleMetadataAccess(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity getContentMetadata(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           @ApiParam(value = "A single tag assigned to certain content elements. Tags allow easy structuring and filtering of content associated to a resource.", required = false) @RequestParam(name = "tag", required = false) String tag,
+          @RequestParam(value = "The version number of the content information.", name = "version", required = false) final Long version,
           final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
@@ -92,7 +93,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
 
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET)
   @ResponseBody
-  public ResponseEntity handleFileDownload(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity getContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
@@ -103,7 +104,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE. Users having WRITE permissions to the associated resource are only allowed to modify contained metadata elements or tags assigned to the content element.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
   @ResponseBody
-  public ResponseEntity patchMetadata(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity patchContentMetadata(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           @ApiParam(value = "Json representation of a json patch document. The document must comply with RFC 6902 specified by the IETF.", required = true) @RequestBody JsonPatch patch,
           final WebRequest request,
           final HttpServletResponse response);

@@ -33,6 +33,7 @@ import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.PathUtils;
+import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
@@ -50,6 +51,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.codec.binary.Hex;
@@ -86,10 +88,12 @@ public class ContentInformationService implements IContentInformationService{
   private ApplicationProperties applicationProperties;
   @Autowired
   private IMessagingService messagingService;
+  @Autowired
+  private IAuditService<ContentInformation> auditService;
 
   @Override
   @Transactional(readOnly = true)
-  public ContentInformation getContentInformation(String identifier, String relativePath){
+  public ContentInformation getContentInformation(String identifier, String relativePath, Long version){
     logger.trace("Performing getContentInformation({}, {}).", identifier, relativePath);
 
     logger.trace("Performing findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag({}, {}).", identifier, relativePath);
@@ -101,8 +105,21 @@ public class ContentInformationService implements IContentInformationService{
       logger.error("No content found for resource {} at path {}. Throwing ResourceNotFoundException.", identifier, relativePath);
       throw new ResourceNotFoundException("No content information for identifier " + identifier + ", path " + relativePath + " found.");
     }
+    ContentInformation result = contentInformation.get();
+    if(Objects.nonNull(version)){
+      logger.trace("Obtained content information for identifier {}. Checking for shadow of version {}.", result.getId(), version);
+      Optional<ContentInformation> optAuditResult = auditService.getResourceByVersion(Long.toString(result.getId()), version);
+      if(optAuditResult.isPresent()){
+        logger.trace("Shadow successfully obtained. Returning version {} of content information with id {}.", version, result.getId());
+        return optAuditResult.get();
+      } else{
+        logger.info("Version {} of content information {} not found. Returning HTTP 404 (NOT_FOUND).", version, result.getId());
+        throw new ResourceNotFoundException("Content information with identifier " + result.getId() + " is not available in version " + version + ".");
 
-    return contentInformation.get();
+      }
+    }
+
+    return result;
   }
 
   @Override
@@ -264,6 +281,9 @@ public class ContentInformationService implements IContentInformationService{
       }
     }
 
+    logger.trace("Capturing audit information.");
+    auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());
+
     logger.trace("Sending CREATE event.");
     messagingService.send(DataResourceMessage.factoryCreateDataMessage(resource.getId(), result.getRelativePath(), result.getContentUri(), result.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
     return result;
@@ -299,6 +319,10 @@ public class ContentInformationService implements IContentInformationService{
     logger.trace("Patch successfully applied. Persisting patched resource.");
     getDao().save(updated);
     logger.trace("Resource successfully persisted.");
+
+    logger.trace("Capturing audit information.");
+    auditService.captureAuditInformation(updated, AuthenticationHelper.getPrincipal());
+
     logger.trace("Sending UPDATE event.");
     messagingService.send(DataResourceMessage.factoryUpdateDataMessage(resource.getParentResource().getId(), updated.getRelativePath(), updated.getContentUri(), updated.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
   }
@@ -307,6 +331,10 @@ public class ContentInformationService implements IContentInformationService{
   public void delete(ContentInformation resource){
     logger.trace("Performing delete({}).", "ContentInformation#" + resource.getId());
     getDao().delete(resource);
+
+    logger.trace("Deleting audit information.");
+    auditService.deleteAuditInformation(Long.toString(resource.getId()), resource);
+
     logger.trace("Sending DELETE event.");
     messagingService.send(DataResourceMessage.factoryDeleteDataMessage(resource.getParentResource().getId(), resource.getRelativePath(), resource.getContentUri(), resource.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
   }

@@ -16,7 +16,7 @@
 package edu.kit.datamanager.repo.service.impl;
 
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
-import edu.kit.datamanager.repo.domain.DataResource;
+import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.service.IAuditService;
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +30,6 @@ import org.javers.repository.jql.ShadowScope;
 import org.javers.shadow.Shadow;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Service;
 
 /**
@@ -38,7 +37,7 @@ import org.springframework.stereotype.Service;
  * @author jejkal
  */
 @Service
-public class DataResourceAuditService implements IAuditService<DataResource>{
+public class ContentInformationAuditService implements IAuditService<ContentInformation>{
 
   @Autowired
   private Logger LOGGER;
@@ -46,31 +45,31 @@ public class DataResourceAuditService implements IAuditService<DataResource>{
   private final ApplicationProperties applicationProperties;
 
   @Autowired
-  public DataResourceAuditService(Javers javers, ApplicationProperties applicationProperties){
+  public ContentInformationAuditService(Javers javers, ApplicationProperties applicationProperties){
     this.javers = javers;
     this.applicationProperties = applicationProperties;
   }
 
   @Override
-  public void captureAuditInformation(DataResource resource, String principal){
-    LOGGER.trace("Calling captureAuditInformation(DataResource#{}, {}).", resource.getId(), principal);
+  public void captureAuditInformation(ContentInformation contentInformation, String principal){
+    LOGGER.trace("Calling captureAuditInformation(ContentInformation#{}, {}).", contentInformation.getId(), principal);
     if(!applicationProperties.isAuditEnabled()){
-      LOGGER.trace("Audit is disabled. Skipping registration of resource.");
+      LOGGER.trace("Audit is disabled. Skipping registration of content information.");
     } else{
-      LOGGER.trace("Capturing audit information for resource {} modified by principal {}.", resource, principal);
-      javers.commit(principal, resource);
-      LOGGER.trace("Successfully committed audit information for resource with id {}.", resource.getId());
+      LOGGER.trace("Capturing audit information for content information {} modified by principal {}.", contentInformation, principal);
+      javers.commit(principal, contentInformation);
+      LOGGER.trace("Successfully committed audit information for content information with id {}.", contentInformation.getId());
     }
   }
 
   @Override
-  public Optional<String> getAuditInformationAsJson(String resourceId, int page, int resultsPerPage){
-    LOGGER.trace("Calling getAuditInformationAsJson({}, {}, {}).", resourceId, page, resultsPerPage);
+  public Optional<String> getAuditInformationAsJson(String contentInformationId, int page, int resultsPerPage){
+    LOGGER.trace("Calling getAuditInformationAsJson({}, {}, {}).", contentInformationId, page, resultsPerPage);
     if(!applicationProperties.isAuditEnabled()){
       LOGGER.trace("Audit is disabled. Returning empty result.");
       return Optional.empty();
     } else{
-      JqlQuery query = QueryBuilder.byInstanceId(resourceId, DataResource.class).limit(resultsPerPage).skip(page * resultsPerPage).build();
+      JqlQuery query = QueryBuilder.byInstanceId(Long.parseLong(contentInformationId), ContentInformation.class).limit(resultsPerPage).skip(page * resultsPerPage).build();
       Changes result = javers.findChanges(query);
 
       LOGGER.trace("Obtained {} change elements. Returning them in serialized format.", result.size());
@@ -79,58 +78,59 @@ public class DataResourceAuditService implements IAuditService<DataResource>{
   }
 
   @Override
-  public Optional<DataResource> getResourceByVersion(String resourceId, long version){
-    LOGGER.trace("Calling getResourceByVersion({}, {}).", resourceId, version);
+  public Optional<ContentInformation> getResourceByVersion(String contentInformationId, long version){
+    LOGGER.trace("Calling getResourceByVersion({}, {}).", contentInformationId, version);
     if(!applicationProperties.isAuditEnabled()){
       LOGGER.trace("Audit is disabled. Returning empty result.");
       return Optional.empty();
     } else{
-      JqlQuery query = QueryBuilder.byInstanceId(resourceId, DataResource.class).withVersion(version).withShadowScope(ShadowScope.DEEP_PLUS).build();
+      LOGGER.trace("Querying for content information with instance id {} and version {}.", contentInformationId, version);
+      JqlQuery query = QueryBuilder.byInstanceId(Long.parseLong(contentInformationId), ContentInformation.class).withVersion(version).withShadowScope(ShadowScope.DEEP_PLUS).build();
       LOGGER.trace("Obtaining shadows from Javers repository.");
-      List<Shadow<DataResource>> shadows = javers.findShadows(query);
+      List<Shadow<ContentInformation>> shadows = javers.findShadows(query);
 
       if(CollectionUtils.isEmpty(shadows)){
-        LOGGER.warn("No version information found for resource id {}. Returning empty result.", resourceId);
+        LOGGER.warn("No version information found for content information id {}. Returning empty result.", contentInformationId);
         return Optional.empty();
       }
 
-      LOGGER.trace("Shadow for resource id {} and version {} found. Returning result.", resourceId, version);
-      Shadow<DataResource> versionShadow = shadows.get(0);
+      LOGGER.trace("Shadow for content information id {} and version {} found. Returning result.", contentInformationId, version);
+      Shadow<ContentInformation> versionShadow = shadows.get(0);
       LOGGER.trace("Returning shadow at index 0 with commit metadata {}.", versionShadow.getCommitMetadata());
       return Optional.of(versionShadow.get());
     }
   }
 
   @Override
-  public long getCurrentVersion(String resourceId){
-    LOGGER.trace("Calling getCurrentVersion({}).", resourceId);
+  public long getCurrentVersion(String contentInformationId){
+    LOGGER.trace("Calling getCurrentVersion({}).", contentInformationId);
     if(!applicationProperties.isAuditEnabled()){
       LOGGER.trace("Audit is disabled. Returning 0.");
       return 0l;
     } else{
-      JqlQuery query = QueryBuilder.byInstanceId(resourceId, DataResource.class).limit(1).build();
+      JqlQuery query = QueryBuilder.byInstanceId(Long.parseLong(contentInformationId), ContentInformation.class).limit(1).build();
       LOGGER.trace("Obtaining snapshots from Javers repository.");
       List<CdoSnapshot> snapshots = javers.findSnapshots(query);
 
       if(CollectionUtils.isEmpty(snapshots)){
-        LOGGER.warn("No version information found for resource id {}. Returning 0.", resourceId);
+        LOGGER.warn("No version information found for content information id {}. Returning 0.", contentInformationId);
         return 0;
       }
 
       long version = snapshots.get(0).getVersion();
-      LOGGER.trace("Snapshot for resource id {} found. Returning version {}.", resourceId, version);
+      LOGGER.trace("Snapshot for content information id {} found. Returning version {}.", contentInformationId, version);
       return version;
     }
   }
 
   @Override
-  public void deleteAuditInformation(String resourceId, DataResource resource){
-    LOGGER.trace("Calling deleteAuditInformation({}, <resource>).", resourceId);
+  public void deleteAuditInformation(String contentInformationId, ContentInformation resource){
+    LOGGER.trace("Calling deleteAuditInformation({}, <contentInformation>).", contentInformationId);
     if(!applicationProperties.isAuditEnabled()){
       LOGGER.trace("Audit is disabled. Returning without doing anything.");
     } else{
-      LOGGER.trace("Performing shallow delete of resource with id {}.", resourceId);
-      javers.commitShallowDelete(resourceId, resource);
+      LOGGER.trace("Performing shallow delete of content information with id {}.", contentInformationId);
+      javers.commitShallowDelete(contentInformationId, resource);
       LOGGER.trace("Shallow delete executed.");
     }
   }

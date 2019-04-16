@@ -1497,9 +1497,9 @@ public class DataResourceControllerTest{
             "Bearer " + userToken)).andDo(print()).andExpect(status().isNotFound());
 
     //get version information
+    System.out.println("GET VERSION INFO");
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("Content-Type", "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.header().exists("Version")).andExpect(MockMvcResultMatchers.header().string("Version", "2"));  }
-  
-  
-
+            "Bearer " + userToken).header("Content-Type", "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.header().exists("Version")).andExpect(MockMvcResultMatchers.header().string("Version", "2"));
+    System.out.println("DONE!");
+  }
 }

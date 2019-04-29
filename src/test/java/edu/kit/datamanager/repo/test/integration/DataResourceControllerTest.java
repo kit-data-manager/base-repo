@@ -1549,9 +1549,9 @@ public class DataResourceControllerTest{
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
   }
 
-  @Test
-  public void testObtainHealthInformation() throws Exception{
-    this.mockMvc.perform(get("/actuator/health")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.status").value("UP"));
-  }
+//  @Test
+//  public void testObtainHealthInformation() throws Exception{
+//    this.mockMvc.perform(get("/actuator/health")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.status").value("UP"));
+//  }
 
 }

@@ -1,7 +1,7 @@
 language: ja
 dist: xenial
 jdk:
-- openjdk11
+- openjdk12
 install: true
 script:
 - ./gradlew -Ptravis clean check jacocoTestReport

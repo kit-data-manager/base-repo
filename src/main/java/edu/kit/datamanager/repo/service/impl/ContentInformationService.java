@@ -317,11 +317,11 @@ public class ContentInformationService implements IContentInformationService{
     logger.trace("Performing patch({}, {}, {}).", "ContentInformation#" + resource.getId(), patch, userGrants);
     ContentInformation updated = PatchUtil.applyPatch(resource, patch, ContentInformation.class, userGrants);
     logger.trace("Patch successfully applied. Persisting patched resource.");
-    getDao().save(updated);
+    ContentInformation result = getDao().save(updated);
     logger.trace("Resource successfully persisted.");
 
     logger.trace("Capturing audit information.");
-    auditService.captureAuditInformation(updated, AuthenticationHelper.getPrincipal());
+    auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());
 
     logger.trace("Sending UPDATE event.");
     messagingService.send(DataResourceMessage.factoryUpdateDataMessage(resource.getParentResource().getId(), updated.getRelativePath(), updated.getContentUri(), updated.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));

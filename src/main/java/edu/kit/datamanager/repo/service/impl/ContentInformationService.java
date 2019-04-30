@@ -123,6 +123,12 @@ public class ContentInformationService implements IContentInformationService{
   }
 
   @Override
+  public Optional<String> getAuditInformationAsJson(String resourceIdentifier, Pageable pgbl){
+    logger.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
+    return auditService.getAuditInformationAsJson(resourceIdentifier, pgbl.getPageNumber(), pgbl.getPageSize());
+  }
+
+  @Override
   public ContentInformation findById(String identifier) throws ResourceNotFoundException{
     logger.trace("Performing findById({}).", identifier);
     Long id = Long.parseLong(identifier);

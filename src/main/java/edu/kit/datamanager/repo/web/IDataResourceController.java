@@ -83,6 +83,24 @@ public interface IDataResourceController extends IGenericResourceController<Data
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);
 
+  @ApiOperation(value = "Access audit information for a single content information resource.",
+          notes = "List audit information for a content information resource in a paginated form. Sorting can be supported but is optional. If no sorting is supported it is recommended to return audit "
+          + "information sorted by version number in descending order. This endpoint is addressed if the caller provides content type "
+          + "'application/vnd.datamanager.audit+json' within the 'Accept' header. If no audit support is enabled or no audit information are available for a certain resource, "
+          + "an empty result should be returned. ")
+  @ApiImplicitParams(value = {
+    @ApiImplicitParam(name = "page", dataType = "integer", paramType = "query", value = "Results page you want to retrieve (0..N)"),
+    @ApiImplicitParam(name = "size", dataType = "integer", paramType = "query", value = "Number of records per page."),
+    @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query", value = "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.")
+  })
+  @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET, produces = "application/vnd.datamanager.audit+json")
+  @ResponseBody
+  public ResponseEntity getContentAuditInformation(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          final Pageable pgbl,
+          final WebRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder uriBuilder);
+
   @ApiOperation(value = "Download data located at the provided content path.",
           notes = "This endpoint allows to download the data associated with a data resource and located at a particular virtual part. The virtual path starts after 'data/' and should end with a filename. "
           + "Depending on the content located at the provided path, different response scenarios can occur. If the content is a locally stored, accessible file, the bitstream of the file is retured. If the file is (temporarily) not available, "

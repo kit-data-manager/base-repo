@@ -1530,14 +1530,27 @@ public class DataResourceControllerTest{
     this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
 
-    //get patched element
+    //get patched content in different versions
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "2").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.tags[0]").value("success"));
+    //current version should be patched one
+    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.tags[0]").value("success"));
 
     //get patched element from first version and expect no result
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "1").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.tags").isEmpty());
 
+    //get invalid version
+    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "666").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
+
+    //get version information
+    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.header().exists("Resource-Version")).andExpect(MockMvcResultMatchers.header().string("Resource-Version", "2"));
+
+    
+    
     //delete content
     this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header("If-Match", etag).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNoContent());
@@ -1553,5 +1566,4 @@ public class DataResourceControllerTest{
 //  public void testObtainHealthInformation() throws Exception{
 //    this.mockMvc.perform(get("/actuator/health")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.status").value("UP"));
 //  }
-
 }

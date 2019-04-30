@@ -97,7 +97,8 @@ public class DataResourceController implements IDataResourceController{
   private final IDataResourceService dataResourceService;
   @Autowired
   private final IAuditService<DataResource> auditService;
-
+  @Autowired
+  private final IAuditService<ContentInformation> contentAuditService;
   @Autowired
   private final IContentInformationService contentInformationService;
   @Autowired
@@ -114,11 +115,12 @@ public class DataResourceController implements IDataResourceController{
    * @param contentInformationService Content information service instance added
    * e.g. via dependency injection.
    */
-  public DataResourceController(IDataResourceService dataResourceService, IAuditService<DataResource> auditService, IContentInformationService contentInformationService){
+  public DataResourceController(IDataResourceService dataResourceService, IAuditService<DataResource> auditService, IAuditService<ContentInformation> contentAuditService, IContentInformationService contentInformationService){
     super();
     this.dataResourceService = dataResourceService;
     this.contentInformationService = contentInformationService;
     this.auditService = auditService;
+    this.contentAuditService = contentAuditService;
   }
 
   @Override
@@ -192,6 +194,51 @@ public class DataResourceController implements IDataResourceController{
 
     LOGGER.trace("Audit information found, returning result.");
     return ResponseEntity.ok().header("Resource-Version", Long.toString(currentVersion)).body(auditInformation.get());
+  }
+
+  @Override
+  public ResponseEntity getContentAuditInformation(@PathVariable("id") final String resourceIdentifier,
+          final Pageable pgbl,
+          final WebRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder uriBuilder){
+    LOGGER.trace("Performing getContentAuditInformation({}, {}).", resourceIdentifier, pgbl);
+
+    String path = getContentPathFromRequest(request);
+    //check resource and permission
+    DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, null, pgbl, request, response, uriBuilder)).toString();
+    });
+
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+
+    LOGGER.trace("Checking provided path {}.", path);
+    if(path.startsWith("/")){
+      LOGGER.debug("Removing leading slash from path {}.", path);
+      //remove leading slash if present, e.g. if path was empty
+      path = path.substring(1);
+    }
+
+    //switch between collection and element listing
+    if(path.endsWith("/") || path.length() == 0){
+      LOGGER.error("Path ends with slash or is empty. Obtaining audit information for collection elements is not supported.");
+      throw new BadArgumentException("Provided path is invalid for obtaining audit information. Path must not be empty and must not end with a slash.");
+    } else{
+      LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
+      ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, null);
+
+      Optional<String> auditInformation = contentInformationService.getAuditInformationAsJson(Long.toString(contentInformation.getId()), pgbl);
+
+      if(!auditInformation.isPresent()){
+        LOGGER.trace("No audit information found for resource {} and path {}. Returning empty JSON array.", resourceIdentifier, path);
+        return ResponseEntity.ok().body("[]");
+      }
+
+      long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
+
+      LOGGER.trace("Audit information found, returning result.");
+      return ResponseEntity.ok().header("Resource-Version", Long.toString(currentVersion)).body(auditInformation.get());
+    }
   }
 
   @Override

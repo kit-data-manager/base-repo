@@ -353,7 +353,7 @@ public class DataResourceController implements IDataResourceController{
     ControllerUtils.checkAnonymousAccess();
     String path = getContentPathFromRequest(request);
     //@TODO escape path properly
-    if(path == null || path.endsWith("/")){
+    if(path == null || path.length() == 0 || path.endsWith("/")){
       throw new BadArgumentException("Provided path is invalid. Path must not be empty and must not end with a slash.");
     }
     //check data resource and permissions
@@ -468,12 +468,12 @@ public class DataResourceController implements IDataResourceController{
     ControllerUtils.checkAnonymousAccess();
 
     String path = getContentPathFromRequest(request);
-
+ 
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
     });
 
-    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
     ControllerUtils.checkEtag(request, resource);
 

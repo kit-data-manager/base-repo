@@ -173,11 +173,8 @@ public class DataResourceUtils{
     List<String> principalIds = AuthenticationHelper.getAuthorizationIdentities();
     PERMISSION maxPermission = PERMISSION.NONE;
     for(AclEntry entry : resource.getAcls()){
-      //TODO: #7 wildcard checks?
-      if(principalIds.contains(entry.getSid())){
-        if(entry.getPermission().ordinal() > maxPermission.ordinal()){
-          maxPermission = entry.getPermission();
-        }
+      if(AclUtils.isSidInPrincipalList(entry.getSid(), principalIds) && entry.getPermission().ordinal() > maxPermission.ordinal()){
+        maxPermission = entry.getPermission();
       }
     }
 
@@ -239,4 +236,4 @@ public class DataResourceUtils{
     return aclMap;
   }
 
-  }
+}

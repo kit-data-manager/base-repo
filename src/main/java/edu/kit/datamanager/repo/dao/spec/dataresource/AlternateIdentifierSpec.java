@@ -13,35 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.kit.datamanager.repo.dao;
+package edu.kit.datamanager.repo.dao.spec.dataresource;
 
+import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.repo.domain.DataResource;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
+import org.datacite.schema.kernel_4.Resource.AlternateIdentifiers.AlternateIdentifier;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
  *
  * @author jejkal
  */
-public class InternalIdentifierSpec{
+public class AlternateIdentifierSpec{
 
   /**
    * Hidden constructor.
    */
-  private InternalIdentifierSpec(){
+  private  AlternateIdentifierSpec(){
   }
 
-  public static Specification<DataResource> toSpecification(final String... identifier){
+  public static Specification<DataResource> toSpecification(final String... identifierValues){
     Specification<DataResource> newSpec = Specification.where(null);
-    if(identifier == null || identifier.length == 0){
+    if(identifierValues == null || identifierValues.length == 0){
       return newSpec;
     }
+
     return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
-      return builder.and(root.get("id").in((Object[]) identifier));
+      //join dataresource table with alternate identifiers table
+      Join<DataResource, AlternateIdentifier> altJoin = root.join("alternateIdentifiers", JoinType.INNER);
+      //get all alternate identifiers NOT of type INTERNAL with one of the provided values
+      return builder.and(builder.notEqual(altJoin.get("identifierType"), Identifier.IDENTIFIER_TYPE.INTERNAL), altJoin.get("value").in((Object[]) identifierValues));
     };
   }
 }

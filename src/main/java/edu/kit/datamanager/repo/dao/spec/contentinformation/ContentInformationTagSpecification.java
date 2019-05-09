@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.kit.datamanager.repo.dao;
+package edu.kit.datamanager.repo.dao.spec.contentinformation;
 
+import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
+import java.util.Arrays;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -25,23 +28,24 @@ import org.springframework.data.jpa.domain.Specification;
  *
  * @author jejkal
  */
-public class PrimaryIdentifierSpec{
+public class ContentInformationTagSpecification{
 
   /**
    * Hidden constructor.
    */
-  private PrimaryIdentifierSpec(){
+  private ContentInformationTagSpecification(){
   }
 
-  public static Specification<DataResource> toSpecification(final String... primaryIdentifier){
-    Specification<DataResource> newSpec = Specification.where(null);
-    if(primaryIdentifier == null || primaryIdentifier.length == 0){
+  public static Specification<ContentInformation> toSpecification(final String... tags){
+    Specification<ContentInformation> newSpec = Specification.where(null);
+    if(tags == null || tags.length == 0){
       return newSpec;
     }
-    return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
+
+    return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
-      return builder.and(root.get("identifier").get("value").in((Object[]) primaryIdentifier));
+      return builder.and(root.join("tags").in(Arrays.asList(tags)));
     };
   }
 }

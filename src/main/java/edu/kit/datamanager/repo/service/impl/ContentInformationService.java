@@ -17,6 +17,7 @@ package edu.kit.datamanager.repo.service.impl;
 
 import com.github.fge.jsonpatch.JsonPatch;
 import com.monitorjbl.json.JsonResult;
+import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.entities.messaging.DataResourceMessage;
 import edu.kit.datamanager.exceptions.BadArgumentException;
@@ -26,8 +27,13 @@ import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
-import edu.kit.datamanager.repo.dao.ContentInformationMatchSpecification;
-import edu.kit.datamanager.repo.dao.ContentInformationTagSpecification;
+import edu.kit.datamanager.repo.dao.spec.contentinformation.ContentInformationContentUriSpecification;
+import edu.kit.datamanager.repo.dao.spec.contentinformation.ContentInformationMediaTypeSpecification;
+import edu.kit.datamanager.repo.dao.spec.contentinformation.ContentInformationMatchSpecification;
+import edu.kit.datamanager.repo.dao.spec.contentinformation.ContentInformationMetadataSpecification;
+import edu.kit.datamanager.repo.dao.spec.contentinformation.ContentInformationPermissionSpecification;
+import edu.kit.datamanager.repo.dao.spec.contentinformation.ContentInformationRelativePathSpecification;
+import edu.kit.datamanager.repo.dao.spec.contentinformation.ContentInformationTagSpecification;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -51,6 +57,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -293,6 +300,65 @@ public class ContentInformationService implements IContentInformationService{
     logger.trace("Sending CREATE event.");
     messagingService.send(DataResourceMessage.factoryCreateDataMessage(resource.getId(), result.getRelativePath(), result.getContentUri(), result.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
     return result;
+  }
+
+  @Override
+  public Page<ContentInformation> findByExample(ContentInformation example,
+          List<String> callerIdentities,
+          boolean callerIsAdmin,
+          Pageable pgbl){
+    logger.trace("Performing findByExample({}, {}).", example, pgbl);
+    Page<ContentInformation> page;
+
+    if(example == null){
+      //obtain all accessible content elements
+      logger.trace("No example provided. Returning all accessible content elements.");
+      Specification<ContentInformation> spec = Specification.where(ContentInformationPermissionSpecification.toSpecification(null, callerIdentities, PERMISSION.READ));
+      page = dao.findAll(spec, pgbl);
+    } else{
+      Specification<ContentInformation> spec;
+
+      if(example.getParentResource() != null && example.getParentResource().getId() != null){
+        logger.trace("Parent resource with id {} provided in example. Searching for content in single resource.", example.getParentResource().getId());
+        spec = Specification.where(ContentInformationPermissionSpecification.toSpecification(example.getParentResource().getId(), callerIdentities, PERMISSION.READ));
+      } else{
+        logger.trace("No parent resource provided in example. Searching for content in all resources.");
+        spec = Specification.where(ContentInformationPermissionSpecification.toSpecification(null, callerIdentities, PERMISSION.READ));
+      }
+
+      logger.trace("Adding additional query specifications based on example {}.", example);
+
+      if(example.getRelativePath() != null){
+        logger.trace("Adding relateive path query specification for relative path {}.", example.getRelativePath());
+        spec = spec.and(ContentInformationRelativePathSpecification.toSpecification(example.getRelativePath(), false));
+      }
+
+      if(example.getContentUri() != null){
+        logger.trace("Adding content Uri query specification for metadata {}.", example.getContentUri());
+        spec = spec.and(ContentInformationContentUriSpecification.toSpecification(example.getContentUri(), false));
+      }
+
+      if(example.getMediaType() != null){
+        logger.trace("Adding mediatype query specification for media type {}.", example.getMediaType());
+        spec = spec.and(ContentInformationMediaTypeSpecification.toSpecification(example.getMediaType(), false));
+      }
+
+      if(example.getMetadata() != null && !example.getMetadata().isEmpty()){
+        logger.trace("Adding metadata query specification for metadata {}.", example.getMetadata());
+        spec = spec.and(ContentInformationMetadataSpecification.toSpecification(example.getMetadata()));
+      }
+
+      if(example.getTags() != null && !example.getTags().isEmpty()){
+        logger.debug("Adding tag query specification for tags {}.", example.getTags());
+        spec = spec.and(ContentInformationTagSpecification.toSpecification(example.getTags().toArray(new String[]{})));
+      }
+
+      logger.trace("Calling findAll for collected specs and page information {}.", pgbl);
+      page = dao.findAll(spec, pgbl);
+    }
+
+    logger.trace("Returning page content.");
+    return page;
   }
 
   @Override

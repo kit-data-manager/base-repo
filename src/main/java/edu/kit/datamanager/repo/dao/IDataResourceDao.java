@@ -31,10 +31,48 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
  */
 public interface IDataResourceDao extends JpaRepository<DataResource, String>, JpaSpecificationExecutor<DataResource>{
 
-   public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, PERMISSION permission);
+  /**
+   * Find all data resources NOT having the provided state, having at least one
+   * of the provided sids in their ACL list with the provided permission.
+   *
+   * @param state The state the resource should NOT have.
+   * @param sids A list of sids from which at least one sid must be in a
+   * matching resource's ACL.
+   * @param permission The permission a matching sid must be allowed to access
+   * the resource with.
+   *
+   * @return A list of data resources or an empty list.
+   */
+  public List<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, PERMISSION permission);
 
+  /**
+   * Find data resources NOT having the provided state, having at least one of
+   * the provided sids in their ACL list with the provided permission in a
+   * paginated form.
+   *
+   * @param state The state the resource should NOT have.
+   * @param sids A list of sids from which at least one sid must be in a
+   * matching resource's ACL.
+   * @param permission The permission a matching sid must be allowed to access
+   * the resource with.
+   *
+   * @return One page of data resources or an empty page.
+   */
   public Page<DataResource> findByStateNotAndAclsSidInAndAclsPermissionGreaterThanEqual(State state, List<String> sids, PERMISSION permission, Pageable pgbl);
 
+  /**
+   * Find one or no data resource with a provided id accessible with the
+   * provided permissions by at least one of the sids in the provided list.
+   *
+   * @param id The resource id.
+   * @param sids A list of sids from which at least one sid must be in a
+   * matching resource's ACL.
+   * @param permission The permission a matching sid must be allowed to access
+   * the resource with.
+   *
+   * @return An optional resource or no resource if no resource is matching the
+   * query.
+   */
   public Optional<DataResource> findByIdAndAclsSidInAndAclsPermissionGreaterThanEqual(String id, List<String> sids, PERMISSION permission);
 
 }

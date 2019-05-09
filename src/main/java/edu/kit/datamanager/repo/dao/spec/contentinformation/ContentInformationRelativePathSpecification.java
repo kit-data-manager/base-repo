@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Karlsruhe Institute of Technology.
+ * Copyright 2019 Karlsruhe Institute of Technology.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.kit.datamanager.repo.dao;
+package edu.kit.datamanager.repo.dao.spec.contentinformation;
 
+import edu.kit.datamanager.repo.dao.spec.StringFieldSpecification;
 import edu.kit.datamanager.repo.domain.ContentInformation;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.domain.Specification;
 
 /**
  *
  * @author jejkal
  */
-public interface IContentInformationDao extends JpaRepository<ContentInformation, Long>, JpaSpecificationExecutor<ContentInformation>{
+public class ContentInformationRelativePathSpecification{
 
-  //public Optional<ContentInformation> findByParentResourceIdEqualsAndRelativePathEquals(Long id, String relativePath);
-  // public Page<ContentInformation> findByParentResourceIdEqualsAndRelativePathLike(Long id, String relativePath, Pageable pgbl);
+  /**
+   * Hidden constructor.
+   */
+  private ContentInformationRelativePathSpecification(){
+  }
+
+  public static Specification<ContentInformation> toSpecification(final String relativePath, final boolean exactPath){
+    return StringFieldSpecification.createSpecification("relativePath", relativePath, exactPath);
+  }
 }

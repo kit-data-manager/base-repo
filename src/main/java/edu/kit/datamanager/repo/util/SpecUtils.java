@@ -16,16 +16,15 @@
 package edu.kit.datamanager.repo.util;
 
 import edu.kit.datamanager.dao.ByExampleSpecification;
-import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.exceptions.FeatureNotImplementedException;
-import edu.kit.datamanager.repo.dao.AlternateIdentifierSpec;
-import edu.kit.datamanager.repo.dao.CreatorSpecification;
-import edu.kit.datamanager.repo.dao.PermissionSpecification;
-import edu.kit.datamanager.repo.dao.PrimaryIdentifierSpec;
-import edu.kit.datamanager.repo.dao.ResourceTypeSpec;
+import edu.kit.datamanager.repo.dao.spec.dataresource.AlternateIdentifierSpec;
+import edu.kit.datamanager.repo.dao.spec.dataresource.CreatorSpecification;
+import edu.kit.datamanager.repo.dao.spec.dataresource.PermissionSpecification;
+import edu.kit.datamanager.repo.dao.spec.dataresource.PrimaryIdentifierSpec;
+import edu.kit.datamanager.repo.dao.spec.dataresource.ResourceTypeSpec;
+import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
-import io.jsonwebtoken.lang.Collections;
 import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.EntityManager;
@@ -72,7 +71,7 @@ public class SpecUtils{
         }
 
       } else{
-        result = new ByExampleSpecification(em).byExample(example).and(ResourceTypeSpec.toSpecification(example.getResourceType()));
+        result = new ByExampleSpecification(em).byExample(example).and(ResourceTypeSpec.toSpecification(example.getResourceType())).and(CreatorSpecification.toSpecification(example.getCreators()));
       }
     }
     return result;
@@ -90,19 +89,18 @@ public class SpecUtils{
   private static void checkForUnsupportedFields(DataResource resource) throws FeatureNotImplementedException{
     if(!CollectionUtils.isEmpty(resource.getAcls())
             || !CollectionUtils.isEmpty(resource.getContributors())
-            || !CollectionUtils.isEmpty(resource.getDates()) 
-            || !CollectionUtils.isEmpty(resource.getDescriptions()) 
+            || !CollectionUtils.isEmpty(resource.getDates())
+            || !CollectionUtils.isEmpty(resource.getDescriptions())
             || !CollectionUtils.isEmpty(resource.getFormats())
-            || !CollectionUtils.isEmpty(resource.getFundingReferences()) 
+            || !CollectionUtils.isEmpty(resource.getFundingReferences())
             || !CollectionUtils.isEmpty(resource.getGeoLocations())
             || !CollectionUtils.isEmpty(resource.getRelatedIdentifiers())
             || !CollectionUtils.isEmpty(resource.getRights())
-            || !CollectionUtils.isEmpty(resource.getSizes()) 
+            || !CollectionUtils.isEmpty(resource.getSizes())
             || !CollectionUtils.isEmpty(resource.getSubjects())){
       LOGGER.warn("Found unsupported field assigned in example {}. Throwing FeatureNotImplementedException exception.", resource);
       throw new FeatureNotImplementedException("Searching is not yet implemented for one of the provided resource attributes. "
               + "Currently, only support for identifiers, resourceType, creators and all primitive attributes is available.");
     }
-
   }
 }

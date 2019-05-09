@@ -58,11 +58,11 @@ public class ContentInformation implements Serializable{
   @ManyToOne
   @SecureUpdate({"FORBIDDEN"})
   private DataResource parentResource;
-  @SecureUpdate({"ROLE_ADMINISTRATOR"})
+  @SecureUpdate({"ROLE_ADMINISTRATOR"})//only allow modification by 'real' administrator, not for owner (having ADMINISTRATE permissions)
   private String relativePath;
   @SecureUpdate({"FORBIDDEN"})
   private int depth;
-  @SecureUpdate({"ROLE_ADMINISTRATOR"})
+  @SecureUpdate({"ROLE_ADMINISTRATOR"})//only allow modification by 'real' administrator, not for owner (having ADMINISTRATE permissions)
   private String contentUri;
   @SecureUpdate({"ROLE_ADMINISTRATOR", "PERMISSION_ADMINISTRATE"})
   private String mediaType;

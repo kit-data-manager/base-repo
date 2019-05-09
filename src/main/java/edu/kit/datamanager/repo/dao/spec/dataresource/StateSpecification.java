@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.kit.datamanager.repo.dao;
+package edu.kit.datamanager.repo.dao.spec.dataresource;
 
 import edu.kit.datamanager.repo.domain.DataResource;
 import java.util.List;

@@ -350,6 +350,7 @@ public class DataResourceController implements IDataResourceController{
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
+
     ControllerUtils.checkAnonymousAccess();
     String path = getContentPathFromRequest(request);
     //@TODO escape path properly
@@ -428,6 +429,25 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
+  public ResponseEntity<List<ContentInformation>> findContentMetadataByExample(@RequestBody final ContentInformation example,
+          final Pageable pgbl,
+          final WebRequest wr,
+          final HttpServletResponse response,
+          final UriComponentsBuilder uriBuilder){
+    PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
+
+    Page<ContentInformation> page = contentInformationService.findByExample(example, AuthenticationHelper.getAuthorizationIdentities(),
+            AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()), pgbl);
+
+    int index_start = page.getNumber() * request.getPageSize();
+    int index_end = index_start + request.getPageSize();
+
+    response.addHeader("Content-Range", (index_start + "-" + index_end + "/" + page.getTotalElements()));
+    filterAndAutoReturnContentInformation(page.getContent());
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
   public ResponseEntity getContent(@PathVariable(value = "id") final String identifier,
           final Pageable pgbl,
           final WebRequest request,
@@ -468,7 +488,7 @@ public class DataResourceController implements IDataResourceController{
     ControllerUtils.checkAnonymousAccess();
 
     String path = getContentPathFromRequest(request);
- 
+
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
     });

@@ -186,7 +186,7 @@ public interface IDataResourceService extends IGenericService<DataResource>, ISe
    * If no element is matching the provided example, an empty list should be
    * returned. This method is NOT expected to return 'null'.
    *
-   * This method is intended toprovide a high level wrapper for {@link #findAll(edu.kit.datamanager.repo.domain.DataResource, org.springframework.data.domain.Pageable, boolean, java.util.function.BiConsumer)
+   * This method provides a high level wrapper for {@link #findAll(edu.kit.datamanager.repo.domain.DataResource, org.springframework.data.domain.Pageable, boolean, java.util.function.BiConsumer)
    * } and {@link #findAllFiltered(edu.kit.datamanager.repo.domain.DataResource, java.util.List, edu.kit.datamanager.entities.PERMISSION, org.springframework.data.domain.Pageable, boolean, java.util.function.BiConsumer)
    * } and may use them internally. In addition it may perform security checks
    * in order to determine, which of the two findAll implementations should be
@@ -194,12 +194,12 @@ public interface IDataResourceService extends IGenericService<DataResource>, ISe
    *
    * @param example The example resource used to build the query for assigned
    * values.
-   * @param pgbl The pageable object containing pagination information.
    * @param callerIdentities A list of caller identities, e.g. principal and
    * active group name.
    * @param callerIsAdministrator If TRUE, the caller was checked for role
    * ADMINISTRATOR and will receive resource access w/o ACL check. Otherwise,
    * the provided identities are used for ACL check.
+   * @param pgbl The pageable object containing pagination information.
    *
    * @return A page of data resources matching the example or an empty page.
    */

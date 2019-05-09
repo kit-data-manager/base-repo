@@ -20,7 +20,7 @@ import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.service.IGenericService;
 import edu.kit.datamanager.service.IServiceAuditSupport;
 import java.io.InputStream;
-import java.util.Optional;
+import java.util.List;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -103,4 +103,29 @@ public interface IContentInformationService extends IGenericService<ContentInfor
    * @return The ContentInformation resource.
    */
   ContentInformation getContentInformation(String identifier, String relativePath, Long version);
+
+  /**
+   * Find content information by the provided example. The example is used to
+   * create a query to the data backend. It depends on the implementation which
+   * fields of the example are evaluated, at least simple fields should be
+   * evaluated. The result as list containing matching elements according to the
+   * provided pagination information.
+   *
+   * If no element is matching the provided example, an empty list should be
+   * returned. This method is NOT expected to return 'null'.
+   *
+   *
+   * @param example The example resource used to build the query for assigned
+   * values.
+   * @param callerIdentities A list of caller identities, e.g. principal and
+   * active group name.
+   * @param callerIsAdministrator If TRUE, the caller was checked for role
+   * ADMINISTRATOR and will receive resource access w/o ACL check. Otherwise,
+   * the provided identities are used for ACL check.
+   * @param pgbl The pageable object containing pagination information.
+   *
+   * @return A page of data resources matching the example or an empty page.
+   */
+  Page<ContentInformation> findByExample(ContentInformation example, List<String> callerIdentities, boolean callerIsAdministrator, Pageable pgbl);
+
 }

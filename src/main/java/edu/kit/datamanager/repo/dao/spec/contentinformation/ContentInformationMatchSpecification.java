@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.kit.datamanager.repo.dao;
+package edu.kit.datamanager.repo.dao.spec.contentinformation;
 
 import edu.kit.datamanager.repo.domain.ContentInformation;
-import java.util.Arrays;
+import edu.kit.datamanager.repo.domain.DataResource;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -26,24 +28,30 @@ import org.springframework.data.jpa.domain.Specification;
  *
  * @author jejkal
  */
-public class ContentInformationTagSpecification{
+public class ContentInformationMatchSpecification{
 
   /**
    * Hidden constructor.
    */
-  private ContentInformationTagSpecification(){
+  private ContentInformationMatchSpecification(){
   }
 
-  public static Specification<ContentInformation> toSpecification(final String... tags){
-    Specification<ContentInformation> newSpec = Specification.where(null);
-    if(tags == null || tags.length == 0){
-      return newSpec;
-    }
-
+  public static Specification<ContentInformation> toSpecification(final String parentId, final String path, final boolean exactPath){
     return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
-      return builder.and(root.join("tags").in(Arrays.asList(tags)));
+      Join<ContentInformation, DataResource> joinOptions = root.join("parentResource");
+
+      Path<String> pid = root.get("parentResource").get("id");
+
+      if(path != null && !exactPath){
+        return builder.and(builder.equal(pid, parentId), builder.like(root.get("relativePath"), path));
+      } else if(path != null && exactPath){
+        return builder.and(builder.equal(pid, parentId), builder.equal(root.get("relativePath"), path));
+      } else{
+        //path is null, only query for parent
+        return builder.equal(pid, parentId);
+      }
     };
   }
 }

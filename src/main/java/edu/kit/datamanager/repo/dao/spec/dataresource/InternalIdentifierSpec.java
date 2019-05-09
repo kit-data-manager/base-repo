@@ -13,18 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.kit.datamanager.repo.dao;
+package edu.kit.datamanager.repo.dao.spec.dataresource;
 
-import edu.kit.datamanager.repo.domain.ContentInformation;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import edu.kit.datamanager.repo.dao.spec.StringFieldSpecification;
+import edu.kit.datamanager.repo.domain.DataResource;
+import org.springframework.data.jpa.domain.Specification;
 
 /**
  *
  * @author jejkal
  */
-public interface IContentInformationDao extends JpaRepository<ContentInformation, Long>, JpaSpecificationExecutor<ContentInformation>{
+public class InternalIdentifierSpec{
 
-  //public Optional<ContentInformation> findByParentResourceIdEqualsAndRelativePathEquals(Long id, String relativePath);
-  // public Page<ContentInformation> findByParentResourceIdEqualsAndRelativePathLike(Long id, String relativePath, Pageable pgbl);
+  /**
+   * Hidden constructor.
+   */
+  private InternalIdentifierSpec(){
+  }
+
+  public static Specification<DataResource> toSpecification(final String... identifiers){
+    return StringFieldSpecification.createSpecification("id", identifiers);
+  }
 }

@@ -81,11 +81,13 @@ public class DataResourceServiceTest{
   @Before
   public void cleanDbBefore(){
     dao.deleteAllInBatch();
+    dao.flush();
   }
   
   @After
   public void cleanDbAfter(){
     dao.deleteAllInBatch();
+    dao.flush();
   }
 
   @Test

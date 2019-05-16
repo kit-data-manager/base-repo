@@ -80,14 +80,22 @@ public class DataResourceServiceTest{
 
   @Before
   public void cleanDbBefore(){
-    dao.deleteAllInBatch();
-    dao.flush();
+    try{
+      dao.deleteAllInBatch();
+      dao.flush();
+    } catch(Throwable t){
+      t.printStackTrace();
+    }
   }
-  
+
   @After
   public void cleanDbAfter(){
-    dao.deleteAllInBatch();
-    dao.flush();
+    try{
+      dao.deleteAllInBatch();
+      dao.flush();
+    } catch(Throwable t){
+      t.printStackTrace();
+    }
   }
 
   @Test

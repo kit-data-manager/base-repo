@@ -22,6 +22,13 @@ import com.monitorjbl.json.JsonView;
 import com.monitorjbl.json.Match;
 import static com.monitorjbl.json.Match.match;
 import edu.kit.datamanager.controller.hateoas.event.PaginatedResultsRetrievedEvent;
+import edu.kit.datamanager.entities.PERMISSION;
+import edu.kit.datamanager.entities.RepoUserRole;
+import edu.kit.datamanager.exceptions.BadArgumentException;
+import edu.kit.datamanager.exceptions.CustomInternalServerError;
+import edu.kit.datamanager.exceptions.ResourceElsewhereException;
+import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import io.swagger.annotations.Api;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Pageable;
@@ -31,18 +38,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.context.request.WebRequest;
-import edu.kit.datamanager.entities.RepoUserRole;
-import edu.kit.datamanager.entities.PERMISSION;
-import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
-import edu.kit.datamanager.exceptions.CustomInternalServerError;
-import edu.kit.datamanager.exceptions.ResourceElsewhereException;
-import edu.kit.datamanager.exceptions.ResourceNotFoundException;
-import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IContentProvider;
 import edu.kit.datamanager.util.AuthenticationHelper;
@@ -54,13 +54,14 @@ import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -77,7 +78,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.apache.http.client.utils.URIBuilder;
 
 /**
  *
@@ -165,7 +165,7 @@ public class DataResourceController implements IDataResourceController{
 
     if(currentVersion > 0){
       //trigger response creation and set etag...the response body is set automatically
-      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header("Resource-Version", Long.toString(currentVersion)).build();
+      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header("Resource-Version", Long.toString((version != null) ? version : currentVersion)).build();
     } else{
       return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
     }

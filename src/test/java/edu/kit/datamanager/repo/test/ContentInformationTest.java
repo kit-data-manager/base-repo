@@ -160,7 +160,7 @@ public class ContentInformationTest{
     info.setRelativePath("/file.txt");
     Assert.assertEquals("file.txt", info.getFilename());
     info = new ContentInformation();
-    Assert.assertEquals("unknown.bin", info.getFilename());
+    Assert.assertNull(info.getFilename());
   }
 
   @Test

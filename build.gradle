@@ -6,14 +6,14 @@ buildscript {
 
    }
    dependencies {
-      classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.5.RELEASE")
+      classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.4.RELEASE")
       //classpath 'org.kordamp.gradle:stats-gradle-plugin:0.2.2'
    }
 }
 
 plugins { 
    id 'io.franzbecker.gradle-lombok' version '1.14'
-   id "io.spring.dependency-management" version "1.0.4.RELEASE" 
+   id "io.spring.dependency-management" version "1.0.7.RELEASE" 
    id "com.github.kt3k.coveralls" version "2.8.1" 
    id "org.owasp.dependencycheck" version "3.1.2"
    id "org.asciidoctor.convert" version "1.5.3"

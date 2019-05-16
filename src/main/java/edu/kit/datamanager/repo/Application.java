@@ -90,7 +90,6 @@ public class Application{
 //      }
 //    };
 //  }
-
   @Bean
   @Primary
   public RequestMappingHandlerAdapter adapter(){

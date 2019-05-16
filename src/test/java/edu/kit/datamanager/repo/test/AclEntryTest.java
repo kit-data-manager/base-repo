@@ -49,7 +49,6 @@ public class AclEntryTest{
 
     //check equal with different types
     Assert.assertTrue(entry1.equals(entry2));
-    Assert.assertFalse(entry1.equals(null));
     Assert.assertFalse(entry1.equals("A String"));
 
     //check equal with different id

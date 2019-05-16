@@ -98,9 +98,10 @@ public class ContentInformation implements Serializable{
   }
 
   public String getFilename(){
-    if(relativePath == null){
-      return "unknown.bin";
-    }
+////    if(relativePath == null){
+////      return "unknown.bin";
+////    }
+if(relativePath == null)return null;
     return relativePath.substring(relativePath.lastIndexOf("/") + 1);
   }
 

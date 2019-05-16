@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 /**
  *
@@ -28,9 +29,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Data
+@Validated
 @EqualsAndHashCode(callSuper = true)
 public class ApplicationProperties extends GenericApplicationProperties{
 
+  @edu.kit.datamanager.repo.annotations.BasePathURL
   private URL basepath;
   @Value("${repo.audit.enabled:FALSE}")
   private boolean auditEnabled;

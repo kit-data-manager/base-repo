@@ -17,7 +17,6 @@ package edu.kit.datamanager.repo.configuration;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -28,7 +27,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(basePackages = "edu.kit.datamanager.repo")
-//@PropertySource("classpath:application.properties")
 @EntityScan(basePackages = {"edu.kit.datamanager.repo.domain", "edu.kit.datamanager.entities"})
 public class JPAPersistenceConfig{
 

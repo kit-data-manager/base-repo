@@ -23,7 +23,6 @@ import edu.kit.datamanager.repo.dao.spec.dataresource.CreatorSpecification;
 import edu.kit.datamanager.repo.dao.spec.dataresource.PermissionSpecification;
 import edu.kit.datamanager.repo.dao.spec.dataresource.PrimaryIdentifierSpec;
 import edu.kit.datamanager.repo.dao.spec.dataresource.ResourceTypeSpec;
-import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import java.util.ArrayList;
 import java.util.List;

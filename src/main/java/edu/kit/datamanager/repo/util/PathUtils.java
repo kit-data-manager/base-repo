@@ -54,7 +54,7 @@ public class PathUtils{
         throw new CustomInternalServerError("Data integrity error. No internal identifier assigned to resource.");
       }
 
-      URIBuilder uriBuilder = new URIBuilder(properties.getBasepath().toURI());
+      URIBuilder uriBuilder = new URIBuilder(properties.getBasepath().toString());
       uriBuilder.setPath(uriBuilder.getPath() + (!properties.getBasepath().toString().endsWith("/") ? "/" : "") + Calendar.getInstance().get(Calendar.YEAR) + "/" + internalIdentifier + "/" + relativeDataPath + "_" + System.currentTimeMillis());
       return uriBuilder.build();
     } catch(URISyntaxException ex){
@@ -76,8 +76,8 @@ public class PathUtils{
     }
     return normalizedPath;
   }
-  
-    public static int getDepth(String relativePath){
+
+  public static int getDepth(String relativePath){
     String normalizedPath = PathUtils.normalizePath(relativePath);
     return normalizedPath.split("/").length;
   }

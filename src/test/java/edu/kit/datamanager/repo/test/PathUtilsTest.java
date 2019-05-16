@@ -32,24 +32,28 @@ import org.junit.Test;
 public class PathUtilsTest{
 
   @Test
-  public void testGetDatUri() throws Exception{
+  public void testGetDataUri() throws Exception{
     // get current year
     int currentYear = Calendar.getInstance().get(Calendar.YEAR);
 
     DataResource resource = DataResource.factoryNewDataResource("test123");
     ApplicationProperties props = new ApplicationProperties();
-    //test with trailing slash
+    //test with trailing slash 
     props.setBasepath(new URL("file:///tmp/"));
-    System.out.println(PathUtils.getDataUri(resource, "folder/file.txt", props));
-    System.out.println(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/" + currentYear + "/test123/folder/file.txt_"));
 
     Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/" + currentYear + "/test123/folder/file.txt_"));
     //test w/o trailing slash
     props.setBasepath(new URL("file:///tmp"));
     Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/" + currentYear + "/test123/folder/file.txt_"));
-    //test with UTF-8 chars
-    props.setBasepath(new URL("file:///fôldęr/"));
+
+    //test with URL-escaped chars
+    props.setBasepath(new URL("file:///f%C3%B4ld%C4%99r/"));
+
     Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/" + URLEncoder.encode("fôldęr", "UTF-8") + "/" + currentYear + "/test123/folder/file.txt_"));
+
+    //test without URL-escaped chars
+    props.setBasepath(new URL("file:///fôldęr/"));
+    Assert.assertFalse(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/" + URLEncoder.encode("fôldęr", "UTF-8") + "/" + currentYear + "/test123/folder/file.txt_"));
   }
 
   @Test(expected = CustomInternalServerError.class)

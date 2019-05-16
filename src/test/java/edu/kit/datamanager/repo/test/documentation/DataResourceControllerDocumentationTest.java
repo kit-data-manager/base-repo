@@ -83,41 +83,12 @@ public class DataResourceControllerDocumentationTest{
   @Rule
   public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
-  private DataResource sampleResource;
-
   @Before
   public void setUp() throws JsonProcessingException{
     this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
             .addFilters(springSecurityFilterChain)
             .apply(documentationConfiguration(this.restDocumentation))
             .build();
-
-//    dataResourceDao.deleteAll();
-//    sampleResource = DataResource.factoryNewDataResource("altIdentifier");
-//    sampleResource.setState(DataResource.State.VOLATILE);
-//    sampleResource.getDescriptions().add(Description.factoryDescription("This is a description", Description.TYPE.OTHER, "en"));
-//    sampleResource.getTitles().add(Title.createTitle("Title", Title.TYPE.OTHER));
-//    sampleResource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"KIT"}));
-//    sampleResource.getContributors().add(Contributor.factoryContributor(Agent.factoryAgent("Jane", "Doe", new String[]{"KIT"}), Contributor.TYPE.DATA_MANAGER));
-//    sampleResource.getDates().add(Date.factoryDate(Instant.now(), Date.DATE_TYPE.CREATED));
-//    sampleResource.setEmbargoDate(DateUtils.addDays(new java.util.Date(), 365));
-//    sampleResource.setLanguage("en");
-//    sampleResource.setPublisher("me");
-//    sampleResource.setPublicationYear("2018");
-//    sampleResource.getFormats().add("plain/text");
-//    sampleResource.getSizes().add("100");
-//    sampleResource.getFundingReferences().add(FundingReference.factoryFundingReference("BMBF", FunderIdentifier.factoryIdentifier("BMBF-01", FunderIdentifier.FUNDER_TYPE.ISNI), Scheme.factoryScheme("BMBF_AWARD", "https://www.bmbf.de/"), "https://www.bmbf.de/01", "Award 01"));
-//    sampleResource.getAcls().add(new AclEntry("admin", PERMISSION.ADMINISTRATE));
-//    sampleResource.getAcls().add(new AclEntry("otheruser", PERMISSION.READ));
-//    sampleResource.getAcls().add(new AclEntry("user", PERMISSION.WRITE));
-//    sampleResource.getGeoLocations().add(GeoLocation.factoryGeoLocation(Point.factoryPoint(12.1f, 13.0f)));
-//    sampleResource.getGeoLocations().add(GeoLocation.factoryGeoLocation(Box.factoryBox(12.0f, 13.0f, 14.0f, 15.0f)));
-//    sampleResource.getGeoLocations().add(GeoLocation.factoryGeoLocation(Box.factoryBox(Point.factoryPoint(10.0f, 11.0f), Point.factoryPoint(42.0f, 45.1f))));
-//    sampleResource.getGeoLocations().add(GeoLocation.factoryGeoLocation(Polygon.factoryPolygon(Point.factoryPoint(12.1f, 13.0f), Point.factoryPoint(14.1f, 12.0f), Point.factoryPoint(16.1f, 11.0f))));
-//    sampleResource.getGeoLocations().add(GeoLocation.factoryGeoLocation("A place"));
-//    sampleResource.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(RelatedIdentifier.RELATION_TYPES.IS_DOCUMENTED_BY, "document_location", Scheme.factoryScheme("id", "uri"), "metadata_scheme"));
-//    sampleResource.getSubjects().add(Subject.factorySubject("testing", "uri", "en", Scheme.factoryScheme("id", "uri")));
-//    sampleResource = dataResourceDao.save(sampleResource);
   }
 
   @Test
@@ -167,6 +138,14 @@ public class DataResourceControllerDocumentationTest{
     //try to GET the resource using the alternate identifier added a second ago
     this.mockMvc.perform(get("/api/v1/dataresources/" + "resource-1-231118")).andExpect(status().isSeeOther()).andDo(document("get-resource-by-alt-id", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
 
+    //find by example
+    DataResource example = new DataResource();
+    example.setResourceType(ResourceType.createResourceType("testingSample"));
+    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType("application/json").content(mapper.writeValueAsString(example))).
+            andExpect(status().isOk()).
+            andDo(document("find-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+       
+    
     //upload random data file
     Path temp = Files.createTempFile("randomFile", "test");
 
@@ -201,6 +180,15 @@ public class DataResourceControllerDocumentationTest{
 
     //download file
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt")).andExpect(status().isOk()).andDo(document("download-file", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+
+    //get audit information
+    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andExpect(status().isOk()).andDo(document("get-audit-information", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+
+    //get particular version
+    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "2")).andExpect(status().isOk()).andDo(document("get-resource-version", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+
+    //get particular version
+    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-current-resource-version", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
 
     //perform a DELETE
     this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId).header("If-Match", etag)).andExpect(status().isNoContent()).andDo(document("delete-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));

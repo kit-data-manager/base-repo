@@ -58,9 +58,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.hamcrest.Matchers;
 import static org.hamcrest.Matchers.equalTo;
-import org.hamcrest.collection.IsArrayContaining;
-import org.hamcrest.core.AnyOf;
-import org.hamcrest.core.StringContains;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -246,6 +243,7 @@ public class DataResourceControllerTest{
    */
   @Test
   public void testGetDataResources() throws Exception{
+    System.out.println(applicationProperties.getBasepath());
     this.mockMvc.perform(get("/api/v1/dataresources/").param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(4))).andReturn();
   }
@@ -341,6 +339,49 @@ public class DataResourceControllerTest{
 
     this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "10").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$").isEmpty());
+  }
+
+  @Test
+  public void testFindAllByExampleViaServiceAfterRevokation() throws Exception{
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+    DataResource example = new DataResource();
+    example.setState(null);
+    example.setLanguage("en");
+    example.setPublicationYear("2018");
+
+    int resourcesBeforeWithRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), true).getNumberOfElements();
+    int resourcesBeforeWithoutRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), false).getNumberOfElements();
+
+    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+
+    int resourcesAfterWithRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), true).getNumberOfElements();
+    int resourcesAfterWithoutRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), false).getNumberOfElements();
+
+    Assert.assertEquals(resourcesBeforeWithRevoked, resourcesBeforeWithoutRevoked);
+    Assert.assertNotEquals(resourcesAfterWithRevoked, resourcesAfterWithoutRevoked);
+  }
+
+  @Test
+  public void testFindAllViaServiceAfterRevokation() throws Exception{
+    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+
+    int resourcesBeforeWithRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), true).getNumberOfElements();
+    int resourcesBeforeWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
+
+    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+
+    int resourcesAfterWithRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), true).getNumberOfElements();
+    int resourcesAfterWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
+
+    Assert.assertEquals(4, resourcesBeforeWithRevoked);
+    Assert.assertEquals(2, resourcesBeforeWithoutRevoked);
+
+    Assert.assertEquals(4, resourcesAfterWithRevoked);
+    Assert.assertEquals(1, resourcesAfterWithoutRevoked);
   }
 
   /**
@@ -720,49 +761,6 @@ public class DataResourceControllerTest{
     Assert.assertFalse(dataResourceDao.findById(sampleResource.getId()).isPresent());
   }
 
-  @Test
-  public void testFindAllByExampleViaServiceAfterRevokation() throws Exception{
-    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
-    DataResource example = new DataResource();
-    example.setState(null);
-    example.setLanguage("en");
-    example.setPublicationYear("2018");
-
-    int resourcesBeforeWithRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), true).getNumberOfElements();
-    int resourcesBeforeWithoutRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), false).getNumberOfElements();
-
-    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
-
-    int resourcesAfterWithRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), true).getNumberOfElements();
-    int resourcesAfterWithoutRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), false).getNumberOfElements();
-
-    Assert.assertEquals(resourcesBeforeWithRevoked, resourcesBeforeWithoutRevoked);
-    Assert.assertNotEquals(resourcesAfterWithRevoked, resourcesAfterWithoutRevoked);
-  }
-
-  @Test
-  public void testFindAllViaServiceAfterRevokation() throws Exception{
-    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
-
-    int resourcesBeforeWithRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), true).getNumberOfElements();
-    int resourcesBeforeWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
-
-    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
-
-    int resourcesAfterWithRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), true).getNumberOfElements();
-    int resourcesAfterWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
-
-    Assert.assertEquals(4, resourcesBeforeWithRevoked);
-    Assert.assertEquals(2, resourcesBeforeWithoutRevoked);
-
-    Assert.assertEquals(4, resourcesAfterWithRevoked);
-    Assert.assertEquals(1, resourcesAfterWithoutRevoked);
-  }
-
   /**
    * PATCH TESTS*
    */
@@ -1138,6 +1136,86 @@ public class DataResourceControllerTest{
             andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).
             andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(Matchers.not(1))));
+  }
+
+  @Test
+  public void testFindContentByExample() throws Exception{
+    ContentInformation cinfo = new ContentInformation();
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("test", "ok");
+    cinfo.setMetadata(metadata);
+    cinfo.setMediaType("application/json");
+
+    ObjectMapper mapper = createObjectMapper();
+
+    Path temp = Files.createTempFile("testUploadExistingWithForceAndMetadataUpdate", "test");
+
+    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex3.txt", "application/json", Files.newInputStream(temp));
+    MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
+
+    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+
+    this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print());
+
+    //get all content with type text/plain
+    ContentInformation example = new ContentInformation();
+    example.setMediaType("text/plain");
+    //expect one result
+    this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+
+    //get all content with type application/json
+    example.setMediaType("application/json");
+    //expect no result
+    this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
+    //reset media type and set wildcard selection of txt files
+    example.setMediaType(null);
+    example.setRelativePath("%.txt");
+    //expect one result
+    this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+
+    //test search by content uri
+    example = new ContentInformation();
+    example.setContentUri("file:/tmp/2019/altIdentifier/bibtex3.txt%");
+
+    //expect one result
+    this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+
+    //test search by metadata only with key
+    example.setContentUri(null);
+    metadata.clear();
+    metadata.put("test", null);
+    example.setMetadata(metadata);
+    //expect one result
+    this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+
+    //test search by metadata with key and value
+    metadata.clear();
+    metadata.put("test", "ok");
+    example.setMetadata(metadata);
+    //expect one result
+    this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+
+    //test search by metadata only with wrong key
+    metadata.clear();
+    metadata.put("wrong", "ok");
+    example.setMetadata(metadata);
+    this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
+
+    //test search by metadata only with wrong value
+    metadata.clear();
+    metadata.put("test", "fail");
+    example.setMetadata(metadata);
+    this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
   }
 
   @Test
@@ -1549,8 +1627,6 @@ public class DataResourceControllerTest{
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.header().exists("Resource-Version")).andExpect(MockMvcResultMatchers.header().string("Resource-Version", "2"));
 
-    
-    
     //delete content
     this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header("If-Match", etag).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNoContent());

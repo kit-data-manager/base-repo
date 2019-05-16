@@ -81,7 +81,7 @@ public class DataResourceServiceTest{
   @Before
   public void cleanDbBefore(){
     try{
-      dao.deleteAllInBatch();
+      dao.deleteAll();
       dao.flush();
     } catch(Throwable t){
       t.printStackTrace();
@@ -91,7 +91,7 @@ public class DataResourceServiceTest{
   @After
   public void cleanDbAfter(){
     try{
-      dao.deleteAllInBatch();
+      dao.deleteAll();
       dao.flush();
     } catch(Throwable t){
       t.printStackTrace();
@@ -100,7 +100,7 @@ public class DataResourceServiceTest{
 
   @Test
   public void testCreateWithTitleAndType(){
-    DataResource resource = createResourceWithDoi("testDoi", "MyResource", "SimpleResource");
+    DataResource resource = createResourceWithDoi("testDoi1", "MyResource", "SimpleResource");
     resource.setState(DataResource.State.VOLATILE);
     resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
     //check if id was assigned
@@ -122,10 +122,10 @@ public class DataResourceServiceTest{
     Assert.assertEquals(PERMISSION.ADMINISTRATE, resource.getAcls().toArray(new AclEntry[]{})[0].getPermission());
 
     //check manually assigned values
-    Assert.assertEquals("testDoi", resource.getIdentifier().getValue());
+    Assert.assertEquals("testDoi1", resource.getIdentifier().getValue());
 
     Assert.assertEquals(1, resource.getAlternateIdentifiers().size());
-    Assert.assertEquals("testDoi", resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getValue());
+    Assert.assertEquals("testDoi1", resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getValue());
     Assert.assertEquals(Identifier.IDENTIFIER_TYPE.INTERNAL, resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getIdentifierType());
 
     Assert.assertEquals(1, resource.getTitles().size());
@@ -139,16 +139,16 @@ public class DataResourceServiceTest{
   @Test
   public void testIdAssignment(){
     //test with doi
-    DataResource resource = createResourceWithDoi("testDoi", "MyResource", "SimpleResource");
+    DataResource resource = createResourceWithDoi("testDoi2", "MyResource", "SimpleResource");
     resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
     //check manually assigned values
-    Assert.assertEquals("testDoi", resource.getIdentifier().getValue());
+    Assert.assertEquals("testDoi2", resource.getIdentifier().getValue());
 
     Assert.assertEquals(1, resource.getAlternateIdentifiers().size());
-    Assert.assertEquals("testDoi", resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getValue());
+    Assert.assertEquals("testDoi2", resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getValue());
     Assert.assertEquals(Identifier.IDENTIFIER_TYPE.INTERNAL, resource.getAlternateIdentifiers().toArray(new Identifier[]{})[0].getIdentifierType());
 
-    Assert.assertEquals("testDoi", resource.getId());
+    Assert.assertEquals("testDoi2", resource.getId());
 
     //test without doi
     resource = createResourceWithoutDoi("internalId", "MyResource", "SimpleResource");
@@ -207,7 +207,7 @@ public class DataResourceServiceTest{
 
   @Test(expected = ResourceAlreadyExistException.class)
   public void testDoubleResourceRegistration(){
-    DataResource resource = createResourceWithDoi("testDoi", "MyResource", "SimpleResource");
+    DataResource resource = createResourceWithDoi("testDoi3", "MyResource", "SimpleResource");
     resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
     resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
     Assert.fail("Test should have failed already, but resource " + resource + " has been created twice.");
@@ -215,14 +215,14 @@ public class DataResourceServiceTest{
 
   @Test(expected = BadArgumentException.class)
   public void testCreateWithoutTitle(){
-    DataResource resource = createResourceWithDoi("testDoi", null, null);
+    DataResource resource = createResourceWithDoi("testDoi4", null, null);
     resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
     Assert.fail("Test should have failed already, but resource " + resource + " has been created.");
   }
 
   @Test
   public void testCreateResourceWithCreators(){
-    DataResource resource = createResourceWithDoi("testDoi", "My Resource", "SimpleResource");
+    DataResource resource = createResourceWithDoi("testDoi5", "My Resource", "SimpleResource");
     resource.getCreators().add(Agent.factoryAgent("test", "user"));
     resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
 
@@ -241,7 +241,7 @@ public class DataResourceServiceTest{
   @Ignore
   public void testCreateResourceWithWithFullAuthentication() throws JsonProcessingException{
     mockJwtUserAuthentication();
-    DataResource resource = createResourceWithDoi("testDoi", "My Resource", "SimpleResource");
+    DataResource resource = createResourceWithDoi("testDoi6", "My Resource", "SimpleResource");
     resource = service.create(resource, "tester", "test", "user");
 
     //check if creator was used and no other creator has been added
@@ -258,7 +258,7 @@ public class DataResourceServiceTest{
 
   @Test(expected = BadArgumentException.class)
   public void testCreateWithTitleAndWithoutType(){
-    DataResource resource = createResourceWithDoi("testDoi", "MyResource", null);
+    DataResource resource = createResourceWithDoi("testDoi7", "MyResource", null);
     resource = service.create(resource, AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
     Assert.fail("Test should have failed already, but resource " + resource + " has been created.");
   }

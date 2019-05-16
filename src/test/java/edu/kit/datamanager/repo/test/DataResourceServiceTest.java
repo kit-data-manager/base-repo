@@ -22,6 +22,7 @@ import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.domain.Agent;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -33,8 +34,8 @@ import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.security.filter.JwtAuthenticationToken;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import java.util.Calendar;
-import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -75,9 +76,16 @@ public class DataResourceServiceTest{
   private IDataResourceService service;
   @Autowired
   private IDataResourceDao dao;
+  @Autowired
+  private ApplicationProperties applicationProperties;
 
-  @After
-  public void cleanDb(){
+//  @After
+//  public void cleanDb(){
+//    dao.deleteAll();
+//  }
+  @Before
+  public void cleanDbBefore(){
+    applicationProperties.setAuditEnabled(false);
     dao.deleteAll();
   }
 

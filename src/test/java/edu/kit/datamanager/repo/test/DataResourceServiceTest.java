@@ -34,6 +34,7 @@ import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.security.filter.JwtAuthenticationToken;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import java.util.Calendar;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -76,16 +77,14 @@ public class DataResourceServiceTest{
   private IDataResourceService service;
   @Autowired
   private IDataResourceDao dao;
-  @Autowired
-  private ApplicationProperties applicationProperties;
 
-//  @After
-//  public void cleanDb(){
-//    dao.deleteAll();
-//  }
   @Before
   public void cleanDbBefore(){
-    applicationProperties.setAuditEnabled(false);
+    dao.deleteAll();
+  }
+  
+  @After
+  public void cleanDbAfter(){
     dao.deleteAll();
   }
 

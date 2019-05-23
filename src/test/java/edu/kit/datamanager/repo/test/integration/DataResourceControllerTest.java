@@ -49,6 +49,7 @@ import edu.kit.datamanager.repo.service.IDataResourceService;
 import edu.kit.datamanager.service.IAuditService;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -1304,6 +1305,33 @@ public class DataResourceControllerTest{
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(header().string("Content-Type", equalTo("text/plain")));
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/withRedirect").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(header().string("Location", equalTo("http://www.heise.de")));
+    //collection download ... first fails due to invalid element at /data/missingFile
+    this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header("Accept", "application/zip")).andDo(print()).andExpect(status().isInternalServerError());
+
+    //rebuild valid content
+    contentInformationDao.deleteAllInBatch();
+    Path firstFile = Paths.get(System.getProperty("java.io.tmpdir"), "firstFile.txt");
+    Path secondFile = Paths.get(System.getProperty("java.io.tmpdir"), "secondFile.txt");
+    Files.write(firstFile, "This is ".getBytes());
+    Files.write(secondFile, "a test! ".getBytes());
+
+    cinfo = new ContentInformation();
+    cinfo.setParentResource(sampleResource);
+    cinfo.setRelativePath("firstFile.txt");
+    cinfo.setContentUri(firstFile.toUri().toString());
+    contentInformationDao.save(cinfo);
+
+    cinfo = new ContentInformation();
+    cinfo.setParentResource(sampleResource);
+    cinfo.setRelativePath("secondFile.txt");
+    cinfo.setContentUri(secondFile.toUri().toString());
+    contentInformationDao.save(cinfo);
+
+    //try again collection download
+    this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header("Accept", "application/zip")).andDo(print()).andExpect(status().isOk());
+
   }
 
   @Test

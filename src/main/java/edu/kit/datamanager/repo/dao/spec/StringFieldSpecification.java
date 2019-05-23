@@ -37,7 +37,7 @@ public class StringFieldSpecification<C>{
       query.distinct(true);
 
       if(!exactMatch){
-        return builder.like(root.get(fieldName), fieldValue);
+        return builder.like(root.get(fieldName), "%" + fieldValue + "%");
       } else{
         return builder.equal(root.get(fieldName), fieldValue);
       }

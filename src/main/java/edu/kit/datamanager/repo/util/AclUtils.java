@@ -15,11 +15,9 @@
  */
 package edu.kit.datamanager.repo.util;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.javers.common.collections.Arrays;
 
 /**
  *
@@ -38,17 +36,17 @@ public class AclUtils{
 
     return false;
   }
-
-  public static void main(String[] args){
-
-    List<String> principalIds = new ArrayList<>();
-    principalIds.add("tester");
-    principalIds.add(".*KIT");
-
-    System.out.println(isSidInPrincipalList("USERS@KIT", principalIds));
-    System.out.println(isSidInPrincipalList("tester", principalIds));
-    System.out.println(isSidInPrincipalList("test", principalIds));
-    System.out.println(isSidInPrincipalList("KIT_LEADER", principalIds));
-
-  }
+//
+//  public static void main(String[] args){
+//
+//    List<String> principalIds = new ArrayList<>();
+//    principalIds.add("tester");
+//    principalIds.add(".*KIT");
+//
+//    System.out.println(isSidInPrincipalList("USERS@KIT", principalIds));
+//    System.out.println(isSidInPrincipalList("tester", principalIds));
+//    System.out.println(isSidInPrincipalList("test", principalIds));
+//    System.out.println(isSidInPrincipalList("KIT_LEADER", principalIds));
+//
+//  }
 }

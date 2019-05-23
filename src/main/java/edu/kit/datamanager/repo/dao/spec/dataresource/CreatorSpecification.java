@@ -67,11 +67,11 @@ public class CreatorSpecification{
           List<Predicate> predicates = new ArrayList<>();
           if(creator.getFamilyName() != null){
             LOGGER.trace("Adding familyName predicate with value {}.", creator.getFamilyName());
-            predicates.add(builder.equal(altJoin.get("familyName"), creator.getFamilyName()));
+            predicates.add(builder.like(altJoin.get("familyName"), "%" + creator.getFamilyName() + "%"));
           }
           if(creator.getGivenName() != null){
             LOGGER.trace("Adding givenName predicate with value {}.", creator.getGivenName());
-            predicates.add(builder.equal(altJoin.get("givenName"), creator.getGivenName()));
+            predicates.add(builder.like(altJoin.get("givenName"), "%" + creator.getGivenName() + "%"));
           }
 
           if(creator.getAffiliations() != null && !creator.getAffiliations().isEmpty()){

@@ -89,64 +89,12 @@ public class ContentInformationService implements IContentInformationService{
   @Autowired
   private IContentInformationDao dao;
 
-//  @PersistenceContext
-//  private EntityManager em;
   @Autowired
   private ApplicationProperties applicationProperties;
   @Autowired
   private IMessagingService messagingService;
   @Autowired
   private IAuditService<ContentInformation> auditService;
-
-  @Override
-  @Transactional(readOnly = true)
-  public ContentInformation getContentInformation(String identifier, String relativePath, Long version){
-    logger.trace("Performing getContentInformation({}, {}).", identifier, relativePath);
-
-    logger.trace("Performing findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag({}, {}).", identifier, relativePath);
-    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(identifier, relativePath, true));
-    Optional<ContentInformation> contentInformation = dao.findOne(spec);
-
-    if(!contentInformation.isPresent()){
-      //TODO: check later for collection download
-      logger.error("No content found for resource {} at path {}. Throwing ResourceNotFoundException.", identifier, relativePath);
-      throw new ResourceNotFoundException("No content information for identifier " + identifier + ", path " + relativePath + " found.");
-    }
-    ContentInformation result = contentInformation.get();
-    if(Objects.nonNull(version)){
-      logger.trace("Obtained content information for identifier {}. Checking for shadow of version {}.", result.getId(), version);
-      Optional<ContentInformation> optAuditResult = auditService.getResourceByVersion(Long.toString(result.getId()), version);
-      if(optAuditResult.isPresent()){
-        logger.trace("Shadow successfully obtained. Returning version {} of content information with id {}.", version, result.getId());
-        return optAuditResult.get();
-      } else{
-        logger.info("Version {} of content information {} not found. Returning HTTP 404 (NOT_FOUND).", version, result.getId());
-        throw new ResourceNotFoundException("Content information with identifier " + result.getId() + " is not available in version " + version + ".");
-
-      }
-    }
-
-    return result;
-  }
-
-  @Override
-  public Optional<String> getAuditInformationAsJson(String resourceIdentifier, Pageable pgbl){
-    logger.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
-    return auditService.getAuditInformationAsJson(resourceIdentifier, pgbl.getPageNumber(), pgbl.getPageSize());
-  }
-
-  @Override
-  public ContentInformation findById(String identifier) throws ResourceNotFoundException{
-    logger.trace("Performing findById({}).", identifier);
-    Long id = Long.parseLong(identifier);
-    Optional<ContentInformation> contentInformation = getDao().findById(id);
-    if(!contentInformation.isPresent()){
-      //TODO: check later for collection download
-      logger.error("No content found for id {}. Throwing ResourceNotFoundException.", id);
-      throw new ResourceNotFoundException("No content information for id " + id + " found.");
-    }
-    return contentInformation.get();
-  }
 
   @Override
   public ContentInformation create(ContentInformation contentInformation, DataResource resource,
@@ -300,6 +248,56 @@ public class ContentInformationService implements IContentInformationService{
     logger.trace("Sending CREATE event.");
     messagingService.send(DataResourceMessage.factoryCreateDataMessage(resource.getId(), result.getRelativePath(), result.getContentUri(), result.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
     return result;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ContentInformation getContentInformation(String identifier, String relativePath, Long version){
+    logger.trace("Performing getContentInformation({}, {}).", identifier, relativePath);
+
+    logger.trace("Performing findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag({}, {}).", identifier, relativePath);
+    Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(identifier, relativePath, true));
+    Optional<ContentInformation> contentInformation = dao.findOne(spec);
+
+    if(!contentInformation.isPresent()){
+      //TODO: check later for collection download
+      logger.error("No content found for resource {} at path {}. Throwing ResourceNotFoundException.", identifier, relativePath);
+      throw new ResourceNotFoundException("No content information for identifier " + identifier + ", path " + relativePath + " found.");
+    }
+    ContentInformation result = contentInformation.get();
+    if(Objects.nonNull(version)){
+      logger.trace("Obtained content information for identifier {}. Checking for shadow of version {}.", result.getId(), version);
+      Optional<ContentInformation> optAuditResult = auditService.getResourceByVersion(Long.toString(result.getId()), version);
+      if(optAuditResult.isPresent()){
+        logger.trace("Shadow successfully obtained. Returning version {} of content information with id {}.", version, result.getId());
+        return optAuditResult.get();
+      } else{
+        logger.info("Version {} of content information {} not found. Returning HTTP 404 (NOT_FOUND).", version, result.getId());
+        throw new ResourceNotFoundException("Content information with identifier " + result.getId() + " is not available in version " + version + ".");
+
+      }
+    }
+
+    return result;
+  }
+
+  @Override
+  public Optional<String> getAuditInformationAsJson(String resourceIdentifier, Pageable pgbl){
+    logger.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
+    return auditService.getAuditInformationAsJson(resourceIdentifier, pgbl.getPageNumber(), pgbl.getPageSize());
+  }
+
+  @Override
+  public ContentInformation findById(String identifier) throws ResourceNotFoundException{
+    logger.trace("Performing findById({}).", identifier);
+    Long id = Long.parseLong(identifier);
+    Optional<ContentInformation> contentInformation = getDao().findById(id);
+    if(!contentInformation.isPresent()){
+      //TODO: check later for collection download
+      logger.error("No content found for id {}. Throwing ResourceNotFoundException.", id);
+      throw new ResourceNotFoundException("No content information for id " + id + " found.");
+    }
+    return contentInformation.get();
   }
 
   @Override

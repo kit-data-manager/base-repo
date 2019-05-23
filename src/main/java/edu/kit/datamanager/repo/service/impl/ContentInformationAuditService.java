@@ -21,6 +21,8 @@ import edu.kit.datamanager.service.IAuditService;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.collections4.CollectionUtils;
+import org.javers.common.exception.JaversException;
+import org.javers.common.exception.JaversExceptionCode;
 import org.javers.core.Changes;
 import org.javers.core.Javers;
 import org.javers.core.metamodel.object.CdoSnapshot;
@@ -130,9 +132,17 @@ public class ContentInformationAuditService implements IAuditService<ContentInfo
       LOGGER.trace("Audit is disabled. Returning without doing anything.");
     } else{
       LOGGER.trace("Performing shallow delete of content information with id {}.", contentInformationId);
-      javers.commitShallowDelete(contentInformationId, resource);
-      LOGGER.trace("Shallow delete executed.");
+      try{
+        javers.commitShallowDelete(contentInformationId, resource);
+        LOGGER.trace("Shallow delete executed.");
+      } catch(JaversException ex){
+        if(JaversExceptionCode.CANT_DELETE_OBJECT_NOT_FOUND.equals(ex.getCode())){
+          LOGGER.info("Unable to delete versioning information for content id " + contentInformationId + ". No versioning information found.");
+        } else{
+          LOGGER.error("Failed to delete versioning information. Please remove manually if needed.", ex);
+        }
+
+      }
     }
   }
-
 }

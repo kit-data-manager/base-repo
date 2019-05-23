@@ -45,7 +45,7 @@ public class ContentInformationMatchSpecification{
       Path<String> pid = root.get("parentResource").get("id");
 
       if(path != null && !exactPath){
-        return builder.and(builder.equal(pid, parentId), builder.like(root.get("relativePath"), path));
+        return builder.and(builder.equal(pid, parentId), builder.like(root.get("relativePath"), "%" + path + "%"));
       } else if(path != null && exactPath){
         return builder.and(builder.equal(pid, parentId), builder.equal(root.get("relativePath"), path));
       } else{

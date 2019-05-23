@@ -116,16 +116,16 @@ attributes are evaluated in which way for creating queries to the data backend.
 
 [cols="m,n", options="header"]
 |============================================================================================================================
-|Supported Data Resource Fields|Queried as... 
-|publisher|String
-|publicationYear|String
-|language|String
-|version|String
-|state|String
-|resourceType|String (applies to both child attributes 'typeGeneral' and 'value')
-|creators|String (applies to child attributes 'familiyName', 'givenName', and 'affiliations')
-|primaryIdentifier|String (applies to child attribute 'value')
-|alternateIdentifiers|String (applies to child attribute 'value', 'identifierType' not included, INTERNAL identifier explicitly excluded)
+|Supported Data Resource Fields|Queried as...|Match Type 
+|publisher|String|resource.publisher LIKE %value%
+|publicationYear|String|resource.publicationYear LIKE %value%
+|language|String|resource.language LIKE %value%
+|version|String|resource.version LIKE %value%
+|state|String|resource.state IN [value]
+|resourceType|String|resource.resourceType.typeGeneral=resourceType.typeGeneral AND resource.resourceType.value LIKE %resourceType.value%
+|creators|Strings|resource.creator.familyName LIKE %creators.familyName% OR resource.creator.givenName LIKE %creators.givenName% OR resource.creator.affiliation IN [creators.affiliation]
+|primaryIdentifier|String|resource.identifier.value IN [primaryIdentifier.value]
+|alternateIdentifiers|String|resource.alternateIdentifier.identifierType!=INTERNAL AND resource.alternateIdentifier.value IN [alternateIdentifiers.value]
 |============================================================================================================================
 
 [NOTE]
@@ -133,12 +133,12 @@ Other fields will be supported in future. If you require a certain field by your
 
 [cols="m,n", options="header"]
 |============================================================================================================================
-|Supported Content Information Fields|Queried as...
-|relativePath|String
-|contentUri|String
-|mediaType|String
-|metadata|String (applies to 'key' and 'value')
-|tags|String (exact match via IN expression for all contained elements)
+|Supported Content Information Fields|Queried as...|Match Type 
+|relativePath|String|contentInformation.relativePath LIKE %relativePath%
+|contentUri|String|contentInformation.contentUri LIKE %contentUri%
+|mediaType|String|contentInformation.mediaType LIKE %mediaType%
+|metadata|String|contentInformation.metadata.key=metadata.key AND contentInformation.metadata.value LIKE %metadata.value%
+|tags|String|contentInformation.tags IN [tags]
 |============================================================================================================================
 
 

@@ -19,7 +19,6 @@ import edu.kit.datamanager.repo.domain.ContentInformation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.MapJoin;
@@ -50,12 +49,11 @@ public class ContentInformationMetadataSpecification{
 
       MapJoin<ContentInformation, String, String> orderMap = root.joinMap("metadata");
 
-      List<Predicate> predicates = new ArrayList<Predicate>();
+      List<Predicate> predicates = new ArrayList<>();
 
-      for(Entry<String, String> entry : metadata.entrySet()){
-        System.out.println("ADD " + entry);
-        predicates.add(builder.and(builder.equal(orderMap.key(), entry.getKey()), builder.equal(orderMap.value(), entry.getValue())));
-      }
+      metadata.entrySet().forEach((entry) -> {
+        predicates.add(builder.and(builder.equal(orderMap.key(), entry.getKey()), builder.like(orderMap.value(), "%" + entry.getValue() + "%")));
+      });
 
       return builder.or(predicates.toArray(new Predicate[]{}));
     };

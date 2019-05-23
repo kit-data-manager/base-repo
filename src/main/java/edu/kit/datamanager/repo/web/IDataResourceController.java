@@ -135,7 +135,6 @@ public interface IDataResourceController extends IGenericResourceController<Data
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET)
   @ResponseBody
   public ResponseEntity getContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);

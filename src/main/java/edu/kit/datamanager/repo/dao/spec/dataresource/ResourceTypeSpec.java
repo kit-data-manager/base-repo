@@ -24,6 +24,7 @@ import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
 import org.datacite.schema.kernel_4.Resource;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.MediaType;
 
 /**
  *
@@ -54,7 +55,11 @@ public class ResourceTypeSpec{
       }
 
       //both are not null
-      return builder.and(builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral()), builder.equal(altJoin.get("value"), resourceType.getValue()));
+      return builder.and(builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral()), builder.like(altJoin.get("value"), "%" + resourceType.getValue() + "%"));
     };
+  }
+  
+  public static void main(String[] args){
+    System.out.println(MediaType.parseMediaType(null));
   }
 }

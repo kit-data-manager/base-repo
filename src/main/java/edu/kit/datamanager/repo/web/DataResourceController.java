@@ -68,9 +68,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.client.utils.URIBuilder;
-import org.javers.common.collections.Arrays;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -86,7 +84,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.NotAcceptableStatusException;
 import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -230,7 +227,7 @@ public class DataResourceController implements IDataResourceController{
     LOGGER.trace("Checking provided path {}.", path);
     if(path.startsWith("/")){
       LOGGER.debug("Removing leading slash from path {}.", path);
-      //remove leading slash if present, e.g. if path was empty
+      //remove leading slash if present, which should actually never happen
       path = path.substring(1);
     }
 

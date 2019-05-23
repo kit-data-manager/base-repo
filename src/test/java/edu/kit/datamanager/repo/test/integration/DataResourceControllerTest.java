@@ -1588,6 +1588,7 @@ public class DataResourceControllerTest{
     this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
 
+    
     //check current version of resource...publicationYear should be 1999
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("1999"));
@@ -1650,6 +1651,10 @@ public class DataResourceControllerTest{
     //get invalid version
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "666").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
+
+    //get version information for collection (should fail)
+    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isBadRequest());
 
     //get version information
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,

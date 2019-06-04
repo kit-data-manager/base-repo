@@ -141,7 +141,6 @@ Other fields will be supported in future. If you require a certain field by your
 |tags|String|contentInformation.tags IN [tags]
 |============================================================================================================================
 
-
 === Updating a Data Resource
 
 The default way of updating resources' metadata in KIT Data Manager is by using HTTP PATCH. Therefor, JSON Patch documents following the RFC 6902 specification are sent to the server stating 

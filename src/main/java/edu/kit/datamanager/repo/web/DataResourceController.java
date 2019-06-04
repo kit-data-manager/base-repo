@@ -22,6 +22,7 @@ import com.monitorjbl.json.JsonView;
 import com.monitorjbl.json.Match;
 import static com.monitorjbl.json.Match.match;
 import edu.kit.datamanager.controller.hateoas.event.PaginatedResultsRetrievedEvent;
+import edu.kit.datamanager.entities.CollectionElement;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.BadArgumentException;
@@ -46,7 +47,6 @@ import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IContentCollectionProvider;
 import edu.kit.datamanager.service.IContentProvider;
-import edu.kit.datamanager.service.impl.FileArchiveContentCollectionProvider;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import java.io.IOException;
@@ -61,10 +61,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -86,6 +84,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -489,18 +488,19 @@ public class DataResourceController implements IDataResourceController{
       Set<MediaType> acceptableMediaTypes = new HashSet<>();
       for(IContentCollectionProvider provider : collectionContentProviders){
         if(acceptHeaderType != null && provider.supportsMediaType(acceptHeaderType)){
-          Map<String, URI> contentUris = new HashMap<>();
+          List<CollectionElement> elements = new ArrayList<>();
           page.getContent().forEach((c) -> {
             URI contentUri = URI.create(c.getContentUri());
             if(provider.canProvide(contentUri.getScheme())){
-              LOGGER.trace("Adding collection mapping '{}':'{}' to map.", c.getRelativePath(), contentUri);
-              contentUris.put(c.getRelativePath(), contentUri);
+              String contextUri = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
+              LOGGER.trace("Adding collection mapping '{}':'{}' with checksum '{}' to list. Additionally providing context Uri {} and size {}.", c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize());
+              elements.add(CollectionElement.createCollectionElement(c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize()));
             } else{
               LOGGER.debug("Skip adding collection mapping '{}':'{}' to map as content provider {} is not capable of providing URI scheme.", c.getRelativePath(), contentUri, provider.getClass());
             }
           });
           LOGGER.trace("Start providing content.");
-          new FileArchiveContentCollectionProvider().provide(contentUris, MediaType.parseMediaType(acceptHeader), response);
+          provider.provide(elements, MediaType.parseMediaType(acceptHeader), response);
           LOGGER.trace("Content successfully provided.");
           provided = true;
         } else{

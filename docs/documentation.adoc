@@ -360,8 +360,8 @@ In addition, you can provide a tag as query argument in order to return only ele
 
 === Downloading Data from a Data Resource
 
-After explaining how metadata and data are put into the system, let's give a brief overview on downloading content. Actually, it's just adding the file URL received during upload to the browser address bar or 
-to issue a GET request without Accept header as you can see it in the curl command below.
+After explaining how metadata and data are put into the system, let's give a brief overview on downloading content. Actually, it's just putting the file URL received during upload to the browser address bar or 
+to issue a GET request without Accept header as you can see in the curl command below.
 
 include::{snippets}/download-file/curl-request.adoc[]
 
@@ -373,7 +373,7 @@ include::{snippets}/download-file/http-request.adoc[]
 
 include::{snippets}/download-file/http-response.adoc[]
 
-If the content is not located at the repository but referenced from remotely, there are plenty of possible responses depending on the availability of the referenced content. While accessing references content,
+If the content is not located at the repository but referenced from remote, there are plenty of possible responses depending on the availability of the referenced content. While accessing references content,
 the repository tries to issue an HTTP GET to the content URI. Depending on the response status received from the remote service, the repository responds as follows:
 
 [cols="m,n", options="header"]
@@ -392,6 +392,36 @@ to try to access the data manually. There are two situations where manual access
 
 1. The remote server returned HTTP UNAUTHORIZED (401) or FORBIDDEN (403) as access requires custom authentication. If you own appropriate credentials, you can access the content after proper authentication.
 2. If the content is not accessed via HTTP(s) you may use a custom data access client capable of opening a data stream to the content URI.
+
+Beside of downloading single files, it's also possible to download all data of one resource or virtual subfolders. Let's assume you've organized a resource in the following way: 
+
+[tree]
+----
+> /
+>> experiment
+>>> parameters.txt
+>>> measurements.csv
+>>> reference_image.png
+>> log
+>>> output.log
+>>> error.log
+----
+
+With this structure, your are able to dowload either the entire content by addressing '/', only all experiment data by addressing 'experiment' or only the 'log' folder. In order to do so, you just address a virtual folder the same way you
+would address a single file, e.g. 
+
+include::get-collection.adoc[]
+
+You can see, that the only differences compared to a single file download are the URLs ending with a slash, in order to address a virtual folder, and the provided content type in the 'Accept' header. In the example above, 'application/zip'
+indicates that all content within the addressed folder is downloaded in a single ZIP archive. Currently, the following content types are supported: 
+
+[cols="m,n,o", options="header"]
+|============================================================================================================================
+|Content Type|Format|Availability
+|application/zip|File with zip compression|Part of default KIT DM 2.0 instance
+|application/vnd.datamanager.bagit+zip|BagIt file following the recommendations of the RDA Research Data Repository Interoperability Working Group with zip compression|Available via plugin (see https://github.com/kit-data-manager/bagit-provider-plugin[bagit-provider-plugin])
+|============================================================================================================================
+ 
 
 === Deleting Data Resources
 

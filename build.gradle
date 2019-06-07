@@ -7,6 +7,7 @@ buildscript {
    }
    dependencies {
       classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.4.RELEASE")
+      classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2'
       //classpath 'org.kordamp.gradle:stats-gradle-plugin:0.2.2'
    }
 }
@@ -96,6 +97,7 @@ dependencies {
    testCompile('org.springframework.restdocs:spring-restdocs-mockmvc:2.0.2.RELEASE')
    testCompile('org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2')
    asciidoctor('org.springframework.restdocs:spring-restdocs-asciidoctor:2.0.2.RELEASE')
+   asciidoctor('com.github.allati.asciidoctor.monotree:asciidoctor-extension-monotree:0.0.1')
 }
 
 bootJar {

@@ -1,0 +1,23 @@
+Download all content:
+
+[source,bash]
+----
+$ curl 'http://localhost:8080/api/v1/dataresources/56433955-2015-468c-b652-79657779bcf9/data/' -i -X GET \
+    -H 'Accept: application/zip'
+----
+
+Download only experiment data:
+
+[source,bash]
+----
+$ curl 'http://localhost:8080/api/v1/dataresources/56433955-2015-468c-b652-79657779bcf9/data/experiment/' -i -X GET \
+    -H 'Accept: application/zip'
+----
+
+Download only logs:
+
+[source,bash]
+----
+$ curl 'http://localhost:8080/api/v1/dataresources/56433955-2015-468c-b652-79657779bcf9/data/log/' -i -X GET \
+    -H 'Accept: application/zip'
+----

@@ -28,6 +28,7 @@ import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.spec.dataresource.AlternateIdentifierSpec;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.spec.dataresource.InternalIdentifierSpec;
+import edu.kit.datamanager.repo.dao.spec.dataresource.LastUpdateSpecification;
 import edu.kit.datamanager.repo.dao.spec.dataresource.PrimaryIdentifierSpec;
 import edu.kit.datamanager.repo.dao.spec.dataresource.StateSpecification;
 import edu.kit.datamanager.repo.domain.Agent;
@@ -258,6 +259,9 @@ public class DataResourceService implements IDataResourceService{
       logger.trace("Resource state found. State is: {}", resource.getState());
     }
 
+    logger.trace("Setting resource's lastUpdate to now().");
+    resource.setLastUpdate(Instant.now());
+
     logger.trace("Persisting created resource.");
     resource = getDao().save(resource);
 
@@ -327,15 +331,18 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  public Page<DataResource> findByExample(DataResource example, List<String> callerIdentities,
+  public Page<DataResource> findByExample(DataResource example,
+          Instant lastUpdateFrom,
+          Instant lastUpdateUntil,
+          List<String> callerIdentities,
           boolean callerIsAdministrator, Pageable pgbl
   ){
-    logger.trace("Performing findByExample({}, {}).", example, pgbl);
+    logger.trace("Performing findByExample({}, {}, {}, {}, {}, {}).", example, lastUpdateFrom, lastUpdateUntil, callerIdentities, callerIsAdministrator, pgbl);
     Page<DataResource> page;
     if(callerIsAdministrator){
       //do find all
       logger.trace("Administrator access detected. Calling findAll({}, {}, {}).", example, pgbl, Boolean.TRUE);
-      page = findAll(example, pgbl, true);
+      page = findAll(example, lastUpdateFrom, lastUpdateUntil, pgbl, true);
     } else{
       //query based on membership
       if(example != null && DataResource.State.REVOKED.equals(example.getState())){
@@ -343,7 +350,7 @@ public class DataResourceService implements IDataResourceService{
         example.setState(null);
       }
       logger.trace("Non-Administrator access detected. Calling findAllFiltered({}, {}, {}, {}, {}).", example, callerIdentities, PERMISSION.READ, pgbl, Boolean.FALSE);
-      page = findAllFiltered(example, callerIdentities, PERMISSION.READ, pgbl, false);
+      page = findAllFiltered(example, lastUpdateFrom, lastUpdateUntil, callerIdentities, PERMISSION.READ, pgbl, false);
     }
 
     logger.trace("Returning page content.");
@@ -351,27 +358,59 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  public Page<DataResource> findAllFiltered(DataResource example, List<String> sids,
+  public Page<DataResource> findAllFiltered(DataResource example,
+          Instant lastUpdateFrom,
+          Instant lastUpdateUntil,
+          List<String> sids,
           PERMISSION permission, Pageable pgbl,
           boolean includeRevoked
   ){
     logger.trace("Performing findAllFiltered({}, {}, {}, {}, {}).", example, sids, permission, pgbl, includeRevoked);
     Specification<DataResource> spec = SpecUtils.getByExampleSpec(example, em, sids, permission);
+
+    spec = (spec == null) ? LastUpdateSpecification.toSpecification(lastUpdateFrom, lastUpdateUntil) : spec.and(LastUpdateSpecification.toSpecification(lastUpdateFrom, lastUpdateUntil));
+
     return doFind(spec, example, pgbl, includeRevoked);
   }
 
   @Override
-  public Page<DataResource> findAll(DataResource example, Pageable pgbl,
+  public Page<DataResource> findAll(DataResource example,
+          Pageable pgbl,
           boolean pIncludeRevoked
   ){
     logger.trace("Performing findAll({}, {}, {}).", example, pgbl, pIncludeRevoked);
-    Specification<DataResource> spec = SpecUtils.getByExampleSpec(example, em, null, null);
-    return doFind(spec, example, pgbl, pIncludeRevoked);
+    return findAll(example, null, null, pgbl, pIncludeRevoked);
   }
 
   @Override
-  public Page<DataResource> findAll(DataResource resource, Pageable pgbl
-  ){
+  public Page<DataResource> findAll(DataResource example,
+          Instant lastUpdateFrom,
+          Instant lastUpdateUntil,
+          Pageable pgbl){
+    logger.trace("Performing findAll({}, {}, {}, {}).", example, lastUpdateFrom, lastUpdateUntil, pgbl);
+    Specification<DataResource> spec = SpecUtils.getByExampleSpec(example, em, null, null);
+
+    spec = (spec == null) ? LastUpdateSpecification.toSpecification(lastUpdateFrom, lastUpdateUntil) : spec.and(LastUpdateSpecification.toSpecification(lastUpdateFrom, lastUpdateUntil));
+
+    return doFind(spec, example, pgbl, false);
+  }
+
+  @Override
+  public Page<DataResource> findAll(DataResource example,
+          Instant lastUpdateFrom,
+          Instant lastUpdateUntil,
+          Pageable pgbl,
+          boolean includeRevoked){
+    logger.trace("Performing findAll({}, {}, {}, {}).", example, lastUpdateFrom, lastUpdateUntil, pgbl);
+    Specification<DataResource> spec = SpecUtils.getByExampleSpec(example, em, null, null);
+
+    spec = (spec == null) ? LastUpdateSpecification.toSpecification(lastUpdateFrom, lastUpdateUntil) : spec.and(LastUpdateSpecification.toSpecification(lastUpdateFrom, lastUpdateUntil));
+
+    return doFind(spec, example, pgbl, includeRevoked);
+  }
+
+  @Override
+  public Page<DataResource> findAll(DataResource resource, Pageable pgbl){
     logger.trace("Performing findAll({}).", "DataResource#" + resource.getId());
     return findAll(resource, pgbl, false);
   }
@@ -380,8 +419,11 @@ public class DataResourceService implements IDataResourceService{
    * Private helper used by findAll and findAllFiltered.
    */
   @Transactional(readOnly = true)
-  private Page<DataResource> doFind(Specification<DataResource> spec, DataResource example,
-          Pageable pgbl, boolean includeRevoked
+  private Page<DataResource> doFind(
+          Specification<DataResource> spec, 
+          DataResource example,
+          Pageable pgbl, 
+          boolean includeRevoked
   ){
     logger.trace("Performing doFind({}, {}, {}).", spec, pgbl, includeRevoked);
 
@@ -442,6 +484,9 @@ public class DataResourceService implements IDataResourceService{
 
     checkUniqueIdentifiers(identifierListBefore, identifierListAfter);
 
+    logger.trace("Setting resource's lastUpdate to now().");
+    updated.setLastUpdate(Instant.now());
+
     DataResource result = getDao().save(updated);
 
     logger.trace("Capturing audit information.");
@@ -490,6 +535,9 @@ public class DataResourceService implements IDataResourceService{
     if(!Objects.isNull(errorMessage)){
       throw new BadArgumentException(errorMessage);
     }
+
+    logger.trace("Setting resource's lastUpdate to now().");
+    newResource.setLastUpdate(Instant.now());
 
     DataResource result = getDao().save(newResource);
 
@@ -567,6 +615,9 @@ public class DataResourceService implements IDataResourceService{
     }
     logger.debug("Setting resource state to {}.", newState);
     resource.setState(newState);
+
+    logger.trace("Setting resource's lastUpdate to now().");
+    resource.setLastUpdate(Instant.now());
 
     logger.trace("Persisting resource.");
     DataResource result = getDao().save(resource);

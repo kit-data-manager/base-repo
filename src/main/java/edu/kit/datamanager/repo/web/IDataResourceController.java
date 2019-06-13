@@ -99,12 +99,44 @@ public interface IDataResourceController extends IGenericResourceController<Data
   @RequestMapping(value = {"/search/data"}, method = {RequestMethod.POST})
   @ResponseBody
   public ResponseEntity<List<ContentInformation>> findContentMetadataByExample(
-//          @ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           @ApiParam(value = "Json representation of the resource serving as example for the search operation. Typically, only first level primitive attributes are evaluated while building queries from examples.", required = true) @RequestBody final ContentInformation c,
           final Pageable pgbl,
           final WebRequest wr,
           final HttpServletResponse hsr,
           final UriComponentsBuilder ucb);
+
+  @ApiOperation(value = "Patch a single content information element.",
+          notes = "This endpoint allows to patch single content information elements associated with a data resource. As most of the content information attributes are typically automatically generated their modification is restricted "
+          + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE. Users having WRITE permissions to the associated resource are only allowed to modify contained metadata elements or tags assigned to the content element.")
+  @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
+  @ResponseBody
+  public ResponseEntity patchContentMetadata(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          @ApiParam(value = "Json representation of a json patch document. The document must comply with RFC 6902 specified by the IETF.", required = true) @RequestBody final JsonPatch patch,
+          final WebRequest request,
+          final HttpServletResponse response);
+
+  @ApiOperation(value = "Download data located at the provided content path.",
+          notes = "This endpoint allows to download the data associated with a data resource and located at a particular virtual part. The virtual path starts after 'data/' and should end with a filename. "
+          + "Depending on the content located at the provided path, different response scenarios can occur. If the content is a locally stored, accessible file, the bitstream of the file is retured. If the file is (temporarily) not available, "
+          + "HTTP 404 is returned. If the content referes to an externally stored resource accessible via http(s), the service will try if the resource is accessible. If this is the case, the service will return HTTP 303 (SEE_OTHER) together "
+          + "with the resource URI in the 'Location' header. Depending on the client, the request is then redirected and the bitstream is returned. If the resource is not accessible or if the protocol is not http(s), the service "
+          + "will either return the status received by accessing the resource URI, SERVICE_UNAVAILABLE if the request has failed or NO_CONTENT if not other status applies. In addition, the resource URI is returned in the 'Content-Location' header "
+          + "in case the client wants to try to access the resource URI.")
+  @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET)
+  @ResponseBody
+  public ResponseEntity getContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          final WebRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder uriBuilder);
+
+  @ApiOperation(value = "Remove a single content information element.",
+          notes = "This endpoint allows to remove single content information elements associated with a data resource. Removing content information elements including their content is restricted "
+          + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE.")
+  @RequestMapping(path = "/{id}/data/**", method = RequestMethod.DELETE)
+  @ResponseBody
+  public ResponseEntity deleteContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          final WebRequest request,
+          final HttpServletResponse response);
 
   @ApiOperation(value = "Access audit information for a single content information resource.",
           notes = "List audit information for a content information resource in a paginated form. Sorting can be supported but is optional. If no sorting is supported it is recommended to return audit "
@@ -124,37 +156,4 @@ public interface IDataResourceController extends IGenericResourceController<Data
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);
 
-  @ApiOperation(value = "Download data located at the provided content path.",
-          notes = "This endpoint allows to download the data associated with a data resource and located at a particular virtual part. The virtual path starts after 'data/' and should end with a filename. "
-          + "Depending on the content located at the provided path, different response scenarios can occur. If the content is a locally stored, accessible file, the bitstream of the file is retured. If the file is (temporarily) not available, "
-          + "HTTP 404 is returned. If the content referes to an externally stored resource accessible via http(s), the service will try if the resource is accessible. If this is the case, the service will return HTTP 303 (SEE_OTHER) together "
-          + "with the resource URI in the 'Location' header. Depending on the client, the request is then redirected and the bitstream is returned. If the resource is not accessible or if the protocol is not http(s), the service "
-          + "will either return the status received by accessing the resource URI, SERVICE_UNAVAILABLE if the request has failed or NO_CONTENT if not other status applies. In addition, the resource URI is returned in the 'Content-Location' header "
-          + "in case the client wants to try to access the resource URI.")
-
-  @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET)
-  @ResponseBody
-  public ResponseEntity getContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder);
-
-  @ApiOperation(value = "Patch a single content information element.",
-          notes = "This endpoint allows to patch single content information elements associated with a data resource. As most of the content information attributes are typically automatically generated their modification is restricted "
-          + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE. Users having WRITE permissions to the associated resource are only allowed to modify contained metadata elements or tags assigned to the content element.")
-  @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
-  @ResponseBody
-  public ResponseEntity patchContentMetadata(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          @ApiParam(value = "Json representation of a json patch document. The document must comply with RFC 6902 specified by the IETF.", required = true) @RequestBody final JsonPatch patch,
-          final WebRequest request,
-          final HttpServletResponse response);
-
-  @ApiOperation(value = "Remove a single content information element.",
-          notes = "This endpoint allows to remove single content information elements associated with a data resource. Removing content information elements including their content is restricted "
-          + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE.")
-  @RequestMapping(path = "/{id}/data/**", method = RequestMethod.DELETE)
-  @ResponseBody
-  public ResponseEntity deleteContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          final WebRequest request,
-          final HttpServletResponse response);
 }

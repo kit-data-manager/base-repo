@@ -30,7 +30,6 @@ import org.javers.repository.jql.ShadowScope;
 import org.javers.shadow.Shadow;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Service;
 
 /**

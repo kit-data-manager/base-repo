@@ -184,6 +184,11 @@ public class DataResource implements EtagSupport, Serializable{
   private Set<FundingReference> fundingReferences = new HashSet<>();
 
   //internal properties
+  @ApiModelProperty(value = "Date at which the last update occured.", example = "2017-05-10T10:41:00Z", required = true)
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+  @JsonDeserialize(using = CustomInstantDeserializer.class)
+  @JsonSerialize(using = CustomInstantSerializer.class)
+  Instant lastUpdate;
   //state of the resource (VOLATILE by default)
   @ApiModelProperty(value = "State information of the resource. After creation each resource is classified as VOLATILE", required = false)
   @Enumerated(EnumType.STRING)

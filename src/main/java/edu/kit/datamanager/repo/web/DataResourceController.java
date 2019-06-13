@@ -58,6 +58,7 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -183,92 +184,25 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity getAuditInformation(@PathVariable("id") final String resourceIdentifier,
-          final Pageable pgbl,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder ucb){
-    LOGGER.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
-    DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, null, request, response)).toString();
-    });
-    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
-
-    Optional<String> auditInformation = dataResourceService.getAuditInformationAsJson(resourceIdentifier, pgbl);
-
-    if(!auditInformation.isPresent()){
-      LOGGER.trace("No audit information found for resource {}. Returning empty JSON array.", resourceIdentifier);
-      return ResponseEntity.ok().body("[]");
-    }
-
-    long currentVersion = auditService.getCurrentVersion(resourceIdentifier);
-
-    LOGGER.trace("Audit information found, returning result.");
-    return ResponseEntity.ok().header("Resource-Version", Long.toString(currentVersion)).body(auditInformation.get());
-  }
-
-  @Override
-  public ResponseEntity getContentAuditInformation(@PathVariable("id") final String resourceIdentifier,
+  public ResponseEntity<List<DataResource>> findAll(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
+          @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
           final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
-    LOGGER.trace("Performing getContentAuditInformation({}, {}).", resourceIdentifier, pgbl);
-
-    String path = getContentPathFromRequest(request);
-    //check resource and permission
-    DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, null, pgbl, request, response, uriBuilder)).toString();
-    });
-
-    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
-
-    LOGGER.trace("Checking provided path {}.", path);
-    if(path.startsWith("/")){
-      LOGGER.debug("Removing leading slash from path {}.", path);
-      //remove leading slash if present, which should actually never happen
-      path = path.substring(1);
-    }
-
-    //switch between collection and element listing
-    if(path.endsWith("/") || path.length() == 0){
-      LOGGER.error("Path ends with slash or is empty. Obtaining audit information for collection elements is not supported.");
-      throw new BadArgumentException("Provided path is invalid for obtaining audit information. Path must not be empty and must not end with a slash.");
-    } else{
-      LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
-      ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, null);
-
-      Optional<String> auditInformation = contentInformationService.getAuditInformationAsJson(Long.toString(contentInformation.getId()), pgbl);
-
-      if(!auditInformation.isPresent()){
-        LOGGER.trace("No audit information found for resource {} and path {}. Returning empty JSON array.", resourceIdentifier, path);
-        return ResponseEntity.ok().body("[]");
-      }
-
-      long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
-
-      LOGGER.trace("Audit information found, returning result.");
-      return ResponseEntity.ok().header("Resource-Version", Long.toString(currentVersion)).body(auditInformation.get());
-    }
-  }
-
-  @Override
-  public ResponseEntity<List<DataResource>> findAll(final Pageable pgbl,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder){
-    return findByExample(null, pgbl, request, response, uriBuilder);
+    return findByExample(null, lastUpdateFrom, lastUpdateUntil, pgbl, request, response, uriBuilder);
   }
 
   @Override
   public ResponseEntity<List<DataResource>> findByExample(@RequestBody DataResource example,
+          @RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
+          @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
           final Pageable pgbl,
           final WebRequest req,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
     PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
-
-    Page<DataResource> page = dataResourceService.findByExample(example, AuthenticationHelper.getAuthorizationIdentities(),
+    Page<DataResource> page = dataResourceService.findByExample(example, lastUpdateFrom, lastUpdateUntil, AuthenticationHelper.getAuthorizationIdentities(),
             AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()),
             request);
 
@@ -459,6 +393,30 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
+  public ResponseEntity patchContentMetadata(@PathVariable(value = "id") final String identifier,
+          final @RequestBody JsonPatch patch,
+          final WebRequest request,
+          final HttpServletResponse response){
+    ControllerUtils.checkAnonymousAccess();
+
+    String path = getContentPathFromRequest(request);
+
+    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
+    });
+
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
+
+    ControllerUtils.checkEtag(request, resource);
+
+    ContentInformation toUpdate = contentInformationService.getContentInformation(resource.getId(), path, null);
+
+    contentInformationService.patch(toUpdate, patch, getUserAuthorities(resource));
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @Override
   public ResponseEntity getContent(@PathVariable(value = "id") final String identifier,
           final WebRequest request,
           final HttpServletResponse response,
@@ -543,30 +501,6 @@ public class DataResourceController implements IDataResourceController{
   }
 
   @Override
-  public ResponseEntity patchContentMetadata(@PathVariable(value = "id") final String identifier,
-          final @RequestBody JsonPatch patch,
-          final WebRequest request,
-          final HttpServletResponse response){
-    ControllerUtils.checkAnonymousAccess();
-
-    String path = getContentPathFromRequest(request);
-
-    DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
-    });
-
-    DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
-
-    ControllerUtils.checkEtag(request, resource);
-
-    ContentInformation toUpdate = contentInformationService.getContentInformation(resource.getId(), path, null);
-
-    contentInformationService.patch(toUpdate, patch, getUserAuthorities(resource));
-
-    return ResponseEntity.noContent().build();
-  }
-
-  @Override
   public ResponseEntity deleteContent(@PathVariable(value = "id")
           final String identifier,
           final WebRequest request,
@@ -616,6 +550,76 @@ public class DataResourceController implements IDataResourceController{
     }
 
     return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity getAuditInformation(@PathVariable("id") final String resourceIdentifier,
+          final Pageable pgbl,
+          final WebRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder ucb){
+    LOGGER.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
+    DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, null, request, response)).toString();
+    });
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+
+    Optional<String> auditInformation = dataResourceService.getAuditInformationAsJson(resourceIdentifier, pgbl);
+
+    if(!auditInformation.isPresent()){
+      LOGGER.trace("No audit information found for resource {}. Returning empty JSON array.", resourceIdentifier);
+      return ResponseEntity.ok().body("[]");
+    }
+
+    long currentVersion = auditService.getCurrentVersion(resourceIdentifier);
+
+    LOGGER.trace("Audit information found, returning result.");
+    return ResponseEntity.ok().header("Resource-Version", Long.toString(currentVersion)).body(auditInformation.get());
+  }
+
+  @Override
+  public ResponseEntity getContentAuditInformation(@PathVariable("id") final String resourceIdentifier,
+          final Pageable pgbl,
+          final WebRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder uriBuilder){
+    LOGGER.trace("Performing getContentAuditInformation({}, {}).", resourceIdentifier, pgbl);
+
+    String path = getContentPathFromRequest(request);
+    //check resource and permission
+    DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
+      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, null, pgbl, request, response, uriBuilder)).toString();
+    });
+
+    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+
+    LOGGER.trace("Checking provided path {}.", path);
+    if(path.startsWith("/")){
+      LOGGER.debug("Removing leading slash from path {}.", path);
+      //remove leading slash if present, which should actually never happen
+      path = path.substring(1);
+    }
+
+    //switch between collection and element listing
+    if(path.endsWith("/") || path.length() == 0){
+      LOGGER.error("Path ends with slash or is empty. Obtaining audit information for collection elements is not supported.");
+      throw new BadArgumentException("Provided path is invalid for obtaining audit information. Path must not be empty and must not end with a slash.");
+    } else{
+      LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
+      ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, null);
+
+      Optional<String> auditInformation = contentInformationService.getAuditInformationAsJson(Long.toString(contentInformation.getId()), pgbl);
+
+      if(!auditInformation.isPresent()){
+        LOGGER.trace("No audit information found for resource {} and path {}. Returning empty JSON array.", resourceIdentifier, path);
+        return ResponseEntity.ok().body("[]");
+      }
+
+      long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
+
+      LOGGER.trace("Audit information found, returning result.");
+      return ResponseEntity.ok().header("Resource-Version", Long.toString(currentVersion)).body(auditInformation.get());
+    }
   }
 
   /**

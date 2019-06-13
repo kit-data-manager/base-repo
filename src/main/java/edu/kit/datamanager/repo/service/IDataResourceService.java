@@ -21,6 +21,7 @@ import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.service.IGenericService;
 import edu.kit.datamanager.service.IServiceAuditSupport;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.data.domain.Page;
@@ -145,6 +146,36 @@ public interface IDataResourceService extends IGenericService<DataResource>, ISe
   Page<DataResource> findAll(DataResource example, Pageable pgbl, boolean includeRevoked);
 
   /**
+   * Basic find by example method. An implementation of this method is not
+   * intended to imply any specific context or authentication information. It is
+   * expected to use the provided information in order to create a query to the
+   * data backend and to return appropriate results.
+   *
+   * The example is used to create a query to the data backend. It depends on
+   * the implementation which fields of the example are evaluated, at least
+   * simple fields should be evaluated. Resources in state REVOKED may or may
+   * not be included depending on the 'includeRevoked' flag.
+   *
+   * The result can be requested in a paginated form using the pgbl argument.
+   *
+   * @param example The example resource used to build the query for assigned
+   * values.
+   * @param lastUpdateFrom The UTC time of the earliest update of a returned
+   * resource.
+   * @param lastUpdateUntil The UTC time of the latest update of a returned
+   * resource.
+   * @param pgbl The pageable object containing pagination information.
+   * @param includeRevoked If TRUE, resources in state 'REVOKED' are included,
+   * otherwise they are ignored. Typically, only privileged users should see
+   * revoked resources.
+   *
+   * @return A page object containing all matching resources on the current
+   * page. The list of results might be empty, but the result should NOT be
+   * 'null'.
+   */
+  Page<DataResource> findAll(DataResource example, Instant lastUpdateFrom, Instant lastUpdateUntil, Pageable pgbl, boolean includeRevoked);
+
+  /**
    * Basic find by example method supporting permission check. An implementation
    * of this method is not intended to imply any specific context or
    * authentication information. It is expected to use the provided information
@@ -161,6 +192,10 @@ public interface IDataResourceService extends IGenericService<DataResource>, ISe
    *
    * @param example The example resource used to build the query for assigned
    * values.
+   * @param lastUpdateFrom The UTC time of the earliest update of a returned
+   * resource.
+   * @param lastUpdateUntil The UTC time of the latest update of a returned
+   * resource.
    * @param sids A list of subject ids identifying caller. This list may or may
    * not contain multiple entries identifying either a user or a group of users.
    * @param permission The minimum permission at least one subject in the list
@@ -174,7 +209,7 @@ public interface IDataResourceService extends IGenericService<DataResource>, ISe
    * page. The list of results might be empty, but the result should NOT be
    * 'null'.
    */
-  Page<DataResource> findAllFiltered(DataResource example, List<String> sids, PERMISSION permission, Pageable pgbl, boolean includeRevoked);
+  Page<DataResource> findAllFiltered(DataResource example, Instant lastUpdateFrom, Instant lastUpdateUntil, List<String> sids, PERMISSION permission, Pageable pgbl, boolean includeRevoked);
 
   /**
    * Find a data resource by the provided example. The example is used to create
@@ -194,6 +229,10 @@ public interface IDataResourceService extends IGenericService<DataResource>, ISe
    *
    * @param example The example resource used to build the query for assigned
    * values.
+   * @param lastUpdateFrom The UTC time of the earliest update of a returned
+   * resource.
+   * @param lastUpdateUntil The UTC time of the latest update of a returned
+   * resource.
    * @param callerIdentities A list of caller identities, e.g. principal and
    * active group name.
    * @param callerIsAdministrator If TRUE, the caller was checked for role
@@ -203,5 +242,5 @@ public interface IDataResourceService extends IGenericService<DataResource>, ISe
    *
    * @return A page of data resources matching the example or an empty page.
    */
-  Page<DataResource> findByExample(DataResource example, List<String> callerIdentities, boolean callerIsAdministrator, Pageable pgbl);
+  Page<DataResource> findByExample(DataResource example, Instant lastUpdateFrom, Instant lastUpdateUntil, List<String> callerIdentities, boolean callerIsAdministrator, Pageable pgbl);
 }

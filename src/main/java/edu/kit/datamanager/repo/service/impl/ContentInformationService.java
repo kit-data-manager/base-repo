@@ -56,6 +56,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -357,6 +358,14 @@ public class ContentInformationService implements IContentInformationService{
 
     logger.trace("Returning page content.");
     return page;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<ContentInformation> findAll(ContentInformation c, Instant lastUpdateFrom, Instant lastUpdateUntil, Pageable pgbl){
+    logger.trace("Performing findAll({}, {}, {}, {}).", c, lastUpdateFrom, lastUpdateUntil, pgbl);
+    logger.info("Obtaining content information from an lastUpdate range is not supported. Ignoring lastUpdate arguments.");
+    return findAll(c, pgbl);
   }
 
   @Override

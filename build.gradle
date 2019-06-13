@@ -111,3 +111,10 @@ bootJar {
    launchScript()
 }
 
+test {
+   testLogging {
+      outputs.upToDateWhen {false}
+      showStandardStreams = true
+   }
+}
+

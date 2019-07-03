@@ -96,7 +96,7 @@ public class RelatedIdentifier{
   @Enumerated(EnumType.STRING)
   private RELATION_TYPES relationType;
   @ApiModelProperty(value = "Identifier scheme.", required = false)
-  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Scheme scheme;
   @ApiModelProperty(value = "Related metadata scheme.", required = false)
   private String relatedMetadataScheme;

@@ -272,7 +272,8 @@ public class DataResource implements EtagSupport, Serializable{
     hash = 41 * hash + Objects.hashCode(this.fundingReferences);
     hash = 41 * hash + EnumUtils.hashCode(this.state);
     hash = 41 * hash + Objects.hashCode(this.embargoDate);
-    hash = 41 * hash + Objects.hashCode(this.acls);
+    hash = 41 * hash + Objects.hashCode(this.lastUpdate);
+        hash = 41 * hash + Objects.hashCode(this.acls);
     return hash;
   }
 
@@ -350,6 +351,9 @@ public class DataResource implements EtagSupport, Serializable{
       return false;
     }
     if(!EnumUtils.equals(this.state, other.state)){
+      return false;
+    }
+      if(!Objects.equals(this.lastUpdate, other.lastUpdate)){
       return false;
     }
     if(!Objects.equals(this.embargoDate, other.embargoDate)){

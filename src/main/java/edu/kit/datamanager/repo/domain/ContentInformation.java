@@ -50,6 +50,8 @@ import org.springframework.http.MediaType;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ContentInformation implements Serializable{
 
+  public static final MediaType CONTENT_INFORMATION_MEDIA_TYPE = MediaType.parseMediaType("application/vnd.datamanager.content-information+json");
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @SecureUpdate({"FORBIDDEN"})
@@ -64,6 +66,8 @@ public class ContentInformation implements Serializable{
   private int depth;
   @SecureUpdate({"ROLE_ADMINISTRATOR"})//only allow modification by 'real' administrator, not for owner (having ADMINISTRATE permissions)
   private String contentUri;
+  @SecureUpdate({"ROLE_ADMINISTRATOR"})//only allow modification by 'real' administrator, not for owner (having ADMINISTRATE permissions)
+  private String uploader;
   @SecureUpdate({"ROLE_ADMINISTRATOR", "PERMISSION_ADMINISTRATE"})
   private String mediaType;
   @SecureUpdate({"ROLE_ADMINISTRATOR", "PERMISSION_ADMINISTRATE"})
@@ -101,7 +105,9 @@ public class ContentInformation implements Serializable{
 ////    if(relativePath == null){
 ////      return "unknown.bin";
 ////    }
-if(relativePath == null)return null;
+    if(relativePath == null){
+      return null;
+    }
     return relativePath.substring(relativePath.lastIndexOf("/") + 1);
   }
 
@@ -124,7 +130,10 @@ if(relativePath == null)return null;
 
   public void setRelativePath(String path){
     if(path == null){
-      throw new IllegalArgumentException("Argument must not be null.");
+      //    throw new IllegalArgumentException("Argument must not be null.");
+      relativePath = null;
+      depth = 0;
+      return;
     }
 
     //remove multiple slashes

@@ -221,14 +221,22 @@ public class ContentInformationService implements IContentInformationService{
     logger.trace("Checking for additional metadata.");
     if(contentInformation != null){
       if(contentInformation.getMetadata() != null){
-        logger.trace("Additional metadata found. Setting metadata.");
+        logger.trace("Additional metadata found. Transferring value.");
         contentInfo.setMetadata(contentInformation.getMetadata());
       }
 
       if(contentInformation.getTags() != null){
-        logger.trace("User-provided tags found. Setting tags.");
+        logger.trace("User-provided tags found. Transferring value.");
         contentInfo.setTags(contentInformation.getTags());
       }
+      if(contentInformation.getUploader() != null){
+        logger.trace("User-provided uploader found. Transferring value.");
+        contentInfo.setUploader(contentInformation.getUploader());
+      }
+    } else{
+      String principal = AuthenticationHelper.getPrincipal();
+      logger.trace("No content information provided. Setting uploader property from caller principal value {}.", principal);
+      contentInfo.setUploader(principal);
     }
 
     logger.trace("Persisting content information.");

@@ -420,9 +420,9 @@ public class DataResourceService implements IDataResourceService{
    */
   @Transactional(readOnly = true)
   private Page<DataResource> doFind(
-          Specification<DataResource> spec, 
+          Specification<DataResource> spec,
           DataResource example,
-          Pageable pgbl, 
+          Pageable pgbl,
           boolean includeRevoked
   ){
     logger.trace("Performing doFind({}, {}, {}).", spec, pgbl, includeRevoked);
@@ -487,6 +487,7 @@ public class DataResourceService implements IDataResourceService{
     logger.trace("Setting resource's lastUpdate to now().");
     updated.setLastUpdate(Instant.now());
 
+    logger.trace("Persisting updated resource.");
     DataResource result = getDao().save(updated);
 
     logger.trace("Capturing audit information.");

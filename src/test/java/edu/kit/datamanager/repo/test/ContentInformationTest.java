@@ -99,10 +99,10 @@ public class ContentInformationTest{
     Assert.assertEquals(2, info.getDepth());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testCreateContentInformationWithNullArgument(){
     ContentInformation info = ContentInformation.createContentInformation(null);
-    Assert.fail("Content information " + info + " should not have been created.");
+    //works now as null check for relative path is no longer active
   }
 
   @Test
@@ -144,10 +144,11 @@ public class ContentInformationTest{
     Assert.assertEquals(2, info.getDepth());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetRelativePathWithNullArgument(){
     ContentInformation info = new ContentInformation();
     info.setRelativePath(null);
+    //works now as null path is allowed
   }
 
   @Test

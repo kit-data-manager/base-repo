@@ -244,7 +244,6 @@ public class DataResourceControllerTest{
    */
   @Test
   public void testGetDataResources() throws Exception{
-    System.out.println(applicationProperties.getBasepath());
     this.mockMvc.perform(get("/api/v1/dataresources/").param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(4))).andReturn();
   }

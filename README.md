@@ -12,7 +12,7 @@ In order to build this microservice you'll need:
 After obtaining the sources change to the folder where the sources are located perform the following steps:
 
 ```
-user@localhost:/home/user/base-repo$ ./gradlew -Prelease build
+user@localhost:/home/user/base-repo$ ./gradlew -Pclean-release build
 > Configure project :
 Using release profile for building base-repo
 <-------------> 0% EXECUTING [0s]
@@ -22,18 +22,6 @@ user@localhost:/home/user/base-repo$
 
 The Gradle wrapper will now take care of downloading the configured version of Gradle, checking out all required libraries, build these
 libraries and finally build the base-repo microservice itself. As a result, a fat jar containing the entire service is created at 'build/jars/base-repo.jar'.
-
-In case you need an entirely clean release, you should call:
-```
-user@localhost:/home/user/base-repo$ ./gradlew -Pclean-release clean build
-> Configure project :
-Using release profile for building base-repo
-<-------------> 0% EXECUTING [0s]
-[...]
-user@localhost:/home/user/base-repo$
-```
-
-This will also checkout the HEAD revision of base-repo itself and rebuilds all artifacts.
 
 ## How to start
 

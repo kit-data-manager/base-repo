@@ -33,7 +33,7 @@ import org.springframework.validation.annotation.Validated;
 @EqualsAndHashCode(callSuper = true)
 public class ApplicationProperties extends GenericApplicationProperties{
 
-  @edu.kit.datamanager.repo.annotations.BasePathURL
+  @edu.kit.datamanager.annotations.LocalFolderURL
   private URL basepath;
   @Value("${repo.audit.enabled:FALSE}")
   private boolean auditEnabled;

@@ -15,7 +15,7 @@
  */
 package edu.kit.datamanager.repo.dao.spec.dataresource;
 
-import edu.kit.datamanager.repo.dao.spec.StringFieldSpecification;
+import edu.kit.datamanager.dao.StringFieldSpecification;
 import edu.kit.datamanager.repo.domain.DataResource;
 import org.springframework.data.jpa.domain.Specification;
 

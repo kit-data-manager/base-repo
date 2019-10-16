@@ -16,11 +16,9 @@
 package edu.kit.datamanager.repo.dao.spec.contentinformation;
 
 import edu.kit.datamanager.repo.domain.ContentInformation;
-import edu.kit.datamanager.repo.domain.DataResource;
 import java.util.Arrays;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 

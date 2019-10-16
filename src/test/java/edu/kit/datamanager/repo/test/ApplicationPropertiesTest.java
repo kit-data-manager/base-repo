@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.repo.test;
 
-import edu.kit.datamanager.configuration.GenericApplicationProperties;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import java.net.URI;
 import org.junit.Assert;

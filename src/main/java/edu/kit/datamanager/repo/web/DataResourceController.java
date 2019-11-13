@@ -208,10 +208,7 @@ public class DataResourceController implements IDataResourceController{
 
     eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), request.getPageSize()));
     //set content-range header for react-admin (index_start-index_end/total
-    int index_start = page.getNumber() * request.getPageSize();
-    int index_end = index_start + request.getPageSize();
-
-    response.addHeader("Content-Range", (index_start + "-" + index_end + "/" + page.getTotalElements()));
+    response.addHeader("Content-Range", ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
     filterAndAutoReturnResources(page.getContent());
     return ResponseEntity.ok().build();
   }
@@ -249,7 +246,7 @@ public class DataResourceController implements IDataResourceController{
 
     ControllerUtils.checkEtag(request, resource);
     newResource.setId(resource.getId());
-
+    System.out.println("PUT " + newResource);
     DataResource result = dataResourceService.put(resource, newResource, getUserAuthorities(resource));
 
     //filter resource if necessary and return it automatically
@@ -384,10 +381,7 @@ public class DataResourceController implements IDataResourceController{
     Page<ContentInformation> page = contentInformationService.findByExample(example, AuthenticationHelper.getAuthorizationIdentities(),
             AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()), pgbl);
 
-    int index_start = page.getNumber() * request.getPageSize();
-    int index_end = index_start + request.getPageSize();
-
-    response.addHeader("Content-Range", (index_start + "-" + index_end + "/" + page.getTotalElements()));
+    response.addHeader("Content-Range", ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
     filterAndAutoReturnContentInformation(page.getContent());
     return ResponseEntity.ok().build();
   }

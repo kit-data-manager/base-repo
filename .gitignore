@@ -5,3 +5,6 @@
 /.settings/
 /lib/
 /config/
+/bak/
+base-repo.jar
+EpistemeImageUploadHandler.properties

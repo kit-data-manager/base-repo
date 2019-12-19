@@ -63,6 +63,10 @@ public class ContentInformation implements Serializable{
   @SecureUpdate({"ROLE_ADMINISTRATOR"})//only allow modification by 'real' administrator, not for owner (having ADMINISTRATE permissions)
   private String relativePath;
   @SecureUpdate({"FORBIDDEN"})
+  private Integer version;
+  @SecureUpdate({"FORBIDDEN"})
+  private String versioningService;
+  @SecureUpdate({"FORBIDDEN"})
   private int depth;
   @SecureUpdate({"ROLE_ADMINISTRATOR"})//only allow modification by 'real' administrator, not for owner (having ADMINISTRATE permissions)
   private String contentUri;

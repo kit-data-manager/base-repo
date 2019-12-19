@@ -21,6 +21,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -37,6 +38,10 @@ public class ContentInformationMatchSpecification{
   }
 
   public static Specification<ContentInformation> toSpecification(final String parentId, final String path, final boolean exactPath){
+    return toSpecification(parentId, path, null, exactPath);
+  }
+
+  public static Specification<ContentInformation> toSpecification(final String parentId, final String path, String version, final boolean exactPath){
     return (Root<ContentInformation> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
       query.distinct(true);
 
@@ -44,13 +49,20 @@ public class ContentInformationMatchSpecification{
 
       Path<String> pid = root.get("parentResource").get("id");
 
+      Predicate basePredicate;
       if(path != null && !exactPath){
-        return builder.and(builder.equal(pid, parentId), builder.like(root.get("relativePath"), "%" + path + "%"));
+        basePredicate = builder.and(builder.equal(pid, parentId), builder.like(root.get("relativePath"), "%" + path + "%"));
+
       } else if(path != null && exactPath){
-        return builder.and(builder.equal(pid, parentId), builder.equal(root.get("relativePath"), path));
+        basePredicate = builder.and(builder.equal(pid, parentId), builder.equal(root.get("relativePath"), path));
       } else{
         //path is null, only query for parent
-        return builder.equal(pid, parentId);
+        basePredicate = builder.equal(pid, parentId);
+      }
+      if(version != null){
+        return builder.and(basePredicate, builder.equal(root.get("version"), version));
+      } else{
+        return basePredicate;
       }
     };
   }

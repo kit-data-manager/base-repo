@@ -17,13 +17,13 @@ package edu.kit.datamanager.repo.service.impl;
 
 import com.github.fge.jsonpatch.JsonPatch;
 import com.monitorjbl.json.JsonResult;
+import edu.kit.datamanager.entities.ContentElement;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.entities.messaging.DataResourceMessage;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.FeatureNotImplementedException;
-import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
@@ -38,34 +38,33 @@ import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
-import edu.kit.datamanager.repo.util.PathUtils;
 import edu.kit.datamanager.service.IAuditService;
+import edu.kit.datamanager.service.IContentCollectionProvider;
+import edu.kit.datamanager.service.IContentProvider;
 import edu.kit.datamanager.service.IMessagingService;
+import edu.kit.datamanager.service.IVersioningService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import edu.kit.datamanager.util.PatchUtil;
-import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.tika.detect.Detector;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
+import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
@@ -73,8 +72,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.UnsupportedMediaTypeStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  *
@@ -96,6 +100,14 @@ public class ContentInformationService implements IContentInformationService{
   private IMessagingService messagingService;
   @Autowired
   private IAuditService<ContentInformation> auditService;
+  @Autowired
+  private IVersioningService[] versioningServices;
+
+  @Autowired
+  private IContentProvider[] contentProviders;
+
+  @Autowired
+  private IContentCollectionProvider[] collectionContentProviders;
 
   @Override
   public ContentInformation create(ContentInformation contentInformation, DataResource resource,
@@ -108,26 +120,14 @@ public class ContentInformationService implements IContentInformationService{
     //We use here no tags as tags are just for reflecting related content elements, but all tags are associated with the same content element.
     Page<ContentInformation> existingContentInformation = findAll(ContentInformation.createContentInformation(resource.getId(), path), PageRequest.of(0, 1));
 
+    Map<String, String> options = new HashMap<>();
+    options.put("force", Boolean.toString(force));
+
     ContentInformation contentInfo;
     Path toRemove = null;
     if(existingContentInformation.hasContent()){
-      logger.trace("Existing content information found. Checking 'force' flag.");
-      //existing content, overwrite necessary
-      if(!force){
-        //conflict
-        logger.error("Existing content information found for resource {} at path {} and 'force' flag not set. Throwing ResourceAlreadyExistException.", "DataResource#" + resource.getId(), path);
-        throw new ResourceAlreadyExistException("There is already content registered at " + path + ". Provide force=true in order to replace the existing resource.");
-      } else{
-        logger.trace("'Force' flag set. Checking for local content to replace.");
-        //overwrite...mark file for deletion
-        contentInfo = existingContentInformation.getContent().get(0);
-        URI contentUri = URI.create(contentInfo.getContentUri());
-        if("file".equals(contentUri.getScheme())){
-          //mark file for removal
-          logger.debug("File content found. Marking current file at URI {} for replacement.", contentInfo.getContentUri());
-          toRemove = Paths.get(URI.create(contentInfo.getContentUri()));
-        }//content URI is not pointing to a file...just replace the entry
-      }
+      contentInfo = existingContentInformation.getContent().get(0);
+      options.put("contentUri", contentInfo.getContentUri());
     } else{
       logger.trace("No existing content information found.");
       //no existing content information, create new or take provided
@@ -140,60 +140,49 @@ public class ContentInformationService implements IContentInformationService{
     if(file != null){
       logger.trace("User upload detected. Preparing to consume data.");
       //file upload
-      URI dataUri = PathUtils.getDataUri(contentInfo.getParentResource(), contentInfo.getRelativePath(), applicationProperties);
-      Path destination = Paths.get(dataUri);
-      logger.trace("Preparing destination {} for storing user data.", destination);
-      //store data
-      OutputStream out = null;
-      try{
-        //read/write file, create checksum and calculate file size
-        Files.createDirectories(destination.getParent());
 
-        MessageDigest md = MessageDigest.getInstance("SHA1");
-        logger.trace("Start reading user data from stream.");
-        int cnt;
-        long bytes = 0;
-        byte[] buffer = new byte[1024];
-        out = Files.newOutputStream(destination);
-        while((cnt = file.read(buffer)) > -1){
-          out.write(buffer, 0, cnt);
-          md.update(buffer, 0, cnt);
-          bytes += cnt;
-        }
-
-        logger.trace("Performing upload post-processing.");
-        contentInfo.setHash("sha1:" + Hex.encodeHexString(md.digest()));
-        logger.debug("Assigned hash {} to content information.", contentInfo.getHash());
-        contentInfo.setSize(bytes);
-        logger.debug("Assigned size {} to content information.", contentInfo.getSize());
-        contentInfo.setContentUri(dataUri.toString());
-        logger.debug("Assigned content URI {} to content information.", contentInfo.getContentUri());
-
-        logger.trace("Trying to determine content type.");
-        try(InputStream is = Files.newInputStream(destination); BufferedInputStream bis = new BufferedInputStream(is);){
-          AutoDetectParser parser = new AutoDetectParser();
-          Detector detector = parser.getDetector();
-          Metadata md1 = new Metadata();
-          md1.add(Metadata.RESOURCE_NAME_KEY, contentInfo.getFilename());
-          org.apache.tika.mime.MediaType mediaType = detector.detect(bis, md1);
-          contentInfo.setMediaType(mediaType.toString());
-          logger.trace("Assigned media type {} to content information.", contentInfo.getMediaType());
-        }
-      } catch(IOException ex){
-        logger.error("Failed to finish upload. Throwing CustomInternalServerError.", ex);
-        throw new CustomInternalServerError("Unable to read from stream. Upload canceled.");
-      } catch(NoSuchAlgorithmException ex){
-        logger.error("Failed to initialize SHA1 message digest. Throwing CustomInternalServerError.", ex);
-        throw new CustomInternalServerError("Internal digest initialization error. Unable to perform upload.");
-      } finally{
-        if(out != null){
+      String versioningService = (contentInformation != null && contentInformation.getVersioningService() != null) ? contentInformation.getVersioningService() : applicationProperties.getDefaultVersioningService();
+      contentInfo.setVersioningService(versioningService);
+      boolean fileWritten = false;
+      logger.trace("Trying to use versioning service named '{}' for writing file content.", versioningService);
+      for(IVersioningService service : versioningServices){
+        if(versioningService.equals(service.getServiceName())){
+          logger.trace("Versioning service found, writing file content.");
+          service.configure();
           try{
-            out.flush();
-            out.close();
-          } catch(IOException ignored){
+            service.write(resource.getId(), AuthenticationHelper.getPrincipal(), path, file, options);
+          } catch(Throwable t){
+            logger.error("Failed to write content to versioning repository.", t);
+            throw new CustomInternalServerError("Failed to write content to versioning repository.");
           }
+          logger.trace("File content successfully written.");
+          fileWritten = true;
+        } else{
+          logger.trace("Skipping service '{}'", service.getServiceName());
         }
       }
+
+      if(!fileWritten){
+        logger.error("No versioning service found for name '{}'.", versioningService);
+        throw new BadArgumentException("Versioning service '" + versioningService + "' not found.");
+      }
+
+      logger.trace("Obtaining file-specific information from versioning service response.");
+      if(options.containsKey("size")){
+        contentInfo.setSize(Long.parseLong(options.get("size")));
+      }
+
+      if(options.containsKey("checksum")){
+        contentInfo.setHash(options.get("checksum"));
+      }
+      if(options.containsKey("contentUri")){
+        contentInfo.setContentUri(options.get("contentUri"));
+      }
+      if(options.containsKey("mediaType")){
+        contentInfo.setMediaType(options.get("mediaType"));
+      }
+
+      logger.trace("File successfully written using versioning service '{}'.", versioningService);
     } else{
       logger.trace("No user upload detected. Checking content URI in content information.");
       //no file upload, take data reference URI from provided content information
@@ -239,17 +228,11 @@ public class ContentInformationService implements IContentInformationService{
       contentInfo.setUploader(principal);
     }
 
+    long newVersion = (contentInfo.getId() != null) ? auditService.getCurrentVersion(Long.toString(contentInfo.getId())) + 1 : 1;
+    logger.trace("Setting new version number of content information to {}.", newVersion);
+    contentInfo.setVersion((int) newVersion);
     logger.trace("Persisting content information.");
     ContentInformation result = getDao().save(contentInfo);
-    if(toRemove != null){
-      try{
-        logger.debug("Removing replaced content from {}.", toRemove);
-        Files.deleteIfExists(toRemove);
-        logger.trace("Content at {} successfully removed.", toRemove);
-      } catch(IOException ex){
-        logger.warn("Failed to remove previously existing content from " + toRemove + ". Manual removal required.", ex);
-      }
-    }
 
     logger.trace("Capturing audit information.");
     auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());
@@ -257,6 +240,100 @@ public class ContentInformationService implements IContentInformationService{
     logger.trace("Sending CREATE event.");
     messagingService.send(DataResourceMessage.factoryCreateDataMessage(resource.getId(), result.getRelativePath(), result.getContentUri(), result.getMediaType(), AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
     return result;
+  }
+
+  @Override
+  public void read(DataResource resource, String path, Long version, String acceptHeader, HttpServletResponse response){
+    URI uri = null;
+    if(path.endsWith("/") || path.isEmpty()){
+      //collection download
+      ContentInformation info = ContentInformation.createContentInformation(resource.getId(), path);
+      Page<ContentInformation> page = findAll(info, PageRequest.of(0, Integer.MAX_VALUE));
+      if(page.isEmpty()){
+        //nothing to provide
+        throw new ResourceNotFoundException("No content found at the provided location.");
+      }
+
+      MediaType acceptHeaderType = acceptHeader != null ? MediaType.parseMediaType(acceptHeader) : null;
+      boolean provided = false;
+      Set<MediaType> acceptableMediaTypes = new HashSet<>();
+      for(IContentCollectionProvider provider : collectionContentProviders){
+        if(acceptHeaderType != null && provider.supportsMediaType(acceptHeaderType)){
+          List<ContentElement> elements = new ArrayList<>();
+          page.getContent().forEach((c) -> {
+            URI contentUri = URI.create(c.getContentUri());
+            if(provider.canProvide(contentUri.getScheme())){
+              String contextUri = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
+              logger.trace("Adding collection mapping '{}':'{}' with checksum '{}' to list. Additionally providing context Uri {} and size {}.", c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize());
+              elements.add(ContentElement.createContentElement(resource.getId(), c.getRelativePath(), c.getContentUri(), (version != null) ? version.intValue() : null, c.getVersioningService(), c.getHash(), contextUri, c.getSize()));
+            } else{
+              logger.debug("Skip adding collection mapping '{}':'{}' to map as content provider {} is not capable of providing URI scheme.", c.getRelativePath(), contentUri, provider.getClass());
+            }
+          });
+          logger.trace("Start providing content.");
+          provider.provide(elements, MediaType.parseMediaType(acceptHeader), response);
+          logger.trace("Content successfully provided.");
+          provided = true;
+        } else{
+          Collection<MediaType> col = new ArrayList<>();
+          Collections.addAll(col, provider.getSupportedMediaTypes());
+          acceptableMediaTypes.addAll(col);
+        }
+        break;
+      }
+
+      if(!provided){
+        //we are done here, content is already submitted
+        logger.info("No content collection provider found for media type {} in Accept header. Throwing HTTP 415 (UNSUPPORTED_MEDIA_TYPE).", acceptHeaderType);
+        throw new UnsupportedMediaTypeStatusException(acceptHeaderType, new ArrayList<>(acceptableMediaTypes));
+      }
+    } else{
+      //try to obtain single content element matching path exactly
+      ContentInformation contentInformation = getContentInformation(resource.getId(), path, version);
+      uri = (contentInformation.getContentUri() != null) ? URI.create(contentInformation.getContentUri()) : null;
+      String contentScheme = (uri != null) ? uri.getScheme() : "file";
+      logger.debug("Trying to provide content at URI {} by any configured content provider.", uri);
+      boolean provided = false;
+      for(IContentProvider contentProvider : contentProviders){
+        if(contentProvider.canProvide(contentScheme)){
+          logger.trace("Using content provider {}.", contentProvider.getClass());
+          String contextUri = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
+          contentProvider.provide(ContentElement.createContentElement(resource.getId(),
+                  contentInformation.getRelativePath(), contentInformation.getContentUri(),
+                  (version != null) ? version.intValue() : null,
+                  contentInformation.getVersioningService(),
+                  contentInformation.getHash(),
+                  contextUri,
+                  contentInformation.getSize()),
+                  contentInformation.getMediaTypeAsObject(),
+                  contentInformation.getFilename(),
+                  response);
+          provided = true;
+          break;
+        }
+      }
+      if(!provided){
+        //obtain data uri and check for content to exist
+        String dataUri = contentInformation.getContentUri();
+        if(dataUri != null){
+          uri = URI.create(dataUri);
+          logger.info("No content provider found for URI {}. Returning URI in Content-Location header.", uri);
+          HttpHeaders headers = new HttpHeaders();
+          headers.add("Content-Location", uri.toString());
+          Set<String> headerKeys = headers.keySet();
+          headerKeys.forEach((headerKey) -> {
+            headers.get(headerKey).forEach((value) -> {
+              response.addHeader(headerKey, value);
+            });
+          });
+          response.setStatus(HttpStatus.NO_CONTENT.value());
+        } else{
+          logger.info("No data URI found for resource with identifier {} and path {}. Returning HTTP 404.", resource.getId(), path);
+          throw new ResourceNotFoundException("No data URI found for the addressed content.");
+        }
+      }
+    }
+
   }
 
   @Override
@@ -281,9 +358,7 @@ public class ContentInformationService implements IContentInformationService{
         logger.trace("Shadow successfully obtained. Returning version {} of content information with id {}.", version, result.getId());
         return optAuditResult.get();
       } else{
-        logger.info("Version {} of content information {} not found. Returning HTTP 404 (NOT_FOUND).", version, result.getId());
-        throw new ResourceNotFoundException("Content information with identifier " + result.getId() + " is not available in version " + version + ".");
-
+        logger.info("Version {} of content information {} not found. Returning most recent version from database.", version, result.getId());
       }
     }
 
@@ -406,6 +481,10 @@ public class ContentInformationService implements IContentInformationService{
     logger.trace("Patch successfully applied. Persisting patched resource.");
     ContentInformation result = getDao().save(updated);
     logger.trace("Resource successfully persisted.");
+
+    long newVersion = auditService.getCurrentVersion(Long.toString(result.getId())) + 1;
+    logger.trace("Setting new version number of content information to {}.", newVersion);
+    result.setVersion((int) newVersion);
 
     logger.trace("Capturing audit information.");
     auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());

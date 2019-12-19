@@ -124,7 +124,8 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "in case the client wants to try to access the resource URI.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET)
   @ResponseBody
-  public ResponseEntity getContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public void getContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          @RequestParam(value = "The version number of the content information.", name = "version", required = false) final Long version,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);

@@ -21,6 +21,7 @@ import edu.kit.datamanager.service.IGenericService;
 import edu.kit.datamanager.service.IServiceAuditSupport;
 import java.io.InputStream;
 import java.util.List;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -57,6 +58,25 @@ public interface IContentInformationService extends IGenericService<ContentInfor
    * @return The created content information resource.
    */
   ContentInformation create(ContentInformation contentInformation, DataResource resource, String path, InputStream fileStream, boolean force);
+
+  /**
+   * Read content located at the provided path associated with the provided data
+   * resource. Reading content may support requesting a specific version of a
+   * content element. Depeneding on the implementation and the provided path,
+   * the most recent version might be returned. Furthermore, the acceptHeader
+   * argument can be used to distinguish between different delivery methods,
+   * e.g. for collection download. The read data is written to the output stream
+   * of the provided response object.
+   *
+   * @param resource The resource the data is associated with.
+   * @param path The resource path, which might be a file or a folder.
+   * @param version The version of the content. If path is a folder, the same
+   * version is used for all elements. If an element is not available in the
+   * provided version, the most recent version should be provided.
+   * @param acceptHeader The accept header provided by the user.
+   * @param response The response object where the data is written to.
+   */
+  void read(DataResource resource, String path, Long version, String acceptHeader, HttpServletResponse response);
 
 //
 //  Optional<ContentInformation> findByParentResourceIdEqualsAndRelativePathEquals(Long id, String relativePath);
@@ -102,7 +122,9 @@ public interface IContentInformationService extends IGenericService<ContentInfor
    *
    * @return The ContentInformation resource.
    */
-  ContentInformation getContentInformation(String identifier, String relativePath, Long version);
+  ContentInformation getContentInformation(String identifier, String relativePath,
+          Long version
+  );
 
   /**
    * Find content information by the provided example. The example is used to
@@ -126,6 +148,8 @@ public interface IContentInformationService extends IGenericService<ContentInfor
    *
    * @return A page of data resources matching the example or an empty page.
    */
-  Page<ContentInformation> findByExample(ContentInformation example, List<String> callerIdentities, boolean callerIsAdministrator, Pageable pgbl);
+  Page<ContentInformation> findByExample(ContentInformation example, List<String> callerIdentities,
+          boolean callerIsAdministrator, Pageable pgbl
+  );
 
 }

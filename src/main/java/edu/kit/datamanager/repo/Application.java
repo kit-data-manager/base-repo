@@ -49,7 +49,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  */
 @SpringBootApplication
 @EnableScheduling
-@ComponentScan({"edu.kit.datamanager", "edu.kit.datamanager.messaging.client"})
+@ComponentScan({"edu.kit.datamanager", "edu.kit.dataversioning", "edu.kit.datamanager.messaging.client"})
 public class Application{
 
   @Autowired

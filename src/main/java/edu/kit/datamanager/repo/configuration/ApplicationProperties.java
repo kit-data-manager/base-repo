@@ -37,5 +37,6 @@ public class ApplicationProperties extends GenericApplicationProperties{
   private URL basepath;
   @Value("${repo.audit.enabled:FALSE}")
   private boolean auditEnabled;
-
+  @Value("${repo.file.versioning.default:none}")
+  private String defaultVersioningService;
 }

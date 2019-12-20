@@ -29,6 +29,7 @@ import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.ResourceElsewhereException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.exceptions.UpdateForbiddenException;
+import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import io.swagger.annotations.Api;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Pageable;
@@ -102,6 +103,8 @@ public class DataResourceController implements IDataResourceController{
   private final IContentInformationService contentInformationService;
   @Autowired
   private ApplicationEventPublisher eventPublisher;
+  @Autowired
+  private ApplicationProperties applicationProperties;
 
   /**
    * Default constructor.
@@ -111,12 +114,17 @@ public class DataResourceController implements IDataResourceController{
    * @param contentInformationService Content information service instance added
    * e.g. via dependency injection.
    */
-  public DataResourceController(IDataResourceService dataResourceService, IAuditService<DataResource> auditService, IAuditService<ContentInformation> contentAuditService, IContentInformationService contentInformationService){
+  public DataResourceController(IDataResourceService dataResourceService, IAuditService<DataResource> auditService, IAuditService<ContentInformation> contentAuditService, IContentInformationService contentInformationService, ApplicationProperties applicationProperties){
     super();
     this.dataResourceService = dataResourceService;
     this.contentInformationService = contentInformationService;
     this.auditService = auditService;
     this.contentAuditService = contentAuditService;
+    this.applicationProperties = applicationProperties;
+
+    if(!this.applicationProperties.isAuditEnabled() && !"none".equals(this.applicationProperties.getDefaultVersioningService())){
+      throw new IllegalArgumentException("Conflicting configuration properties detected. 'repo.audit.enabled' must be 'true' if 'repo.file.versioning.default' is not 'none'.");
+    }
   }
 
   @Override
@@ -403,80 +411,11 @@ public class DataResourceController implements IDataResourceController{
     String path = getContentPathFromRequest(request);
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
       return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, 1l, null, request, response, uriBuilder)).toString();
-      //return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContent(t, version, request, response, uriBuilder)).toString();
     });
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
     LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getId());
     String acceptHeader = request.getHeader(HttpHeaders.ACCEPT);
     contentInformationService.read(resource, path, version, acceptHeader, response);
-
-//    
-//    URI uri = null;
-//    if(path.endsWith("/") || path.isEmpty()){
-//      //collection download
-//      ContentInformation info = ContentInformation.createContentInformation(identifier, path);
-//      Page<ContentInformation> page = contentInformationService.findAll(info, PageRequest.of(0, Integer.MAX_VALUE));
-//      if(page.isEmpty()){
-//        //nothing to provide
-//        return new ResponseEntity<>("No content found at the provided location.", HttpStatus.NOT_FOUND);
-//      }
-//      String acceptHeader = request.getHeader(HttpHeaders.ACCEPT);
-//      MediaType acceptHeaderType = acceptHeader != null ? MediaType.parseMediaType(acceptHeader) : null;
-//      boolean provided = false;
-//      Set<MediaType> acceptableMediaTypes = new HashSet<>();
-//      for(IContentCollectionProvider provider : collectionContentProviders){
-//        if(acceptHeaderType != null && provider.supportsMediaType(acceptHeaderType)){
-//          List<CollectionElement> elements = new ArrayList<>();
-//          page.getContent().forEach((c) -> {
-//            URI contentUri = URI.create(c.getContentUri());
-//            if(provider.canProvide(contentUri.getScheme())){
-//              String contextUri = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
-//              LOGGER.trace("Adding collection mapping '{}':'{}' with checksum '{}' to list. Additionally providing context Uri {} and size {}.", c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize());
-//              elements.add(CollectionElement.createCollectionElement(c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize()));
-//            } else{
-//              LOGGER.debug("Skip adding collection mapping '{}':'{}' to map as content provider {} is not capable of providing URI scheme.", c.getRelativePath(), contentUri, provider.getClass());
-//            }
-//          });
-//          LOGGER.trace("Start providing content.");
-//          provider.provide(elements, MediaType.parseMediaType(acceptHeader), response);
-//          LOGGER.trace("Content successfully provided.");
-//          provided = true;
-//        } else{
-//          Collection<MediaType> col = new ArrayList<>();
-//          Collections.addAll(col, provider.getSupportedMediaTypes());
-//          acceptableMediaTypes.addAll(col);
-//        }
-//      }
-//
-//      if(provided){
-//        //we are done here, content is already submitted
-//        return null;
-//      } else{
-//        LOGGER.info("No content collection provider found for media type {} in Accept header. Throwing HTTP 415 (UNSUPPORTED_MEDIA_TYPE).", acceptHeaderType);
-//        throw new UnsupportedMediaTypeStatusException(acceptHeaderType, new ArrayList<>(acceptableMediaTypes));
-//      }
-//    } else{
-//      //try to obtain single content element matching path exactly
-//      ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, null);
-//      //obtain data uri and check for content to exist
-//      String dataUri = contentInformation.getContentUri();
-//      uri = URI.create(dataUri);
-//      LOGGER.debug("Trying to provide content at URI {} by any configured content provider.", uri);
-//      for(IContentProvider contentProvider : contentProviders){
-//        if(contentProvider.canProvide(uri.getScheme())){
-//          return contentProvider.provide(uri, contentInformation.getMediaTypeAsObject(), contentInformation.getFilename());
-//        }
-//      }
-//    }
-//    if(uri != null){
-//      LOGGER.info("No content provider found for URI {}. Returning URI in Content-Location header.", uri);
-//      HttpHeaders headers = new HttpHeaders();
-//      headers.add("Content-Location", uri.toString());
-//      return new ResponseEntity<>(null, headers, HttpStatus.NO_CONTENT);
-//    } else{
-//      LOGGER.info("No data URI found for resource with identifier {} and path {}. Returning HTTP 404.", identifier, path);
-//      return new ResponseEntity<>("No data URI found for the addressed content.", HttpStatus.NOT_FOUND);
-//    }
   }
 
   @Override

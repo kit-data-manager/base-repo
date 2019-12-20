@@ -143,8 +143,7 @@ public class DataResourceControllerDocumentationTest{
     this.mockMvc.perform(post("/api/v1/dataresources/search").contentType("application/json").content(mapper.writeValueAsString(example))).
             andExpect(status().isOk()).
             andDo(document("find-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
-       
-    
+
     //upload random data file
     Path temp = Files.createTempFile("randomFile", "test");
 
@@ -160,6 +159,7 @@ public class DataResourceControllerDocumentationTest{
     ContentInformation cinfo = new ContentInformation();
     Map<String, String> metadata = new HashMap<>();
     metadata.put("test", "ok");
+    cinfo.setVersioningService("none");
     cinfo.setMetadata(metadata);
     fstmp = new MockMultipartFile("file", "randomFile2.txt", "multipart/form-data", Files.newInputStream(temp));
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
@@ -167,6 +167,7 @@ public class DataResourceControllerDocumentationTest{
 
     //upload referenced file
     cinfo = new ContentInformation();
+    cinfo.setVersioningService("none");
     cinfo.setContentUri("https://www.google.com");
     secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/referencedContent").file(secmp)).andDo(print()).andExpect(status().isCreated()).andDo(document("upload-file-with-reference", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));

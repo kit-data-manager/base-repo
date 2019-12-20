@@ -167,7 +167,7 @@ public class NoneDataVersioningService implements IVersioningService{
 
     try{
       logger.trace("Copying file content to target stream.");
-      Files.copy(Path.of(URI.create(contentUriString)), destination);
+      Files.copy(Paths.get(URI.create(contentUriString)), destination);
     } catch(IOException ex){
       logger.error("Failed to read content stream.", ex);
       throw new CustomInternalServerError("Failed to read content stream.");

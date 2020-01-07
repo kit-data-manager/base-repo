@@ -1161,6 +1161,11 @@ public class DataResourceControllerTest{
     MvcResult res = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andReturn();
 
+    //ContentInformation result = mapper.
+    
+    //res.getResponse().getContentAsString()
+    
+    
     //get all content with type text/plain
     ContentInformation example = new ContentInformation();
     example.setMediaType("text/plain");
@@ -1173,21 +1178,27 @@ public class DataResourceControllerTest{
     //expect no result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
+      
     //reset media type and set wildcard selection of txt files
     example.setMediaType(null);
     example.setRelativePath("%.txt");
     //expect one result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
-
+   
+    
+    //XXXXX
+    
     //test search by content uri
     example = new ContentInformation();
-    example.setContentUri("file:/tmp/2019/altIdentifier/bibtex3.txt%");
+  //  example.setContentUri("file:/tmp/2019/altIdentifier/bibtex3.txt%");
 
     //expect one result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
 
+    //XXXXXX
+    
     //test search by metadata only with key
     example.setContentUri(null);
     metadata.clear();

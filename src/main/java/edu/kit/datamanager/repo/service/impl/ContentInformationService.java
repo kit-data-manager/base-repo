@@ -152,8 +152,8 @@ public class ContentInformationService implements IContentInformationService{
           try{
             service.write(resource.getId(), AuthenticationHelper.getPrincipal(), path, file, options);
           } catch(Throwable t){
-            logger.error("Failed to write content to versioning repository.", t);
-            throw new CustomInternalServerError("Failed to write content to versioning repository.");
+            logger.error("Failed to write content using versioning service " + versioningService + ".", t);
+            throw t;
           }
           logger.trace("File content successfully written.");
           fileWritten = true;
@@ -333,7 +333,6 @@ public class ContentInformationService implements IContentInformationService{
         }
       }
     }
-
   }
 
   @Override
@@ -341,7 +340,7 @@ public class ContentInformationService implements IContentInformationService{
   public ContentInformation getContentInformation(String identifier, String relativePath, Long version){
     logger.trace("Performing getContentInformation({}, {}).", identifier, relativePath);
 
-    logger.trace("Performing findByParentResourceIdEqualsAndRelativePathEqualsAndHasTag({}, {}).", identifier, relativePath);
+    logger.trace("Performing findOne({}, {}).", identifier, relativePath);
     Specification<ContentInformation> spec = Specification.where(ContentInformationMatchSpecification.toSpecification(identifier, relativePath, true));
     Optional<ContentInformation> contentInformation = dao.findOne(spec);
 
@@ -358,7 +357,8 @@ public class ContentInformationService implements IContentInformationService{
         logger.trace("Shadow successfully obtained. Returning version {} of content information with id {}.", version, result.getId());
         return optAuditResult.get();
       } else{
-        logger.info("Version {} of content information {} not found. Returning most recent version from database.", version, result.getId());
+        logger.info("Version {} of content information {} not found. Returning HTTP 404 (NOT_FOUND).", version, result.getId());
+        throw new ResourceNotFoundException("Content information with identifier " + result.getId() + " is not available in version " + version + ".");
       }
     }
 
@@ -478,13 +478,14 @@ public class ContentInformationService implements IContentInformationService{
   public void patch(ContentInformation resource, JsonPatch patch, Collection<? extends GrantedAuthority> userGrants){
     logger.trace("Performing patch({}, {}, {}).", "ContentInformation#" + resource.getId(), patch, userGrants);
     ContentInformation updated = PatchUtil.applyPatch(resource, patch, ContentInformation.class, userGrants);
-    logger.trace("Patch successfully applied. Persisting patched resource.");
+    logger.trace("Patch successfully applied.");
+
+    long newVersion = auditService.getCurrentVersion(Long.toString(updated.getId())) + 1;
+    logger.trace("Setting new version number of content information to {}.", newVersion);
+    updated.setVersion((int) newVersion);
+
     ContentInformation result = getDao().save(updated);
     logger.trace("Resource successfully persisted.");
-
-    long newVersion = auditService.getCurrentVersion(Long.toString(result.getId())) + 1;
-    logger.trace("Setting new version number of content information to {}.", newVersion);
-    result.setVersion((int) newVersion);
 
     logger.trace("Capturing audit information.");
     auditService.captureAuditInformation(result, AuthenticationHelper.getPrincipal());

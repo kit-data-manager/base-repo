@@ -17,14 +17,11 @@ package edu.kit.datamanager.repo.service.impl;
 
 import edu.kit.datamanager.entities.VersionInfo;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
-import edu.kit.datamanager.exceptions.ResourceAlreadyExistException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
-import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.util.PathUtils;
-import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IVersioningService;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -99,15 +96,17 @@ public class SimpleDataVersioningService implements IVersioningService{
       map.put("contentUri", dataUri.toString());
       logger.debug("Assigned content URI {} to content information.", map.get("contentUri"));
 
-      logger.trace("Trying to determine content type.");
-      try(InputStream is = Files.newInputStream(destination); BufferedInputStream bis = new BufferedInputStream(is);){
-        AutoDetectParser parser = new AutoDetectParser();
-        Detector detector = parser.getDetector();
-        Metadata md1 = new Metadata();
-        //md1.add(Metadata.RESOURCE_NAME_KEY, contentInfo.getFilename());
-        org.apache.tika.mime.MediaType mediaType = detector.detect(bis, md1);
-        map.put("mediaType", mediaType.toString());
-        logger.trace("Assigned media type {} to content information.", map.get("mediaType"));
+      if(!map.containsKey("mediaType")){
+        logger.trace("Trying to determine content type.");
+        try(InputStream is = Files.newInputStream(destination); BufferedInputStream bis = new BufferedInputStream(is);){
+          AutoDetectParser parser = new AutoDetectParser();
+          Detector detector = parser.getDetector();
+          Metadata md1 = new Metadata();
+          //md1.add(Metadata.RESOURCE_NAME_KEY, contentInfo.getFilename());
+          org.apache.tika.mime.MediaType mediaType = detector.detect(bis, md1);
+          map.put("mediaType", mediaType.toString());
+          logger.trace("Assigned media type {} to content information.", map.get("mediaType"));
+        }
       }
     } catch(IOException ex){
       logger.error("Failed to finish upload. Throwing CustomInternalServerError.", ex);
@@ -144,41 +143,6 @@ public class SimpleDataVersioningService implements IVersioningService{
       logger.error("Failed to read content stream.", ex);
       throw new CustomInternalServerError("Failed to read content stream.");
     }
-//      MediaType acceptHeaderType = acceptHeader != null ? MediaType.parseMediaType(acceptHeader) : null;
-//      boolean provided = false;
-//      Set<MediaType> acceptableMediaTypes = new HashSet<>();
-//      for(IContentCollectionProvider provider : collectionContentProviders){
-//        if(acceptHeaderType != null && provider.supportsMediaType(acceptHeaderType)){
-//          List<CollectionElement> elements = new ArrayList<>();
-//          page.getContent().forEach((c) -> {
-//            URI contentUri = URI.create(c.getContentUri());
-//            if(provider.canProvide(contentUri.getScheme())){
-//              String contextUri = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
-//              logger.trace("Adding collection mapping '{}':'{}' with checksum '{}' to list. Additionally providing context Uri {} and size {}.", c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize());
-//              elements.add(CollectionElement.createCollectionElement(c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize()));
-//            } else{
-//              logger.debug("Skip adding collection mapping '{}':'{}' to map as content provider {} is not capable of providing URI scheme.", c.getRelativePath(), contentUri, provider.getClass());
-//            }
-//          });
-//          logger.trace("Start providing content.");
-//         
-// 
-//          provider.provide(elements, MediaType.parseMediaType(acceptHeader), response);
-//          
-//            logger.trace("Content successfully provided.");
-//          provided = true;
-//        } else{
-//          Collection<MediaType> col = new ArrayList<>();
-//          Collections.addAll(col, provider.getSupportedMediaTypes());
-//          acceptableMediaTypes.addAll(col);
-//        }
-//      }
-//
-//      if(!provided){
-//        //we are done here, content is already submitted
-//        logger.info("No content collection provider found for media type {} in Accept header. Throwing HTTP 415 (UNSUPPORTED_MEDIA_TYPE).", acceptHeaderType);
-//        throw new UnsupportedMediaTypeStatusException(acceptHeaderType, new ArrayList<>(acceptableMediaTypes));
-//      }
   }
 
   @Override

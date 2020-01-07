@@ -35,8 +35,10 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
@@ -68,7 +70,6 @@ public class NoneDataVersioningService implements IVersioningService{
   public void write(String resourceId, String callerId, String path, InputStream stream, Map<String, String> map){
     boolean force = Boolean.parseBoolean(map.get("force"));
     String contentUriString = map.get("contentUri");
-    Path toRemove = null;
 
     if(contentUriString != null){
       logger.trace("ContentUri option provided, checking 'force' option.");
@@ -80,15 +81,21 @@ public class NoneDataVersioningService implements IVersioningService{
         logger.trace("'Force' flag set. Checking for local content to replace.");
         //overwrite...mark file for deletion
         URI contentUri = URI.create(contentUriString);
-        if("file".equals(contentUri.getScheme())){
+        if(!"file".equals(contentUri.getScheme())){
           //mark file for removal
-          logger.debug("File content found. Marking current file at URI {} for replacement.", contentUri);
-          toRemove = Paths.get(contentUri);
-        }//content URI is not pointing to a file...just replace the entry
+          logger.debug("Existing contentUri {} is no local file. Creating new contentUri.", contentUri);
+          // toRemove = Paths.get(contentUri);
+          contentUri = PathUtils.getDataUri(DataResource.factoryNewDataResource(resourceId), path, applicationProperties);
+          contentUriString = contentUri.toString();
+        }
       }
+    } else{
+      logger.trace("New entry detected, setting initial contentUri.");
+      contentUriString = PathUtils.getDataUri(DataResource.factoryNewDataResource(resourceId), path, applicationProperties).toString();
     }
-    URI dataUri = PathUtils.getDataUri(DataResource.factoryNewDataResource(resourceId), path, applicationProperties);
-    Path destination = Paths.get(dataUri);
+
+    //URI dataUri = PathUtils.getDataUri(DataResource.factoryNewDataResource(resourceId), path, applicationProperties);
+    Path destination = Paths.get(URI.create(contentUriString));
     logger.trace("Preparing destination {} for storing user data.", destination);
     //store data
     OutputStream out = null;
@@ -113,18 +120,20 @@ public class NoneDataVersioningService implements IVersioningService{
       logger.debug("Assigned hash {} to content information.", map.get("checksum"));
       map.put("size", Long.toString(bytes));
       logger.debug("Assigned size {} to content information.", map.get("size"));
-      map.put("contentUri", dataUri.toString());
+      map.put("contentUri", contentUriString);
       logger.debug("Assigned content URI {} to content information.", map.get("contentUri"));
 
-      logger.trace("Trying to determine content type.");
-      try(InputStream is = Files.newInputStream(destination); BufferedInputStream bis = new BufferedInputStream(is);){
-        AutoDetectParser parser = new AutoDetectParser();
-        Detector detector = parser.getDetector();
-        Metadata md1 = new Metadata();
-        //md1.add(Metadata.RESOURCE_NAME_KEY, contentInfo.getFilename());
-        org.apache.tika.mime.MediaType mediaType = detector.detect(bis, md1);
-        map.put("mediaType", mediaType.toString());
-        logger.trace("Assigned media type {} to content information.", map.get("mediaType"));
+      if(!map.containsKey("mediaType")){
+        logger.trace("Trying to determine content type.");
+        try(InputStream is = Files.newInputStream(destination); BufferedInputStream bis = new BufferedInputStream(is);){
+          AutoDetectParser parser = new AutoDetectParser();
+          Detector detector = parser.getDetector();
+          Metadata md1 = new Metadata();
+          //md1.add(Metadata.RESOURCE_NAME_KEY, contentInfo.getFilename());
+          org.apache.tika.mime.MediaType mediaType = detector.detect(bis, md1);
+          map.put("mediaType", mediaType.toString());
+          logger.trace("Assigned media type {} to content information.", map.get("mediaType"));
+        }
       }
     } catch(IOException ex){
       logger.error("Failed to finish upload. Throwing CustomInternalServerError.", ex);
@@ -140,17 +149,6 @@ public class NoneDataVersioningService implements IVersioningService{
         } catch(IOException ignored){
         }
       }
-
-      if(toRemove != null){
-        try{
-          logger.debug("Removing replaced content from {}.", toRemove);
-          Files.deleteIfExists(toRemove);
-          logger.trace("Content at {} successfully removed.", toRemove);
-        } catch(IOException ex){
-          logger.warn("Failed to remove previously existing content from " + toRemove + ". Manual removal required.", ex);
-        }
-      }
-
     }
   }
 
@@ -158,6 +156,15 @@ public class NoneDataVersioningService implements IVersioningService{
   public void read(String resourceId, String callerId, String path, String versionId, OutputStream destination, Map<String, String> options){
     String contentUriString = options.get("contentUri");
     logger.trace("Checking URI {}.", contentUriString);
+
+    System.out.println("CONTEN " + contentUriString);
+    System.out.println(Files.exists(Paths.get(URI.create(contentUriString))));
+    try{
+      System.out.println(Files.list(Paths.get(URI.create(contentUriString)).getParent()));
+    } catch(IOException ex){
+      ex.printStackTrace();
+    }
+
     if(!Files.exists(Paths.get(URI.create(contentUriString)))){
       logger.error("Content at URI {} seems not to exist.", contentUriString);
       throw new ResourceNotFoundException("The provided resource was not found on the server.");
@@ -172,41 +179,6 @@ public class NoneDataVersioningService implements IVersioningService{
       logger.error("Failed to read content stream.", ex);
       throw new CustomInternalServerError("Failed to read content stream.");
     }
-//      MediaType acceptHeaderType = acceptHeader != null ? MediaType.parseMediaType(acceptHeader) : null;
-//      boolean provided = false;
-//      Set<MediaType> acceptableMediaTypes = new HashSet<>();
-//      for(IContentCollectionProvider provider : collectionContentProviders){
-//        if(acceptHeaderType != null && provider.supportsMediaType(acceptHeaderType)){
-//          List<CollectionElement> elements = new ArrayList<>();
-//          page.getContent().forEach((c) -> {
-//            URI contentUri = URI.create(c.getContentUri());
-//            if(provider.canProvide(contentUri.getScheme())){
-//              String contextUri = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
-//              logger.trace("Adding collection mapping '{}':'{}' with checksum '{}' to list. Additionally providing context Uri {} and size {}.", c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize());
-//              elements.add(CollectionElement.createCollectionElement(c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize()));
-//            } else{
-//              logger.debug("Skip adding collection mapping '{}':'{}' to map as content provider {} is not capable of providing URI scheme.", c.getRelativePath(), contentUri, provider.getClass());
-//            }
-//          });
-//          logger.trace("Start providing content.");
-//         
-// 
-//          provider.provide(elements, MediaType.parseMediaType(acceptHeader), response);
-//          
-//            logger.trace("Content successfully provided.");
-//          provided = true;
-//        } else{
-//          Collection<MediaType> col = new ArrayList<>();
-//          Collections.addAll(col, provider.getSupportedMediaTypes());
-//          acceptableMediaTypes.addAll(col);
-//        }
-//      }
-//
-//      if(!provided){
-//        //we are done here, content is already submitted
-//        logger.info("No content collection provider found for media type {} in Accept header. Throwing HTTP 415 (UNSUPPORTED_MEDIA_TYPE).", acceptHeaderType);
-//        throw new UnsupportedMediaTypeStatusException(acceptHeaderType, new ArrayList<>(acceptableMediaTypes));
-//      }
   }
 
   @Override

@@ -52,8 +52,8 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @ComponentScan({"edu.kit.datamanager", "edu.kit.dataversioning", "edu.kit.datamanager.messaging.client"})
 public class Application{
 
-  @Autowired
-  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
+//  @Autowired
+//  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
 
   @Bean
   @Scope("prototype")
@@ -90,16 +90,16 @@ public class Application{
 //      }
 //    };
 //  }
-  @Bean
-  @Primary
-  public RequestMappingHandlerAdapter adapter(){
-    return requestMappingHandlerAdapter;
-  }
+//  @Bean
+//  @Primary
+//  public RequestMappingHandlerAdapter adapter(){
+//    return requestMappingHandlerAdapter;
+//  }
 
-  @Bean
-  public JsonViewSupportFactoryBean views(){
-    return new JsonViewSupportFactoryBean();
-  }
+//  @Bean
+//  public JsonViewSupportFactoryBean views(){
+//    return new JsonViewSupportFactoryBean();
+//  }
 
   @Bean
   @ConfigurationProperties("repo")

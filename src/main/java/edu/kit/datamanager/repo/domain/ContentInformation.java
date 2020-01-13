@@ -65,6 +65,8 @@ public class ContentInformation implements Serializable{
   @SecureUpdate({"FORBIDDEN"})
   private Integer version;
   @SecureUpdate({"FORBIDDEN"})
+  private String fileVersion;
+  @SecureUpdate({"FORBIDDEN"})
   private String versioningService;
   @SecureUpdate({"FORBIDDEN"})
   private int depth;

@@ -50,10 +50,10 @@ public class PathUtilsTest{
     props.setBasepath(new URL("file:///f%C3%B4ld%C4%99r/"));
 
     Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/" + URLEncoder.encode("fôldęr", "UTF-8") + "/" + currentYear + "/test123/folder/file.txt_"));
-
+   
     //test without URL-escaped chars
     props.setBasepath(new URL("file:///fôldęr/"));
-    Assert.assertFalse(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/" + URLEncoder.encode("fôldęr", "UTF-8") + "/" + currentYear + "/test123/folder/file.txt_"));
+    Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/" + URLEncoder.encode("fôldęr", "UTF-8") + "/" + currentYear + "/test123/folder/file.txt_"));
   }
 
   @Test(expected = CustomInternalServerError.class)

@@ -18,7 +18,6 @@ package edu.kit.datamanager.repo.web;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Objects;
 import com.monitorjbl.json.JsonResult;
-import com.monitorjbl.json.JsonView;
 import com.monitorjbl.json.Match;
 import static com.monitorjbl.json.Match.match;
 import edu.kit.datamanager.controller.hateoas.event.PaginatedResultsRetrievedEvent;
@@ -69,7 +68,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.hateoas.mvc.ControllerLinkBuilder;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -88,8 +87,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Api(value = "Data Resource Management")
 public class DataResourceController implements IDataResourceController{
 
-  private final JsonResult json = JsonResult.instance();
-
+  // private final JsonResult json = JsonResult.instance();
   @Autowired
   private Logger LOGGER;
 
@@ -139,8 +137,8 @@ public class DataResourceController implements IDataResourceController{
     try{
       LOGGER.trace("Creating controller link for resource identifier {}.", result.getId());
       //do some hacking in order to properly escape the resource identifier
-      //if escaping in beforehand, ControllerLinkBuilder will escape again, which invalidated the link
-      String uriLink = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", 1l, request, response)).toString();
+      //if escaping in beforehand, WebMvcLinkBuilder will escape again, which invalidated the link
+      String uriLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", 1l, request, response)).toString();
       //replace placeholder with escaped identifier in order to ensure single-escaping
       uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getId(), "UTF-8"));
       uriLink = uriLink.substring(0, uriLink.lastIndexOf("?"));
@@ -159,19 +157,17 @@ public class DataResourceController implements IDataResourceController{
           final WebRequest request,
           final HttpServletResponse response){
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, version, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
     });
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
-    //filter resource if necessary and return it automatically
-    filterAndAutoReturnResource(resource);
 
     long currentVersion = auditService.getCurrentVersion(identifier);
 
     if(currentVersion > 0){
       //trigger response creation and set etag...the response body is set automatically
-      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header("Resource-Version", Long.toString((version != null) ? version : currentVersion)).build();
+      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header("Resource-Version", Long.toString((version != null) ? version : currentVersion)).body(filterResource(resource));
     } else{
-      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
+      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(filterResource(resource));
     }
   }
 
@@ -201,8 +197,7 @@ public class DataResourceController implements IDataResourceController{
     eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), request.getPageSize()));
     //set content-range header for react-admin (index_start-index_end/total
     response.addHeader("Content-Range", ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
-    filterAndAutoReturnResources(page.getContent());
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok().body(filterResources(page.getContent()));
   }
 
   @Override
@@ -213,7 +208,7 @@ public class DataResourceController implements IDataResourceController{
     ControllerUtils.checkAnonymousAccess();
 
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patch(t, patch, request, response)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).patch(t, patch, request, response)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
@@ -232,19 +227,17 @@ public class DataResourceController implements IDataResourceController{
           final HttpServletResponse response){
     ControllerUtils.checkAnonymousAccess();
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
     });
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
     ControllerUtils.checkEtag(request, resource);
     newResource.setId(resource.getId());
-    System.out.println("PUT " + newResource);
+
     DataResource result = dataResourceService.put(resource, newResource, getUserAuthorities(resource));
 
-    //filter resource if necessary and return it automatically
-    filterAndAutoReturnResource(result);
     //trigger response creation and set etag...the response body is set automatically
-    return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").body(result);
+    return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").body(filterResource(result));
   }
 
   @Override
@@ -255,7 +248,7 @@ public class DataResourceController implements IDataResourceController{
 
     try{
       DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-        return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).delete(t, request, response)).toString();
+        return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).delete(t, request, response)).toString();
       });
       LOGGER.trace("Resource found. Checking for permission {} or role {}.", PERMISSION.ADMINISTRATE, RepoUserRole.ADMINISTRATOR);
       if(DataResourceUtils.hasPermission(resource, PERMISSION.ADMINISTRATE) || AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.getValue())){
@@ -293,12 +286,12 @@ public class DataResourceController implements IDataResourceController{
     }
     //check data resource and permissions
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).createContent(t, file, contentInformation, force, request, response, uriBuilder)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).createContent(t, file, contentInformation, force, request, response, uriBuilder)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
-    URI link = ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(resource.getId(), null, 1l, null, request, response, uriBuilder)).toUri();
+    URI link = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(resource.getId(), null, 1l, null, request, response, uriBuilder)).toUri();
 
     try{
       contentInformationService.create(contentInformation, resource, path, (file != null) ? file.getInputStream() : null, force);
@@ -325,7 +318,7 @@ public class DataResourceController implements IDataResourceController{
     String path = getContentPathFromRequest(request);
     //check resource and permission
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, tag, version, pgbl, request, response, uriBuilder)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, tag, version, pgbl, request, response, uriBuilder)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
@@ -350,15 +343,14 @@ public class DataResourceController implements IDataResourceController{
       Page<ContentInformation> resultList = contentInformationService.findAll(ContentInformation.createContentInformation(resource.getId(), path, tag), pageRequest);
 
       LOGGER.trace("Obtained {} content information result(s).", resultList.getContent().size());
-      filterAndAutoReturnContentInformation(resultList.getContent());
-      return ResponseEntity.ok().build();
+      List<ContentInformation> result = filterContentInformation(resultList.getContent());
+      return ResponseEntity.ok().body(result);
     } else{
       LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
       ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, version);
 
-      filterAndAutoReturnContentInformation(contentInformation);
       LOGGER.trace("Obtained single content information result.");
-      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").build();
+      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(filterContentInformation(contentInformation));
     }
   }
 
@@ -374,8 +366,7 @@ public class DataResourceController implements IDataResourceController{
             AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()), pgbl);
 
     response.addHeader("Content-Range", ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
-    filterAndAutoReturnContentInformation(page.getContent());
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok().body(filterContentInformation(page.getContent()));
   }
 
   @Override
@@ -388,7 +379,7 @@ public class DataResourceController implements IDataResourceController{
     String path = getContentPathFromRequest(request);
 
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
@@ -410,7 +401,7 @@ public class DataResourceController implements IDataResourceController{
           final UriComponentsBuilder uriBuilder){
     String path = getContentPathFromRequest(request);
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, 1l, null, request, response, uriBuilder)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, 1l, null, request, response, uriBuilder)).toString();
     });
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
     LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getId());
@@ -429,7 +420,7 @@ public class DataResourceController implements IDataResourceController{
 
     //check resource and permission
     DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).deleteContent(t, request, response)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).deleteContent(t, request, response)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.ADMINISTRATE);
@@ -478,7 +469,7 @@ public class DataResourceController implements IDataResourceController{
           final UriComponentsBuilder ucb){
     LOGGER.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
     DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getById(t, null, request, response)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, null, request, response)).toString();
     });
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
 
@@ -506,7 +497,7 @@ public class DataResourceController implements IDataResourceController{
     String path = getContentPathFromRequest(request);
     //check resource and permission
     DataResource resource = getResourceByIdentifierOrRedirect(resourceIdentifier, null, (t) -> {
-      return ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, null, pgbl, request, response, uriBuilder)).toString();
+      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, null, pgbl, request, response, uriBuilder)).toString();
     });
 
     DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
@@ -595,43 +586,47 @@ public class DataResourceController implements IDataResourceController{
     return userGrants;
   }
 
-  private void filterAndAutoReturnResource(DataResource resource){
-    Match match = match();
+  private DataResource filterResource(DataResource resource){
     if(!AuthenticationHelper.isAuthenticatedAsService() && !DataResourceUtils.hasPermission(resource, PERMISSION.ADMINISTRATE) && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
       LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
       //exclude ACLs if not administrate or administrator permissions are set
-      match = match.exclude("acls");
+      resource.setAcls(null);
     } else{
       LOGGER.debug("Administrator access detected, keeping ACL information in resources.");
     }
 
-    //transform and return JSON representation as next controller result
-    json.use(JsonView.with(resource).onClass(DataResource.class, match));
+    return resource;
   }
 
-  private void filterAndAutoReturnResources(List<DataResource> resources){
-    Match match = match();
+  private List<DataResource> filterResources(List<DataResource> resources){
 
     if(!AuthenticationHelper.isAuthenticatedAsService() && !AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString())){
       LOGGER.debug("Removing ACL information from resources due to non-administrator access.");
       //exclude ACLs if not administrate or administrator permissions are set
-      match = match.exclude("acls");
+      resources.forEach((resource) -> {
+        resource.setAcls(null);
+      });
     } else{
       LOGGER.debug("Administrator access detected, keeping ACL information in resources.");
     }
 
-    //transform and return JSON representation as next controller result
-    json.use(JsonView.with(resources).onClass(DataResource.class, match));
+    return resources;
   }
 
-  private void filterAndAutoReturnContentInformation(ContentInformation resource){
+  private ContentInformation filterContentInformation(ContentInformation resource){
     //hide all attributes but the id from the parent data resource in the content information entity
-    json.use(JsonView.with(resource).onClass(DataResource.class, match().exclude("*").include("id")));
+
+    String id = resource.getParentResource().getId();
+    resource.setParentResource(DataResource.factoryNewDataResource(id));
+    return resource;
   }
 
-  private void filterAndAutoReturnContentInformation(List<ContentInformation> resources){
+  private List<ContentInformation> filterContentInformation(List<ContentInformation> resources){
     //hide all attributes but the id from the parent data resource in all content information entities
-    json.use(JsonView.with(resources).onClass(DataResource.class, match().exclude("*").include("id")));
+    resources.forEach((resource) -> {
+      String id = resource.getParentResource().getId();
+      resource.setParentResource(DataResource.factoryNewDataResource(id));
+    });
+    return resources;
   }
-
 }

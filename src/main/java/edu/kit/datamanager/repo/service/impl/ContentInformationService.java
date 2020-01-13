@@ -137,6 +137,7 @@ public class ContentInformationService implements IContentInformationService{
       contentInfo.setRelativePath(path);
     }
 
+    String newFileVersion = null;
     if(file != null){
       logger.trace("User upload detected. Preparing to consume data.");
       //file upload
@@ -180,6 +181,10 @@ public class ContentInformationService implements IContentInformationService{
       }
       if(options.containsKey("mediaType")){
         contentInfo.setMediaType(options.get("mediaType"));
+      }
+
+      if(options.containsKey("fileVersion")){
+        newFileVersion = options.get("fileVersion");
       }
 
       logger.trace("File successfully written using versioning service '{}'.", versioningService);
@@ -228,9 +233,15 @@ public class ContentInformationService implements IContentInformationService{
       contentInfo.setUploader(principal);
     }
 
-    long newVersion = (contentInfo.getId() != null) ? auditService.getCurrentVersion(Long.toString(contentInfo.getId())) + 1 : 1;
-    logger.trace("Setting new version number of content information to {}.", newVersion);
-    contentInfo.setVersion((int) newVersion);
+    long newMetadataVersion = (contentInfo.getId() != null) ? auditService.getCurrentVersion(Long.toString(contentInfo.getId())) + 1 : 1;
+    logger.trace("Setting new version number of content information to {}.", newMetadataVersion);
+    contentInfo.setVersion((int) newMetadataVersion);
+
+    if(newFileVersion == null){
+      logger.trace("No file version provided by versioning service. Using metadata version {} as file version.", newMetadataVersion);
+      contentInfo.setFileVersion(Long.toString(newMetadataVersion));
+    }
+
     logger.trace("Persisting content information.");
     ContentInformation result = getDao().save(contentInfo);
 
@@ -244,7 +255,7 @@ public class ContentInformationService implements IContentInformationService{
 
   @Override
   public void read(DataResource resource, String path, Long version, String acceptHeader, HttpServletResponse response){
-    URI uri = null;
+    URI uri;
     if(path.endsWith("/") || path.isEmpty()){
       //collection download
       ContentInformation info = ContentInformation.createContentInformation(resource.getId(), path);
@@ -265,7 +276,7 @@ public class ContentInformationService implements IContentInformationService{
             if(provider.canProvide(contentUri.getScheme())){
               String contextUri = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
               logger.trace("Adding collection mapping '{}':'{}' with checksum '{}' to list. Additionally providing context Uri {} and size {}.", c.getRelativePath(), contentUri, c.getHash(), contextUri, c.getSize());
-              elements.add(ContentElement.createContentElement(resource.getId(), c.getRelativePath(), c.getContentUri(), (version != null) ? version.intValue() : null, c.getVersioningService(), c.getHash(), contextUri, c.getSize()));
+              elements.add(ContentElement.createContentElement(resource.getId(), c.getRelativePath(), c.getContentUri(), c.getFileVersion(), c.getVersioningService(), c.getHash(), contextUri, c.getSize()));
             } else{
               logger.debug("Skip adding collection mapping '{}':'{}' to map as content provider {} is not capable of providing URI scheme.", c.getRelativePath(), contentUri, provider.getClass());
             }
@@ -300,7 +311,7 @@ public class ContentInformationService implements IContentInformationService{
           String contextUri = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
           contentProvider.provide(ContentElement.createContentElement(resource.getId(),
                   contentInformation.getRelativePath(), contentInformation.getContentUri(),
-                  (version != null) ? version.intValue() : null,
+                  contentInformation.getFileVersion(),
                   contentInformation.getVersioningService(),
                   contentInformation.getHash(),
                   contextUri,

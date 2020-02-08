@@ -144,7 +144,7 @@ public class DataResourceController implements IDataResourceController{
       uriLink = uriLink.substring(0, uriLink.lastIndexOf("?"));
 
       LOGGER.trace("Created resource link is: {}", uriLink);
-      return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").body(result);
+      return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").header("Resource-Version", Long.toString(1l)).body(result);
     } catch(UnsupportedEncodingException ex){
       LOGGER.error("Failed to encode resource identifier " + result.getId() + ".", ex);
       throw new CustomInternalServerError("Failed to decode resource identifier " + result.getId() + ", but resource has been created.");
@@ -217,7 +217,13 @@ public class DataResourceController implements IDataResourceController{
 
     dataResourceService.patch(resource, patch, getUserAuthorities(resource));
 
-    return ResponseEntity.noContent().build();
+    long currentVersion = auditService.getCurrentVersion(identifier);
+    if(currentVersion > 0){
+      return ResponseEntity.noContent().header("Resource-Version", Long.toString(currentVersion)).build();
+    } else{
+      return ResponseEntity.noContent().build();
+
+    }
   }
 
   @Override
@@ -236,8 +242,15 @@ public class DataResourceController implements IDataResourceController{
 
     DataResource result = dataResourceService.put(resource, newResource, getUserAuthorities(resource));
 
-    //trigger response creation and set etag...the response body is set automatically
-    return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").body(filterResource(result));
+    long currentVersion = auditService.getCurrentVersion(identifier);
+
+    if(currentVersion > 0){
+      //trigger response creation and set etag...the response body is set automatically
+      return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").header("Resource-Version", Long.toString(currentVersion)).body(filterResource(result));
+    } else{
+      return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").body(filterResource(result));
+
+    }
   }
 
   @Override
@@ -294,13 +307,25 @@ public class DataResourceController implements IDataResourceController{
     URI link = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(resource.getId(), null, 1l, null, request, response, uriBuilder)).toUri();
 
     try{
-      contentInformationService.create(contentInformation, resource, path, (file != null) ? file.getInputStream() : null, force);
+      ContentInformation result = contentInformationService.create(contentInformation, resource, path, (file != null) ? file.getInputStream() : null, force);
+
       URIBuilder builder = new URIBuilder(link);
       builder.setPath(builder.getPath().replace("**", path));
-      return ResponseEntity.created(builder.build()).build();
-    } catch(URISyntaxException ex){
-      LOGGER.error("Failed to create location URI for path " + path + ". However, resource should be created.", ex);
-      return ResponseEntity.created(link).build();
+      URI resourceUri = null;
+
+      try{
+        resourceUri = builder.build();
+      } catch(URISyntaxException ex){
+        LOGGER.error("Failed to create location URI for path " + path + ". However, resource should be created.", ex);
+        throw new CustomInternalServerError("Resource creation successful, but unable to create resource linkfor path " + path + ".");
+      }
+
+      long currentVersion = contentAuditService.getCurrentVersion(Long.toString(result.getId()));
+      if(currentVersion > 0){
+        return ResponseEntity.created(resourceUri).header("Resource-Version", Long.toString(currentVersion)).build();
+      } else{
+        return ResponseEntity.created(resourceUri).build();
+      }
     } catch(IOException ex){
       LOGGER.error("Failed to open file input stream.", ex);
       throw new CustomInternalServerError("Unable to read from stream. Upload canceled.");
@@ -349,8 +374,14 @@ public class DataResourceController implements IDataResourceController{
       LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
       ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, version);
 
+      long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
+
       LOGGER.trace("Obtained single content information result.");
-      return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(filterContentInformation(contentInformation));
+      if(currentVersion > 0){
+        return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header("Resource-Version", Long.toString(currentVersion)).body(filterContentInformation(contentInformation));
+      } else{
+        return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(filterContentInformation(contentInformation));
+      }
     }
   }
 
@@ -389,8 +420,13 @@ public class DataResourceController implements IDataResourceController{
     ContentInformation toUpdate = contentInformationService.getContentInformation(resource.getId(), path, null);
 
     contentInformationService.patch(toUpdate, patch, getUserAuthorities(resource));
+    long currentVersion = contentAuditService.getCurrentVersion(Long.toString(toUpdate.getId()));
 
-    return ResponseEntity.noContent().build();
+    if(currentVersion > 0){
+      return ResponseEntity.noContent().header("Resource-Version", Long.toString(currentVersion)).build();
+    } else{
+      return ResponseEntity.noContent().build();
+    }
   }
 
   @Override

@@ -110,6 +110,7 @@ public class ContentInformationService implements IContentInformationService{
   private IContentCollectionProvider[] collectionContentProviders;
 
   @Override
+  @Transactional
   public ContentInformation create(ContentInformation contentInformation, DataResource resource,
           String path,
           InputStream file,
@@ -347,7 +348,6 @@ public class ContentInformationService implements IContentInformationService{
   }
 
   @Override
-  @Transactional(readOnly = true)
   public ContentInformation getContentInformation(String identifier, String relativePath, Long version){
     logger.trace("Performing getContentInformation({}, {}).", identifier, relativePath);
 
@@ -455,7 +455,6 @@ public class ContentInformationService implements IContentInformationService{
   }
 
   @Override
-  @Transactional(readOnly = true)
   public Page<ContentInformation> findAll(ContentInformation c, Instant lastUpdateFrom, Instant lastUpdateUntil, Pageable pgbl){
     logger.trace("Performing findAll({}, {}, {}, {}).", c, lastUpdateFrom, lastUpdateUntil, pgbl);
     logger.info("Obtaining content information from an lastUpdate range is not supported. Ignoring lastUpdate arguments.");
@@ -463,7 +462,6 @@ public class ContentInformationService implements IContentInformationService{
   }
 
   @Override
-  @Transactional(readOnly = true)
   public Page<ContentInformation> findAll(ContentInformation c, Pageable pgbl){
     logger.trace("Performing findAll({}, {}).", c, pgbl);
 
@@ -485,7 +483,7 @@ public class ContentInformationService implements IContentInformationService{
   }
 
   @Override
-  @Transactional(readOnly = false)
+  @Transactional
   public void patch(ContentInformation resource, JsonPatch patch, Collection<? extends GrantedAuthority> userGrants){
     logger.trace("Performing patch({}, {}, {}).", "ContentInformation#" + resource.getId(), patch, userGrants);
     ContentInformation updated = PatchUtil.applyPatch(resource, patch, ContentInformation.class, userGrants);
@@ -506,6 +504,7 @@ public class ContentInformationService implements IContentInformationService{
   }
 
   @Override
+  @Transactional
   public void delete(ContentInformation resource){
     logger.trace("Performing delete({}).", "ContentInformation#" + resource.getId());
     getDao().delete(resource);

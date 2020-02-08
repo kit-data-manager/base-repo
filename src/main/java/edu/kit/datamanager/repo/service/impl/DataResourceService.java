@@ -95,13 +95,13 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  @Transactional(readOnly = false)
+  @Transactional
   public DataResource create(DataResource resource, String callerPrincipal){
     return create(resource, callerPrincipal, null, null);
   }
 
   @Override
-  @Transactional(readOnly = false)
+  @Transactional
   public DataResource create(DataResource resource, String callerPrincipal, String callerFirstName, String callerLastName){
     logger.trace("Performing create({}, {}, {}, {}).", resource, callerPrincipal, callerFirstName, callerLastName);
 
@@ -274,7 +274,6 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  @Transactional(readOnly = true)
   public DataResource findById(final String id){
     logger.trace("Performing findById({}).", id);
     Optional<DataResource> result = getDao().findById(id);
@@ -288,14 +287,12 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  @Transactional(readOnly = true)
   public DataResource findByAnyIdentifier(final String resourceIdentifier){
     logger.trace("Performing findByAnyIdentifier({}).", resourceIdentifier);
     return findByAnyIdentifier(resourceIdentifier, null);
   }
 
   @Override
-  @Transactional(readOnly = true)
   public DataResource findByAnyIdentifier(final String resourceIdentifier, Long version){
     logger.trace("Performing findByAnyIdentifier({}, {}).", resourceIdentifier, version);
     Optional<DataResource> result = getDao().findOne(InternalIdentifierSpec.toSpecification(resourceIdentifier));
@@ -418,7 +415,6 @@ public class DataResourceService implements IDataResourceService{
   /**
    * Private helper used by findAll and findAllFiltered.
    */
-  @Transactional(readOnly = true)
   private Page<DataResource> doFind(
           Specification<DataResource> spec,
           DataResource example,
@@ -469,10 +465,9 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  @Transactional(readOnly = false)
+  @Transactional
   public void patch(DataResource resource, JsonPatch patch,
-          Collection<? extends GrantedAuthority> userGrants
-  ){
+          Collection<? extends GrantedAuthority> userGrants){
     logger.trace("Performing patch({}, {}, {}).", "DataResource#" + resource.getId(), patch, userGrants);
 
     List<String> identifierListBefore = getUniqueIdentifiers(resource);
@@ -498,7 +493,7 @@ public class DataResourceService implements IDataResourceService{
   }
 
   @Override
-  @Transactional(readOnly = false)
+  @Transactional
   public DataResource put(DataResource resource, DataResource newResource,
           Collection<? extends GrantedAuthority> userGrants) throws UpdateForbiddenException{
     logger.trace("Performing put({}, {}, {}).", "DataResource#" + resource.getId(), "DataResource#" + newResource.getId(), userGrants);
@@ -635,7 +630,6 @@ public class DataResourceService implements IDataResourceService{
   @Override
   public Health health(){
     logger.trace("Obtaining health information.");
-
     return Health.up().withDetail("DataResources", getDao().count()).withDetail("Audit enabled?", applicationProperties.isAuditEnabled()).build();
   }
 

@@ -20,12 +20,11 @@ import edu.kit.datamanager.controller.IControllerAuditSupport;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.controller.IGenericResourceController;
 import edu.kit.datamanager.repo.domain.ContentInformation;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+import org.springdoc.core.converters.PageableAsQueryParam;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,7 +48,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 public interface IDataResourceController extends IGenericResourceController<DataResource>, IControllerAuditSupport{
 
-  @ApiOperation(value = "Upload data for a data resource.", notes = "This endpoint allows to upload or assign data and content metadata related to the uploaded file to a resource identified by its id. "
+  @Operation(summary = "Upload data for a data resource.", description = "This endpoint allows to upload or assign data and content metadata related to the uploaded file to a resource identified by its id. "
           + "Uploaded data will be stored at the configured backend, typically the local hard disk. Furthermore, it is possible to register data stored elsewhere by providing only a content URI within the content metadata."
           + "In any other case, providing content metadata is optional. Parts of the content metadata, e.g. content type or checksum, may be generated or overwritten after a file upload if they not already exist or if "
           + "the configuration does not allow the user to provide particular content metadata entries, e.g. because a certain checksum digest is mandatory."
@@ -58,65 +57,60 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "has successfully finished. If the overwritten element only contains a reference URI, the entry is just replaced by the user provided entry.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.POST)
   @ResponseBody
-  public ResponseEntity createContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          @ApiParam(value = "The file to upload. If no file is uploaded, a metadata document must be provided containing a reference URI to the externally hosted data.", required = false) @RequestPart(name = "file", required = false) final MultipartFile file,
-          @ApiParam(value = "Json representation of a content information metadata document. Providing this metadata document is optional unless no file is uploaded.", required = false) @RequestPart(name = "metadata", required = false) final ContentInformation contentInformation,
-          @ApiParam(value = "Flag to indicate, that existing content at the same location should be overwritten.", required = false) @RequestParam(name = "force", defaultValue = "false") final boolean force,
+  public ResponseEntity createContent(@Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          @Parameter(description = "The file to upload. If no file is uploaded, a metadata document must be provided containing a reference URI to the externally hosted data.", required = false) @RequestPart(name = "file", required = false) final MultipartFile file,
+          @Parameter(description = "Json representation of a content information metadata document. Providing this metadata document is optional unless no file is uploaded.", required = false) @RequestPart(name = "metadata", required = false) final ContentInformation contentInformation,
+          @Parameter(description = "Flag to indicate, that existing content at the same location should be overwritten.", required = false) @RequestParam(name = "force", defaultValue = "false") final boolean force,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);
 
-  @ApiOperation(value = "Access content information for single or multiple data elements.",
-          notes = "List metadata of one or more content elements associated with a data resource in a paginated and/or sorted form. This endpoint is addressed if the caller provides content type "
+  @Operation(summary = "Access content information for single or multiple data elements.",
+          description = "List metadata of one or more content elements associated with a data resource in a paginated and/or sorted form. This endpoint is addressed if the caller provides content type "
           + "'application/vnd.datamanager.content-information+json' within the 'Accept' header. If this content type is not present, the content element is downloaded instead."
           + "The content path, defining whether one or more content element(s) is/are returned, is provided within the request URL. Everything after 'data/' is expected to be either a virtual folder or single content element. "
           + "If the provided content path ends with a slash, it is expected to represent a virtual collection which should be listed. If the content path does not end with a slash, it is expected to refer to a single element. "
           + "If not element with the exact content path exists, HTTP NOT_FOUND is returned. The user may provide custom sort criteria for ordering the returned elements. If no sort criteria is provided, the default sorting is "
           + "applied which returning all matching elements in ascending order by hierarchy depth and alphabetically by their relative path.")
-  @ApiImplicitParams(value = {
-    @ApiImplicitParam(name = "page", dataType = "integer", paramType = "query", value = "Results page you want to retrieve (0..N)"),
-    @ApiImplicitParam(name = "size", dataType = "integer", paramType = "query", value = "Number of records per page."),
-    @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query", value = "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.")
-  })
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET, produces = "application/vnd.datamanager.content-information+json")
   @ResponseBody
-  public ResponseEntity getContentMetadata(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          @ApiParam(value = "A single tag assigned to certain content elements. Tags allow easy structuring and filtering of content associated to a resource.", required = false) @RequestParam(name = "tag", required = false) final String tag,
-          @RequestParam(value = "The version number of the content information.", name = "version", required = false) final Long version,
-          final Pageable pgbl,
+  @PageableAsQueryParam
+  public ResponseEntity getContentMetadata(
+          @Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          @Parameter(description = "A single tag assigned to certain content elements. Tags allow easy structuring and filtering of content associated to a resource.", required = false) @RequestParam(name = "tag", required = false) final String tag,
+          @Parameter(description = "The resource version to access.", required = false) @RequestParam(value = "The version number of the content information.", name = "version", required = false) final Long version,
+          @Parameter(hidden = true) final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);
 
-  @ApiOperation(value = "List content information by example.", notes = "List all content information in a paginated and/or sorted form by example using an example document provided in the request body. "
+  @Operation(summary = "List content information by example.", description = "List all content information in a paginated and/or sorted form by example using an example document provided in the request body. "
           + "The example is a normal instance of the resource. However, search-relevant top level primitives are marked as 'Searchable' within the implementation. "
           + "For string values, '%' can be used as wildcard character. If the example document is omitted, the response is identical to listing all resources with the same pagination parameters. "
           + "As well as listing of all resources, the number of total results might be affected by the caller's role.")
-  @ApiImplicitParams(value = {
-    @ApiImplicitParam(name = "page", dataType = "integer", paramType = "query", value = "Results page you want to retrieve (0..N)"),
-    @ApiImplicitParam(name = "size", dataType = "integer", paramType = "query", value = "Number of records per page."),
-    @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query", value = "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.")})
   @RequestMapping(value = {"/search/data"}, method = {RequestMethod.POST})
   @ResponseBody
+  @PageableAsQueryParam
   public ResponseEntity<List<ContentInformation>> findContentMetadataByExample(
-          @ApiParam(value = "Json representation of the resource serving as example for the search operation. Typically, only first level primitive attributes are evaluated while building queries from examples.", required = true) @RequestBody final ContentInformation c,
-          final Pageable pgbl,
+          @Parameter(description = "Json representation of the resource serving as example for the search operation. Typically, only first level primitive attributes are evaluated while building queries from examples.", required = true) @RequestBody final ContentInformation c,
+          @Parameter(hidden = true) final Pageable pgbl,
           final WebRequest wr,
           final HttpServletResponse hsr,
           final UriComponentsBuilder ucb);
 
-  @ApiOperation(value = "Patch a single content information element.",
-          notes = "This endpoint allows to patch single content information elements associated with a data resource. As most of the content information attributes are typically automatically generated their modification is restricted "
+  @Operation(summary = "Patch a single content information element.",
+          description = "This endpoint allows to patch single content information elements associated with a data resource. As most of the content information attributes are typically automatically generated their modification is restricted "
           + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE. Users having WRITE permissions to the associated resource are only allowed to modify contained metadata elements or tags assigned to the content element.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
   @ResponseBody
-  public ResponseEntity patchContentMetadata(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          @ApiParam(value = "Json representation of a json patch document. The document must comply with RFC 6902 specified by the IETF.", required = true) @RequestBody final JsonPatch patch,
+  public ResponseEntity patchContentMetadata(
+          @Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          @Parameter(description = "Json representation of a json patch document. The document must comply with RFC 6902 specified by the IETF.", required = true) @RequestBody final JsonPatch patch,
           final WebRequest request,
           final HttpServletResponse response);
 
-  @ApiOperation(value = "Download data located at the provided content path.",
-          notes = "This endpoint allows to download the data associated with a data resource and located at a particular virtual part. The virtual path starts after 'data/' and should end with a filename. "
+  @Operation(summary = "Download data located at the provided content path.",
+          description = "This endpoint allows to download the data associated with a data resource and located at a particular virtual part. The virtual path starts after 'data/' and should end with a filename. "
           + "Depending on the content located at the provided path, different response scenarios can occur. If the content is a locally stored, accessible file, the bitstream of the file is retured. If the file is (temporarily) not available, "
           + "HTTP 404 is returned. If the content referes to an externally stored resource accessible via http(s), the service will try if the resource is accessible. If this is the case, the service will return HTTP 303 (SEE_OTHER) together "
           + "with the resource URI in the 'Location' header. Depending on the client, the request is then redirected and the bitstream is returned. If the resource is not accessible or if the protocol is not http(s), the service "
@@ -124,35 +118,32 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "in case the client wants to try to access the resource URI.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET)
   @ResponseBody
-  public void getContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          @RequestParam(value = "The version number of the content information.", name = "version", required = false) final Long version,
+  public void getContent(
+          @Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          @Parameter(description = "The resource version to access.", required = false) @RequestParam(value = "The version number of the content information.", name = "version", required = false) final Long version,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);
 
-  @ApiOperation(value = "Remove a single content information element.",
-          notes = "This endpoint allows to remove single content information elements associated with a data resource. Removing content information elements including their content is restricted "
+  @Operation(summary = "Remove a single content information element.",
+          description = "This endpoint allows to remove single content information elements associated with a data resource. Removing content information elements including their content is restricted "
           + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE.")
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.DELETE)
   @ResponseBody
-  public ResponseEntity deleteContent(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+  public ResponseEntity deleteContent(@Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
           final WebRequest request,
           final HttpServletResponse response);
 
-  @ApiOperation(value = "Access audit information for a single content information resource.",
-          notes = "List audit information for a content information resource in a paginated form. Sorting can be supported but is optional. If no sorting is supported it is recommended to return audit "
+  @Operation(summary = "Access audit information for a single content information resource.",
+          description = "List audit information for a content information resource in a paginated form. Sorting can be supported but is optional. If no sorting is supported it is recommended to return audit "
           + "information sorted by version number in descending order. This endpoint is addressed if the caller provides content type "
           + "'application/vnd.datamanager.audit+json' within the 'Accept' header. If no audit support is enabled or no audit information are available for a certain resource, "
           + "an empty result should be returned. ")
-  @ApiImplicitParams(value = {
-    @ApiImplicitParam(name = "page", dataType = "integer", paramType = "query", value = "Results page you want to retrieve (0..N)"),
-    @ApiImplicitParam(name = "size", dataType = "integer", paramType = "query", value = "Number of records per page."),
-    @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query", value = "Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.")
-  })
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET, produces = "application/vnd.datamanager.audit+json")
   @ResponseBody
-  public ResponseEntity getContentAuditInformation(@ApiParam(value = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
-          final Pageable pgbl,
+  @PageableAsQueryParam
+  public ResponseEntity getContentAuditInformation(@Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
+          @Parameter(hidden = true) final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder);

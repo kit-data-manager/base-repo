@@ -17,8 +17,8 @@ package edu.kit.datamanager.repo.domain;
 
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -31,17 +31,18 @@ import lombok.Data;
  */
 @Entity
 @Data
-@ApiModel(description = "Geo location information as point.")
+@Schema(description = "Geo location information as point.")
 public class Point{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "-67.302", notes = "-180 <= longitude <= 180", required = true)
+  @Schema(example = "-180 <= longitude <= 180", required = true)
   private float longitude;
-  @ApiModelProperty(value = "31.233", notes = "-90 <= latitude <= 90", required = true)
+  @Schema(example = "-90 <= latitude <= 90", required = true)
   private float latitude;
 
   /**

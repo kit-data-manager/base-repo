@@ -17,8 +17,7 @@ package edu.kit.datamanager.repo.domain;
 
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -32,22 +31,23 @@ import lombok.Data;
  */
 @Entity
 @Data
-@ApiModel(description = "A subject of a resource, which can either be free text or a value URI.")
+@Schema(description = "A subject of a resource, which can either be free text or a value URI.")
 public class Subject{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "The subject", dataType = "String", required = false)
+  @Schema(description = "The subject value.", required = false)
   private String value;
-  @ApiModelProperty(required = false)
+  @Schema(required = false)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Scheme scheme;
-  @ApiModelProperty(value = "http://udcdata.info/037278", dataType = "String", required = false)
+  @Schema(example = "http://udcdata.info/037278", required = false)
   private String valueUri;
-  @ApiModelProperty(value = "en", dataType = "String", required = false)
+  @Schema(example = "en", required = false)
   private String lang;
 
   /**

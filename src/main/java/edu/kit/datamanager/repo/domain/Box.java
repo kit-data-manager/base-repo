@@ -17,8 +17,7 @@ package edu.kit.datamanager.repo.domain;
 
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -30,22 +29,23 @@ import lombok.Data;
  * @author jejkal
  */
 @Entity
-@ApiModel(description = "Geo location information as box.")
+@Schema(description = "Geo location information as box.")
 @Data
 public class Box{
 
   @Id
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "-67.302", notes = "-180 <= westLongitude <= 180", required = true)
+  @Schema(description = "-67.302", example = "-180 <= westLongitude <= 180", required = true)
   private float westLongitude;
-  @ApiModelProperty(value = "-67.302", notes = "-180 <= eastLongitude <= 180", required = true)
+  @Schema(description = "-67.302", example = "-180 <= eastLongitude <= 180", required = true)
   private float eastLongitude;
-  @ApiModelProperty(value = "31.233", notes = "-90 <= southLatitude <= 90", required = true)
+  @Schema(description = "31.233", example = "-90 <= southLatitude <= 90", required = true)
   private float southLatitude;
-  @ApiModelProperty(value = "31.233", notes = "-90 <= northLatitude <= 90", required = true)
+  @Schema(description = "31.233", example = "-90 <= northLatitude <= 90", required = true)
   private float northLatitude;
 
   /**

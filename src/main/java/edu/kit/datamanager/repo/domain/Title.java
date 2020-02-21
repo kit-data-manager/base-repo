@@ -20,8 +20,7 @@ import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.util.EnumUtils;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -38,7 +37,7 @@ import lombok.Data;
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
-@ApiModel(description = "The title of a resource.")
+@Schema(description = "The title of a resource.")
 public class Title{
 
   public enum TYPE implements BaseEnum{
@@ -60,18 +59,19 @@ public class Title{
   }
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "My sample resource", dataType = "String", required = true)
+  @Schema(example = "My sample resource", required = true)
   private String value;
   //vocab, e.g. Subtitle, AlternativeTitle
-  @ApiModelProperty(value = "SUBTITLE", required = false)
+  @Schema(example = "SUBTITLE", required = false)
   @Enumerated(EnumType.STRING)
   private TYPE titleType;
-  @ApiModelProperty(value = "en", required = false)
+  @Schema(example = "en", required = false)
   private String lang;
- 
+
   public static Title factoryTitle(String value){
     Title t = new Title();
     t.value = value;

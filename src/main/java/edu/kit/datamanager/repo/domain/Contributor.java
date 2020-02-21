@@ -20,8 +20,7 @@ import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.util.EnumUtils;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -37,7 +36,7 @@ import lombok.Data;
  * @author jejkal
  */
 @Entity
-@ApiModel(description = "A contributor to a resource.")
+@Schema(description = "A contributor to a resource.")
 @Data
 public class Contributor{
 
@@ -77,16 +76,17 @@ public class Contributor{
   }
 
   @Id
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "Contributing user.", dataType = "edu.kit.datamanager.repo.domain.User", required = true)
+  @Schema(description = "Contributing user.", implementation = edu.kit.datamanager.repo.domain.Agent.class, required = true)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Agent user;
 
   //vocab, e.g. Producer, Editor...
-  @ApiModelProperty(value = "Controlled vocabulary value describing the contribution type, e.g. Producer.", required = true)
+  @Schema(description = "Controlled vocabulary value describing the contribution type, e.g. Producer.", required = true)
   @Enumerated(EnumType.STRING)
   private TYPE contributionType;
 

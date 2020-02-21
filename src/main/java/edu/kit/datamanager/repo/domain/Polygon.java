@@ -17,8 +17,7 @@ package edu.kit.datamanager.repo.domain;
 
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,15 +35,16 @@ import lombok.Data;
  */
 @Entity
 @Data
-@ApiModel(description = "Geo location information as polygon. A polygon must consist of 4 or more points.")
+@Schema(description = "Geo location information as polygon. A polygon must consist of 4 or more points.")
 public class Polygon{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(required = true)
+  @Schema(required = true)
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<Point> points;
 

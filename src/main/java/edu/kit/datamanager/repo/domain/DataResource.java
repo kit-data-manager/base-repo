@@ -29,8 +29,7 @@ import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.util.EnumUtils;
 import edu.kit.datamanager.util.json.CustomInstantDeserializer;
 import edu.kit.datamanager.util.json.CustomInstantSerializer;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -61,7 +60,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
-@ApiModel(description = "Data resource element")
+@Schema(description = "Data resource element")
 @Data
 public class DataResource implements EtagSupport, Serializable{
 
@@ -85,119 +84,119 @@ public class DataResource implements EtagSupport, Serializable{
   }
   //The internal resource identifier assigned once during creation
   @Id
-  @ApiModelProperty(required = false, readOnly = true)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private String id = null;
 
   //mandatory
-  @ApiModelProperty(required = true)
+  @Schema(required = true)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private PrimaryIdentifier identifier;
 
   //vocab
-  @ApiModelProperty(required = true)
+  @Schema(required = true)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<Agent> creators = new HashSet<>();
 
-  @ApiModelProperty(required = true)
+  @Schema(required = true)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<Title> titles = new HashSet<>();
 
-  @ApiModelProperty(value = "Publisher, e.g. institution", example = "Karlsruhe Institute of Technology", required = true)
+  @Schema(description = "Publisher, e.g. institution", example = "Karlsruhe Institute of Technology", required = true)
   @Searchable
   private String publisher;
 
   //format: YYYY
-  @ApiModelProperty(value = "Publication year (could be aquisition year, if publication year is not feasible)", example = "2017", required = true)
+  @Schema(description = "Publication year (could be aquisition year, if publication year is not feasible)", example = "2017", required = true)
   @Searchable
   private String publicationYear;
 
-  @ApiModelProperty(required = true)
+  @Schema(required = true)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private ResourceType resourceType;
 
   //recommended
-  @ApiModelProperty(value = "One or more subjects describing the resource (recommended).", required = false)
+  @Schema(description = "One or more subjects describing the resource (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<Subject> subjects = new HashSet<>();
 
-  @ApiModelProperty(value = "One or more contributors that have contributed to the resource (recommended).", required = false)
+  @Schema(description = "One or more contributors that have contributed to the resource (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<Contributor> contributors = new HashSet<>();
 
-  @ApiModelProperty(value = "One or more dates related to the resource, e.g. creation or publication date (recommended).", required = false)
+  @Schema(description = "One or more dates related to the resource, e.g. creation or publication date (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<Date> dates = new HashSet<>();
 
-  @ApiModelProperty(value = "One or more related identifiers the can be used to identify related resources, e.g. metadata, parts or derived resources (recommended).", required = false)
+  @Schema(description = "One or more related identifiers the can be used to identify related resources, e.g. metadata, parts or derived resources (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<RelatedIdentifier> relatedIdentifiers = new HashSet<>();
 
-  @ApiModelProperty(value = "One or more description entries providing additional information, e.g. abstract or technical information (recommended).", required = false)
+  @Schema(description = "One or more description entries providing additional information, e.g. abstract or technical information (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Set<Description> descriptions = new HashSet<>();
 
-  @ApiModelProperty(value = "One or more geolocation entries providing information about the location of the resource, e.g. storage or aquisition location (recommended).", required = false)
+  @Schema(description = "One or more geolocation entries providing information about the location of the resource, e.g. storage or aquisition location (recommended).", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<GeoLocation> geoLocations = new HashSet<>();
 
   //optional
-  @ApiModelProperty(value = "The primary language of the resource. Possible codes are IETF BCP 47 or ISO 639-1.", example = "en, de, fr", required = false)
+  @Schema(description = "The primary language of the resource. Possible codes are IETF BCP 47 or ISO 639-1.", example = "en, de, fr", required = false)
   @Searchable
   private String language;
 
-  @ApiModelProperty(value = "One or more alternate identifiers the can be used to identify the resources in addition to the primary identifier.", required = false)
+  @Schema(description = "One or more alternate identifiers the can be used to identify the resources in addition to the primary identifier.", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Set<Identifier> alternateIdentifiers = new HashSet<>();
 
-  @ApiModelProperty(value = "Unstructured size information about the resource or its contents.", example = "15 files, 10 page, 100 bytes", required = false)
+  @Schema(description = "Unstructured size information about the resource or its contents.", example = "15 files, 10 page, 100 bytes", required = false)
   @ElementCollection(fetch = FetchType.EAGER)
   private Set<String> sizes = new HashSet<>();
 
-  @ApiModelProperty(value = "Format information about the resource or its contents. Preferably, mime types or file extensions are used.", example = "text/plain, xml, application/pdf", required = false)
+  @Schema(description = "Format information about the resource or its contents. Preferably, mime types or file extensions are used.", example = "text/plain, xml, application/pdf", required = false)
   @ElementCollection(fetch = FetchType.EAGER)
   private Set<String> formats = new HashSet<>();
 
   //e.g. major.minor
-  @ApiModelProperty(value = "Version of the resource, e.g. major.minor.", example = "1.0", required = false)
+  @Schema(description = "Version of the resource, e.g. major.minor.", example = "1.0", required = false)
   @Searchable
   private String version;
 
   //e.g. CC-0
-  @ApiModelProperty(value = "Intellectual property information.", required = false)
+  @Schema(description = "Intellectual property information.", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<Scheme> rights = new HashSet<>();
 
-  @ApiModelProperty(value = "Funding information, e.g. funder, award number and title.", required = false)
+  @Schema(description = "Funding information, e.g. funder, award number and title.", required = false)
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "resource_id")
   private Set<FundingReference> fundingReferences = new HashSet<>();
 
   //internal properties
-  @ApiModelProperty(value = "Date at which the last update occured.", example = "2017-05-10T10:41:00Z", required = true)
+  @Schema(description = "Date at which the last update occured.", example = "2017-05-10T10:41:00Z", required = true)
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
   @JsonDeserialize(using = CustomInstantDeserializer.class)
   @JsonSerialize(using = CustomInstantSerializer.class)
   Instant lastUpdate;
   //state of the resource (VOLATILE by default)
-  @ApiModelProperty(value = "State information of the resource. After creation each resource is classified as VOLATILE", required = false)
+  @Schema(description = "State information of the resource. After creation each resource is classified as VOLATILE", required = false)
   @Enumerated(EnumType.STRING)
   @Searchable
   private State state;
   //embargo date that should receive a value 'resourceCreationTime + DefaultEmbargoSpan' on resource creation time
   //embargo date should only be used for policy triggering, not for actual access decisions. This should be done on the basis of ACLs. 
   //As soon as the embargo ends, all access restrictions should be removed in order to allow public access.
-  @ApiModelProperty(value = "Date at which the embargo ends, e.g. after which the resource is published.", example = "2017-05-10T10:41:00Z", required = true)
+  @Schema(description = "Date at which the embargo ends, e.g. after which the resource is published.", example = "2017-05-10T10:41:00Z", required = true)
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
   @JsonDeserialize(using = CustomInstantDeserializer.class)
   @JsonSerialize(using = CustomInstantSerializer.class)
@@ -273,7 +272,7 @@ public class DataResource implements EtagSupport, Serializable{
     hash = 41 * hash + EnumUtils.hashCode(this.state);
     hash = 41 * hash + Objects.hashCode(this.embargoDate);
     hash = 41 * hash + Objects.hashCode(this.lastUpdate);
-        hash = 41 * hash + Objects.hashCode(this.acls);
+    hash = 41 * hash + Objects.hashCode(this.acls);
     return hash;
   }
 
@@ -353,7 +352,7 @@ public class DataResource implements EtagSupport, Serializable{
     if(!EnumUtils.equals(this.state, other.state)){
       return false;
     }
-      if(!Objects.equals(this.lastUpdate, other.lastUpdate)){
+    if(!Objects.equals(this.lastUpdate, other.lastUpdate)){
       return false;
     }
     if(!Objects.equals(this.embargoDate, other.embargoDate)){

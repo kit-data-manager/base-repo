@@ -19,8 +19,7 @@ import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.util.EnumUtils;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -36,7 +35,7 @@ import lombok.Data;
  */
 @Entity
 @Data
-@ApiModel(description = "The type of a resource.")
+@Schema(description = "The type of a resource.")
 public class ResourceType{
 
   public enum TYPE_GENERAL implements BaseEnum{
@@ -71,13 +70,14 @@ public class ResourceType{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "Measurement Data", dataType = "String", required = true)
+  @Schema(description = "Measurement Data", required = true)
   private String value;
   //vocab, e.g. Dataset, Image....
-  @ApiModelProperty(value = "DATASET", required = true)
+  @Schema(example = "DATASET", required = true)
   @Enumerated(EnumType.STRING)
   private TYPE_GENERAL typeGeneral;
 

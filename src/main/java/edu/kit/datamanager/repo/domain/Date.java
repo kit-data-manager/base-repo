@@ -24,8 +24,7 @@ import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.util.EnumUtils;
 import edu.kit.datamanager.util.json.CustomInstantDeserializer;
 import edu.kit.datamanager.util.json.CustomInstantSerializer;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
@@ -42,7 +41,7 @@ import lombok.Data;
  * @author jejkal
  */
 @Entity
-@ApiModel(description = "A data entry of a resource.")
+@Schema(description = "A data entry of a resource.")
 @Data
 public class Date{
 
@@ -73,17 +72,18 @@ public class Date{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
   //ISO format
-  @ApiModelProperty(value = "The actual date of the entry.", example = "2017-05-10T10:41:00Z", required = true)
+  @Schema(description = "The actual date of the entry.", example = "2017-05-10T10:41:00Z", required = true)
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
   @JsonDeserialize(using = CustomInstantDeserializer.class)
   @JsonSerialize(using = CustomInstantSerializer.class)
   Instant value;
   //vocab, e.g. Created, Issued...
-  @ApiModelProperty(value = "Controlled vocabulary value describing the date type.", required = true)
+  @Schema(description = "Controlled vocabulary value describing the date type.", required = true)
   @Enumerated(EnumType.STRING)
   DATE_TYPE type;
 

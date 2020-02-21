@@ -19,8 +19,7 @@ import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.util.EnumUtils;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -35,7 +34,7 @@ import lombok.Data;
  * @author jejkal
  */
 @Entity
-@ApiModel(description = "A description entry of a resource.")
+@Schema(description = "A description entry of a resource.")
 @Data
 public class Description{
 
@@ -61,16 +60,17 @@ public class Description{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "The actual description as full text.", dataType = "String", required = true)
+  @Schema(description = "The actual description as full text.", required = true)
   private String description;
   //vocab, e.g. Abstract
-  @ApiModelProperty(value = "Controlled vocabulary value describing the description type.", required = true)
+  @Schema(description = "Controlled vocabulary value describing the description type.", required = true)
   @Enumerated(EnumType.STRING)
   private TYPE type;
-  @ApiModelProperty(value = "Description language.", required = false)
+  @Schema(description = "Description language.", required = false)
   private String lang;
 
   public static Description factoryDescription(String description, TYPE type, String lang){

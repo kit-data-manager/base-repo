@@ -17,8 +17,7 @@ package edu.kit.datamanager.repo.domain;
 
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -31,17 +30,18 @@ import lombok.Data;
  */
 @Entity
 @Data
-@ApiModel(description = "A scheme mapping consisting of namespace (schemeId) and schemeUri.")
+@Schema(description = "A scheme mapping consisting of namespace (schemeId) and schemeUri.")
 public class Scheme{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "ORCID", dataType = "String", required = true)
+  @Schema(example = "ORCID", required = true)
   private String schemeId;
-  @ApiModelProperty(value = "http://orcid.org/", dataType = "String", required = false)
+  @Schema(example = "http://orcid.org/", required = false)
   private String schemeUri;
 
   public static Scheme factoryScheme(String schemeId, String schemeUri){

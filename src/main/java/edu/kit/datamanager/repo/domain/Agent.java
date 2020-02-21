@@ -18,8 +18,7 @@ package edu.kit.datamanager.repo.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -35,21 +34,22 @@ import lombok.Data;
  * @author jejkal
  */
 @Entity
-@ApiModel(description = "An agent related to the creation or modification of a resource, e.g. the creator or a contributor.")
+@Schema(description = "An agent related to the creation or modification of a resource, e.g. the creator or a contributor.")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class Agent{
 
   @Id
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "Family name of the user.", example = "Doe", dataType = "String", required = false)
+  @Schema(description = "Family name of the user.", example = "Doe", required = false)
   private String familyName;
-  @ApiModelProperty(value = "Given name of the user.", example = "John", dataType = "String", required = false)
+  @Schema(description = "Given name of the user.", example = "John", required = false)
   private String givenName;
-  @ApiModelProperty(value = "Affiliation of the user, e.g. home institution.", example = "Karlsruhe Institute of Techology", required = false)
+  @Schema(description = "Affiliation of the user, e.g. home institution.", example = "Karlsruhe Institute of Techology", required = false)
   @ElementCollection
   private Set<String> affiliations = new HashSet<>();
 

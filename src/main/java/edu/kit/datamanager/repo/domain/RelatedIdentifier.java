@@ -20,10 +20,8 @@ import edu.kit.datamanager.annotations.SecureUpdate;
 import edu.kit.datamanager.entities.BaseEnum;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.util.EnumUtils;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -39,7 +37,7 @@ import lombok.Data;
  */
 @Entity()
 @Data
-@ApiModel(description = "A related identifier for a resource.")
+@Schema(description = "A related identifier for a resource.")
 public class RelatedIdentifier{
 
   public enum RELATION_TYPES implements BaseEnum{
@@ -83,22 +81,23 @@ public class RelatedIdentifier{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(value = "Controlled vocabulary, e.g. INTERNAL or DOI.", required = true)
+  @Schema(description = "Controlled vocabulary, e.g. INTERNAL or DOI.", required = true)
   @Enumerated(EnumType.STRING)
   private Identifier.IDENTIFIER_TYPE identifierType;
-  @ApiModelProperty(value = "10.1234/foo", dataType = "String", required = true)
+  @Schema(description = "10.1234/foo", required = true)
   private String value;
   //vocab, e.g. IsMetadataFor...
-  @ApiModelProperty(value = "Controlled vocabulary value describing the relation type, e.g. IS_PART_OF or IS_METADATA_FOR.", dataType = "String", required = true)
+  @Schema(description = "Controlled vocabulary value describing the relation type, e.g. IS_PART_OF or IS_METADATA_FOR.", required = true)
   @Enumerated(EnumType.STRING)
   private RELATION_TYPES relationType;
-  @ApiModelProperty(value = "Identifier scheme.", required = false)
+  @Schema(description = "Identifier scheme.", required = false)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Scheme scheme;
-  @ApiModelProperty(value = "Related metadata scheme.", required = false)
+  @Schema(description = "Related metadata scheme.", required = false)
   private String relatedMetadataScheme;
 
   /**

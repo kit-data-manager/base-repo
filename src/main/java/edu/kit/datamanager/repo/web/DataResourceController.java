@@ -17,9 +17,6 @@ package edu.kit.datamanager.repo.web;
 
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Objects;
-import com.monitorjbl.json.JsonResult;
-import com.monitorjbl.json.Match;
-import static com.monitorjbl.json.Match.match;
 import edu.kit.datamanager.controller.hateoas.event.PaginatedResultsRetrievedEvent;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
@@ -29,7 +26,6 @@ import edu.kit.datamanager.exceptions.ResourceElsewhereException;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.exceptions.UpdateForbiddenException;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
-import io.swagger.annotations.Api;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +42,7 @@ import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -84,7 +81,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 @Controller
 @RequestMapping(value = "/api/v1/dataresources")
-@Api(value = "Data Resource Management")
+@Schema(description = "Data Resource Management")
 public class DataResourceController implements IDataResourceController{
 
   // private final JsonResult json = JsonResult.instance();
@@ -174,7 +171,7 @@ public class DataResourceController implements IDataResourceController{
   @Override
   public ResponseEntity<List<DataResource>> findAll(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
           @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
-          final Pageable pgbl,
+          @RequestParam(required = false) final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
@@ -185,7 +182,7 @@ public class DataResourceController implements IDataResourceController{
   public ResponseEntity<List<DataResource>> findByExample(@RequestBody DataResource example,
           @RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
           @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
-          final Pageable pgbl,
+          @RequestParam(required = false) final Pageable pgbl,
           final WebRequest req,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
@@ -336,7 +333,7 @@ public class DataResourceController implements IDataResourceController{
   public ResponseEntity getContentMetadata(@PathVariable(value = "id") final String identifier,
           @RequestParam(name = "tag", required = false) final String tag,
           @RequestParam(name = "version", required = false) final Long version,
-          final Pageable pgbl,
+          @RequestParam(required = false) final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
@@ -387,7 +384,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity<List<ContentInformation>> findContentMetadataByExample(@RequestBody final ContentInformation example,
-          final Pageable pgbl,
+          @RequestParam(required = false) final Pageable pgbl,
           final WebRequest wr,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
@@ -499,7 +496,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity getAuditInformation(@PathVariable("id") final String resourceIdentifier,
-          final Pageable pgbl,
+          @RequestParam(required = false) final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder ucb){
@@ -524,7 +521,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity getContentAuditInformation(@PathVariable("id") final String resourceIdentifier,
-          final Pageable pgbl,
+          @RequestParam(required = false) final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){

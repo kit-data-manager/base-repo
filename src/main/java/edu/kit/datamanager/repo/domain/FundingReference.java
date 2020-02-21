@@ -18,8 +18,7 @@ package edu.kit.datamanager.repo.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -34,27 +33,24 @@ import lombok.Data;
  */
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
-@ApiModel(description = "A resource's funding information.")
+@Schema(description = "A resource's funding information.")
 @Data
 public class FundingReference{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(dataType = "String", required = true)
+  @Schema(required = true)
   private String funderName;
   //use identifier?
-  @ApiModelProperty(required = false)
   @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
   private FunderIdentifier funderIdentifier;
-  @ApiModelProperty(required = false)
   @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
   private Scheme awardNumber;
-  @ApiModelProperty(dataType = "String", required = false)
   private String awardUri;
-  @ApiModelProperty(dataType = "String", required = false)
   private String awardTitle;
 
   public static FundingReference factoryFundingReference(String funderName, FunderIdentifier funderIdentifier, Scheme awardNumber, String awardUri, String awardTitle){

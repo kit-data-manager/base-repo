@@ -17,8 +17,7 @@ package edu.kit.datamanager.repo.domain;
 
 import edu.kit.datamanager.annotations.Searchable;
 import edu.kit.datamanager.annotations.SecureUpdate;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -31,25 +30,22 @@ import lombok.Data;
  * @author jejkal
  */
 @Entity
-@ApiModel(description = "Geo location information for a resource.")
+@Schema(description = "Geo location information for a resource.")
 @Data
 public class GeoLocation{
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Schema(required = false, accessMode = Schema.AccessMode.READ_ONLY)
   @SecureUpdate({"FORBIDDEN"})
   @Searchable
   private Long id;
-  @ApiModelProperty(required = false)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Point point;
-  @ApiModelProperty(required = false)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Box box;
-  @ApiModelProperty(required = false)
   @OneToOne(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
   private Polygon polygon;
-  @ApiModelProperty(required = false)
   private String place;
 
   /**

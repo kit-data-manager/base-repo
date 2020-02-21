@@ -171,7 +171,7 @@ public class DataResourceController implements IDataResourceController{
   @Override
   public ResponseEntity<List<DataResource>> findAll(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
           @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
-          @RequestParam(required = false) final Pageable pgbl,
+          final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
@@ -182,7 +182,7 @@ public class DataResourceController implements IDataResourceController{
   public ResponseEntity<List<DataResource>> findByExample(@RequestBody DataResource example,
           @RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
           @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
-          @RequestParam(required = false) final Pageable pgbl,
+          final Pageable pgbl,
           final WebRequest req,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
@@ -333,7 +333,7 @@ public class DataResourceController implements IDataResourceController{
   public ResponseEntity getContentMetadata(@PathVariable(value = "id") final String identifier,
           @RequestParam(name = "tag", required = false) final String tag,
           @RequestParam(name = "version", required = false) final Long version,
-          @RequestParam(required = false) final Pageable pgbl,
+          final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
@@ -384,7 +384,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity<List<ContentInformation>> findContentMetadataByExample(@RequestBody final ContentInformation example,
-          @RequestParam(required = false) final Pageable pgbl,
+          final Pageable pgbl,
           final WebRequest wr,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){
@@ -496,7 +496,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity getAuditInformation(@PathVariable("id") final String resourceIdentifier,
-          @RequestParam(required = false) final Pageable pgbl,
+          final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder ucb){
@@ -521,7 +521,7 @@ public class DataResourceController implements IDataResourceController{
 
   @Override
   public ResponseEntity getContentAuditInformation(@PathVariable("id") final String resourceIdentifier,
-          @RequestParam(required = false) final Pageable pgbl,
+          final Pageable pgbl,
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder){

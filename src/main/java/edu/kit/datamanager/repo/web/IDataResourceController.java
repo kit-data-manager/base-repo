@@ -22,6 +22,7 @@ import edu.kit.datamanager.controller.IGenericResourceController;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springdoc.core.converters.PageableAsQueryParam;
@@ -54,7 +55,8 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "the configuration does not allow the user to provide particular content metadata entries, e.g. because a certain checksum digest is mandatory."
           + "All uploaded data can be virtually structured by providing the relative path where they should be accessible within the request URL. If a file at a given path already exists, there will be typically returned HTTP CONFLICT. "
           + "If desired, overwriting of existing content can be enforced by setting the request parameter 'force' to  true. In that case, the existing file will be marked for deletion and is deleted after the upload operation "
-          + "has successfully finished. If the overwritten element only contains a reference URI, the entry is just replaced by the user provided entry.")
+          + "has successfully finished. If the overwritten element only contains a reference URI, the entry is just replaced by the user provided entry.", security = {
+            @SecurityRequirement(name = "bearer-jwt")})
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.POST)
   @ResponseBody
   public ResponseEntity createContent(@Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,
@@ -71,7 +73,8 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "The content path, defining whether one or more content element(s) is/are returned, is provided within the request URL. Everything after 'data/' is expected to be either a virtual folder or single content element. "
           + "If the provided content path ends with a slash, it is expected to represent a virtual collection which should be listed. If the content path does not end with a slash, it is expected to refer to a single element. "
           + "If not element with the exact content path exists, HTTP NOT_FOUND is returned. The user may provide custom sort criteria for ordering the returned elements. If no sort criteria is provided, the default sorting is "
-          + "applied which returning all matching elements in ascending order by hierarchy depth and alphabetically by their relative path.")
+          + "applied which returning all matching elements in ascending order by hierarchy depth and alphabetically by their relative path.", security = {
+            @SecurityRequirement(name = "bearer-jwt")})
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET, produces = "application/vnd.datamanager.content-information+json")
   @ResponseBody
   @PageableAsQueryParam
@@ -87,7 +90,8 @@ public interface IDataResourceController extends IGenericResourceController<Data
   @Operation(summary = "List content information by example.", description = "List all content information in a paginated and/or sorted form by example using an example document provided in the request body. "
           + "The example is a normal instance of the resource. However, search-relevant top level primitives are marked as 'Searchable' within the implementation. "
           + "For string values, '%' can be used as wildcard character. If the example document is omitted, the response is identical to listing all resources with the same pagination parameters. "
-          + "As well as listing of all resources, the number of total results might be affected by the caller's role.")
+          + "As well as listing of all resources, the number of total results might be affected by the caller's role.", security = {
+            @SecurityRequirement(name = "bearer-jwt")})
   @RequestMapping(value = {"/search/data"}, method = {RequestMethod.POST})
   @ResponseBody
   @PageableAsQueryParam
@@ -100,7 +104,8 @@ public interface IDataResourceController extends IGenericResourceController<Data
 
   @Operation(summary = "Patch a single content information element.",
           description = "This endpoint allows to patch single content information elements associated with a data resource. As most of the content information attributes are typically automatically generated their modification is restricted "
-          + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE. Users having WRITE permissions to the associated resource are only allowed to modify contained metadata elements or tags assigned to the content element.")
+          + "to privileged users, e.g. user with role ADMINISTRATOR or permission ADMINISTRATE. Users having WRITE permissions to the associated resource are only allowed to modify contained metadata elements or tags assigned to the content element.", security = {
+            @SecurityRequirement(name = "bearer-jwt")})
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
   @ResponseBody
   public ResponseEntity patchContentMetadata(
@@ -115,7 +120,8 @@ public interface IDataResourceController extends IGenericResourceController<Data
           + "HTTP 404 is returned. If the content referes to an externally stored resource accessible via http(s), the service will try if the resource is accessible. If this is the case, the service will return HTTP 303 (SEE_OTHER) together "
           + "with the resource URI in the 'Location' header. Depending on the client, the request is then redirected and the bitstream is returned. If the resource is not accessible or if the protocol is not http(s), the service "
           + "will either return the status received by accessing the resource URI, SERVICE_UNAVAILABLE if the request has failed or NO_CONTENT if not other status applies. In addition, the resource URI is returned in the 'Content-Location' header "
-          + "in case the client wants to try to access the resource URI.")
+          + "in case the client wants to try to access the resource URI.", security = {
+            @SecurityRequirement(name = "bearer-jwt")})
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET)
   @ResponseBody
   public void getContent(
@@ -138,7 +144,8 @@ public interface IDataResourceController extends IGenericResourceController<Data
           description = "List audit information for a content information resource in a paginated form. Sorting can be supported but is optional. If no sorting is supported it is recommended to return audit "
           + "information sorted by version number in descending order. This endpoint is addressed if the caller provides content type "
           + "'application/vnd.datamanager.audit+json' within the 'Accept' header. If no audit support is enabled or no audit information are available for a certain resource, "
-          + "an empty result should be returned. ")
+          + "an empty result should be returned.", security = {
+            @SecurityRequirement(name = "bearer-jwt")})
   @RequestMapping(path = "/{id}/data/**", method = RequestMethod.GET, produces = "application/vnd.datamanager.audit+json")
   @ResponseBody
   @PageableAsQueryParam

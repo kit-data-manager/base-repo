@@ -1,5 +1,9 @@
 # KIT Data Manager - Base Repository Service
 
+![Build Status](https://img.shields.io/travis/kit-data-manager/base-repo.svg)
+![Code Coverage](https://img.shields.io/coveralls/github/kit-data-manager/base-repo.svg)
+![License](https://img.shields.io/github/license/kit-data-manager/base-repo.svg)
+
 This project contains the repository service microservice for the KIT DM infrastructure. The service provides
 data resource management, e.g. register DataCite-oriented metadata and upload/download content to data resources.
 

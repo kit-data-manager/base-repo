@@ -31,12 +31,15 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Validated
 @EqualsAndHashCode(callSuper = true)
-public class ApplicationProperties extends GenericApplicationProperties{
+public class ApplicationProperties extends GenericApplicationProperties {
 
-  @edu.kit.datamanager.annotations.LocalFolderURL
-  private URL basepath;
-  @Value("${repo.audit.enabled:FALSE}")
-  private boolean auditEnabled;
-  @Value("${repo.file.versioning.default:none}")
-  private String defaultVersioningService;
+    @edu.kit.datamanager.annotations.LocalFolderURL
+    private URL basepath;
+
+    @Value("${repo.audit.enabled:FALSE}")
+    private boolean auditEnabled;
+    @Value("${repo.basepath.pattern:${year}}")
+    private String pathPattern;
+    @Value("${repo.file.versioning.default:none}")
+    private String defaultVersioningService;
 }

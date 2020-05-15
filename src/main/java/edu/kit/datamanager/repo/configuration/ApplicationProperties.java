@@ -38,7 +38,7 @@ public class ApplicationProperties extends GenericApplicationProperties {
 
     @Value("${repo.audit.enabled:FALSE}")
     private boolean auditEnabled;
-    @Value("${repo.basepath.pattern:${year}}")
+    @Value("${repo.basepath.pattern:'@{year}'}")
     private String pathPattern;
     @Value("${repo.file.versioning.default:none}")
     private String defaultVersioningService;

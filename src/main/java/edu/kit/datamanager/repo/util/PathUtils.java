@@ -71,7 +71,7 @@ public class PathUtils {
         data.put("month", Integer.toString(Calendar.getInstance().get(Calendar.MONTH)));
         data.put("day", Integer.toString(Calendar.getInstance().get(Calendar.DAY_OF_MONTH)));
 
-        String pattern = properties.getPathPattern();
+        String pattern = properties.getPathPattern().replaceAll("\\@", "\\$");
         if (pattern.startsWith("/")) {
             pattern = pattern.substring(1);
         }

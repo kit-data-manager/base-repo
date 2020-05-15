@@ -40,6 +40,7 @@ public class PathUtilsTest{
     ApplicationProperties props = new ApplicationProperties();
     //test with trailing slash 
     props.setBasepath(new URL("file:///tmp/"));
+    props.setPathPattern("@{year}");
 
     Assert.assertTrue(PathUtils.getDataUri(resource, "folder/file.txt", props).toString().startsWith("file:/tmp/" + currentYear + "/test123/folder/file.txt_"));
     //test w/o trailing slash

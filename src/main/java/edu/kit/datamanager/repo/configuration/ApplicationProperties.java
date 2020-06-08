@@ -38,6 +38,9 @@ public class ApplicationProperties extends GenericApplicationProperties {
     @edu.kit.datamanager.annotations.LocalFolderURL
     private URL basepath;
 
+    @Value("${repo.readonly:FALSE}")
+    private boolean readOnly;
+
     @Value("${repo.audit.enabled:FALSE}")
     private boolean auditEnabled;
     @Value("${repo.basepath.pattern:'@{year}'}")

@@ -68,6 +68,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -127,6 +128,11 @@ public class DataResourceController implements IDataResourceController {
     public ResponseEntity<DataResource> create(@RequestBody final DataResource resource,
             final WebRequest request,
             final HttpServletResponse response) {
+        if (applicationProperties.isReadOnly()) {
+            LOGGER.info("Repository is in read-only mode. Create request denied.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+
         ControllerUtils.checkAnonymousAccess();
         DataResource result = dataResourceService.create(resource,
                 (String) AuthenticationHelper.getAuthentication().getPrincipal(),
@@ -203,6 +209,11 @@ public class DataResourceController implements IDataResourceController {
             @RequestBody final JsonPatch patch,
             final WebRequest request,
             final HttpServletResponse response) {
+        if (applicationProperties.isReadOnly()) {
+            LOGGER.info("Repository is in read-only mode. Patch request denied.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+
         ControllerUtils.checkAnonymousAccess();
 
         DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
@@ -229,6 +240,11 @@ public class DataResourceController implements IDataResourceController {
             @RequestBody final DataResource newResource,
             final WebRequest request,
             final HttpServletResponse response) {
+        if (applicationProperties.isReadOnly()) {
+            LOGGER.info("Repository is in read-only mode. Put request denied.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+
         ControllerUtils.checkAnonymousAccess();
         DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
@@ -255,6 +271,11 @@ public class DataResourceController implements IDataResourceController {
     public ResponseEntity delete(@PathVariable("id") final String identifier,
             final WebRequest request,
             final HttpServletResponse response) {
+        if (applicationProperties.isReadOnly()) {
+            LOGGER.info("Repository is in read-only mode. Delete request denied.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+
         ControllerUtils.checkAnonymousAccess();
 
         try {
@@ -288,6 +309,10 @@ public class DataResourceController implements IDataResourceController {
             final WebRequest request,
             final HttpServletResponse response,
             final UriComponentsBuilder uriBuilder) {
+        if (applicationProperties.isReadOnly()) {
+            LOGGER.info("Repository is in read-only mode. Create content request denied.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
 
         ControllerUtils.checkAnonymousAccess();
         String path = getContentPathFromRequest(request);
@@ -403,6 +428,11 @@ public class DataResourceController implements IDataResourceController {
             final @RequestBody JsonPatch patch,
             final WebRequest request,
             final HttpServletResponse response) {
+        if (applicationProperties.isReadOnly()) {
+            LOGGER.info("Repository is in read-only mode. Patch content metadata request denied.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+
         ControllerUtils.checkAnonymousAccess();
 
         String path = getContentPathFromRequest(request);
@@ -448,6 +478,11 @@ public class DataResourceController implements IDataResourceController {
             final String identifier,
             final WebRequest request,
             final HttpServletResponse response) {
+        if (applicationProperties.isReadOnly()) {
+            LOGGER.info("Repository is in read-only mode. Delete content request denied.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+
         ControllerUtils.checkAnonymousAccess();
 
         String path = getContentPathFromRequest(request);

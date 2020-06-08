@@ -66,10 +66,13 @@ dependencies {
    
     implementation("edu.kit.datamanager:service-base:0.1")
     api("org.springdoc:springdoc-openapi-data-rest:1.2.31")
-
+    implementation("org.springframework.cloud:spring-cloud-dependencies:Greenwich.SR3")
+    implementation("org.springframework.cloud:spring-cloud-starter:2.2.3.RELEASE")
     implementation("edu.kit.datamanager:generic-message-consumer:0.1.0")
 
     implementation("org.apache.commons:commons-text:1.8")
+    implementation("commons-configuration:commons-configuration:1.10")
+
     implementation("com.monitorjbl:spring-json-view:1.0.1")
     implementation("org.postgresql:postgresql:42.2.1")
     implementation("org.apache.tika:tika-core:1.18") 

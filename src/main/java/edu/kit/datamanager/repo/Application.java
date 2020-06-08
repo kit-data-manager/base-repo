@@ -46,36 +46,35 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @ComponentScan({"edu.kit.datamanager", "edu.kit.dataversioning", "edu.kit.datamanager.messaging.client"})
-public class Application{
+public class Application {
 
 //  @Autowired
 //  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
+    @Bean
+    @Scope("prototype")
+    public Logger logger(InjectionPoint injectionPoint) {
+        Class<?> targetClass = injectionPoint.getMember().getDeclaringClass();
+        return LoggerFactory.getLogger(targetClass.getCanonicalName());
+    }
 
-  @Bean
-  @Scope("prototype")
-  public Logger logger(InjectionPoint injectionPoint){
-    Class<?> targetClass = injectionPoint.getMember().getDeclaringClass();
-    return LoggerFactory.getLogger(targetClass.getCanonicalName());
-  }
+    @Bean
+    public IDataResourceService dataResourceService() {
+        return new DataResourceService();
+    }
 
-  @Bean
-  public IDataResourceService dataResourceService(){
-    return new DataResourceService();
-  }
+    @Bean
+    public IContentInformationService contentInformationService() {
+        return new ContentInformationService();
+    }
 
-  @Bean
-  public IContentInformationService contentInformationService(){
-    return new ContentInformationService();
-  }
-
-  @Bean(name = "OBJECT_MAPPER_BEAN")
-  public ObjectMapper jsonObjectMapper(){
-    return Jackson2ObjectMapperBuilder.json()
-            .serializationInclusion(JsonInclude.Include.NON_EMPTY) // Don’t include null values
-            .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS) //ISODate
-            .modules(new JavaTimeModule())
-            .build();
-  }
+    @Bean(name = "OBJECT_MAPPER_BEAN")
+    public ObjectMapper jsonObjectMapper() {
+        return Jackson2ObjectMapperBuilder.json()
+                .serializationInclusion(JsonInclude.Include.NON_EMPTY) // Don’t include null values
+                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS) //ISODate
+                .modules(new JavaTimeModule())
+                .build();
+    }
 
 //  @Bean
 //  public WebMvcConfigurer corsConfigurer(){
@@ -91,26 +90,24 @@ public class Application{
 //  public RequestMappingHandlerAdapter adapter(){
 //    return requestMappingHandlerAdapter;
 //  }
-
 //  @Bean
 //  public JsonViewSupportFactoryBean views(){
 //    return new JsonViewSupportFactoryBean();
 //  }
+    @Bean
+    @ConfigurationProperties("repo")
+    public ApplicationProperties applicationProperties() {
+        return new ApplicationProperties();
+    }
 
-  @Bean
-  @ConfigurationProperties("repo")
-  public ApplicationProperties applicationProperties(){
-    return new ApplicationProperties();
-  }
+    @Bean
+    public IMessagingService messagingService() {
+        return new RabbitMQMessagingService();
+    }
 
-  @Bean
-  public IMessagingService messagingService(){
-    return new RabbitMQMessagingService();
-  }
-
-  public static void main(String[] args){
-    ApplicationContext ctx = SpringApplication.run(Application.class, args);
-    System.out.println("Spring is running!");
-  }
+    public static void main(String[] args) {
+        ApplicationContext ctx = SpringApplication.run(Application.class, args);
+        System.out.println("Spring is running!");
+    }
 
 }

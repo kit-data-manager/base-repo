@@ -49,7 +49,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class Application {
 
 //  @Autowired
-//  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
+//  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;  
     @Bean
     @Scope("prototype")
     public Logger logger(InjectionPoint injectionPoint) {

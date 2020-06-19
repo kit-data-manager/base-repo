@@ -37,7 +37,11 @@ task buildGenericMessageConsumer(type:Exec){
     dependsOn buildServiceBase
  
     workingDir 'libraries/generic-message-consumer'
-    commandLine './gradlew', 'build', 'install'
+    if (System.properties['os.name'].toLowerCase().contains('windows')) {
+        commandLine 'gradlew.bat', 'build', 'install'
+    } else {
+        commandLine './gradlew', 'build', 'install'
+    }
 
     standardOutput = new ByteArrayOutputStream()
 

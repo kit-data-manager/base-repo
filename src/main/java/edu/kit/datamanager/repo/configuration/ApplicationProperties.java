@@ -36,6 +36,7 @@ import org.springframework.validation.annotation.Validated;
 public class ApplicationProperties extends GenericApplicationProperties {
 
     @edu.kit.datamanager.annotations.LocalFolderURL
+    @Value("${repo.basepath}")
     private URL basepath;
 
     @Value("${repo.readonly:FALSE}")

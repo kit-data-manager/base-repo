@@ -43,4 +43,15 @@ bootJar {
    }
    launchScript()
 }
+
+/**The default task for compiling the project has to be overwritten in order to build first 
+ * from a clean release
+ */
+compileJava {
+    if (project.hasProperty('clean-release')) {
+        apply from: 'gradle/git_checkout.gradle'
+        dependsOn checkoutProject
+    }
+
+}
    

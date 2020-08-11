@@ -3,8 +3,5 @@
 /.nb-gradle/
 /.nb-gradle-properties
 /.settings/
-/lib/
 /config/
-/bak/
-base-repo.jar
-EpistemeImageUploadHandler.properties
+**/application.properties

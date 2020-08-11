@@ -49,7 +49,10 @@ public class AlternateIdentifierSpec{
       //join dataresource table with alternate identifiers table
       Join<DataResource, AlternateIdentifier> altJoin = root.join("alternateIdentifiers", JoinType.INNER);
       //get all alternate identifiers NOT of type INTERNAL with one of the provided values
-      return builder.and(builder.notEqual(altJoin.get("identifierType"), Identifier.IDENTIFIER_TYPE.INTERNAL), altJoin.get("value").in((Object[]) identifierValues));
+      return 
+              builder.
+                      and(builder.notEqual(altJoin.get("identifierType"), Identifier.IDENTIFIER_TYPE.INTERNAL), altJoin.get("value").
+                              in((Object[]) identifierValues));
     };
   }
 }

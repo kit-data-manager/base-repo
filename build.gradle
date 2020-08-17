@@ -73,7 +73,7 @@ dependencies {
 
     implementation("com.monitorjbl:spring-json-view:1.0.1")
     implementation("org.postgresql:postgresql:42.2.1")
-    implementation("org.hsqldb:hsqldb:2.4.0")
+    implementation("com.h2database:h2:1.4.194")
     implementation("org.apache.tika:tika-core:1.18") 
     implementation ("org.javers:javers-core:5.8.7")
 

@@ -110,6 +110,7 @@ bootJar {
     from ("${asciidoctor.outputDir}/html5") {
         into 'static/docs'
     }
+    archiveFileName = "${archiveBaseName.get()}.${archiveExtension.get()}"
     launchScript()
 }
 

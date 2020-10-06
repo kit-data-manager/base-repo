@@ -22,7 +22,7 @@ LABEL stage=run
 RUN mkdir -p /var/repository
 RUN mkdir -p /base-repo/config/
 COPY --from=build-base-repo /base-repo/base-repo/build/libs/base-repo.jar /base-repo/base-repo.jar
-COPY --from=build-base-repo /base-repo/collection-api/config/application-default.properties /base-repo/application.properties
+COPY --from=build-base-repo /base-repo/base-repo/config/application-default.properties /base-repo/application.properties
 COPY run.sh /base-repo/
 
 EXPOSE 8080

@@ -20,6 +20,7 @@ import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +59,7 @@ public class PathUtils {
             }
 
             URIBuilder uriBuilder = new URIBuilder(properties.getBasepath().toString());
+            uriBuilder.setCharset(Charset.forName("UTF-8"));
             uriBuilder.setPath(uriBuilder.getPath() + (!properties.getBasepath().toString().endsWith("/") ? "/" : "") + substitutePathPattern(properties) + "/" + internalIdentifier + "/" + relativeDataPath + "_" + System.currentTimeMillis());
             return uriBuilder.build();
         } catch (URISyntaxException ex) {

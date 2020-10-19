@@ -4,6 +4,11 @@ buildscript {
         jcenter()
         mavenCentral()
     }
+	 repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:2.2.2.RELEASE")
         classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2'
@@ -58,7 +63,6 @@ if (project.hasProperty('travis')) {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-rest")
-    implementation("org.javers:javers-spring-boot-starter-sql:3.9.0")
 
     implementation("edu.kit.datamanager:service-base:0.1.2")
     implementation("edu.kit.datamanager:generic-message-consumer:0.1.2")
@@ -83,10 +87,10 @@ dependencies {
     implementation('javax.activation:activation:1.1.1')
     implementation('org.javassist:javassist:3.23.1-GA')
     
-    implementation('org.apache.httpcomponents:httpclient:4.5.6')
+    compile('javax.xml.bind:jaxb-api:2.3.0')
 
     testImplementation("com.h2database:h2:1.4.194") 
-    testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
+    //testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework:spring-test")
     testImplementation("org.springframework.security:spring-security-test")

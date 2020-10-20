@@ -35,10 +35,8 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
@@ -94,6 +92,7 @@ public class NoneDataVersioningService implements IVersioningService{
       contentUriString = PathUtils.getDataUri(DataResource.factoryNewDataResource(resourceId), path, applicationProperties).toString();
     }
 
+    logger.trace("Obtaining path for contentUriString {}.", contentUriString);
     //URI dataUri = PathUtils.getDataUri(DataResource.factoryNewDataResource(resourceId), path, applicationProperties);
     Path destination = Paths.get(URI.create(contentUriString));
     logger.trace("Preparing destination {} for storing user data.", destination);

@@ -1252,6 +1252,7 @@ public class DataResourceControllerTest{
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex5.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
 
+    //CHECK THIS
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data//").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).
             andExpect(status().isOk()).

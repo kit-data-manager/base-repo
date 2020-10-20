@@ -26,12 +26,16 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.http.client.utils.URIBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author jejkal
  */
 public class PathUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PathUtils.class);
 
     private PathUtils() {
     }
@@ -53,15 +57,18 @@ public class PathUtils {
      */
     public static URI getDataUri(DataResource parentResource, String relativeDataPath, ApplicationProperties properties) {
         try {
+
             String internalIdentifier = DataResourceUtils.getInternalIdentifier(parentResource);
             if (internalIdentifier == null) {
                 throw new CustomInternalServerError("Data integrity error. No internal identifier assigned to resource.");
             }
-
-            URIBuilder uriBuilder = new URIBuilder(properties.getBasepath().toString());
-            uriBuilder.setCharset(Charset.forName("UTF-8"));
+            LOGGER.trace("Getting data URI for resource with id {} and relative path {}.", internalIdentifier, relativeDataPath);
+            URIBuilder uriBuilder = new URIBuilder(properties.getBasepath().toURI());
+            //uriBuilder.setCharset(Charset.forName("UTF-8"));
             uriBuilder.setPath(uriBuilder.getPath() + (!properties.getBasepath().toString().endsWith("/") ? "/" : "") + substitutePathPattern(properties) + "/" + internalIdentifier + "/" + relativeDataPath + "_" + System.currentTimeMillis());
-            return uriBuilder.build();
+            URI result = uriBuilder.build();
+            LOGGER.trace("Returning data URI {}.", result);
+            return result;
         } catch (URISyntaxException ex) {
             throw new CustomInternalServerError("Failed to transform configured basepath to URI.");
         }

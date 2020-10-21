@@ -20,7 +20,6 @@ import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +56,6 @@ public class PathUtils {
      */
     public static URI getDataUri(DataResource parentResource, String relativeDataPath, ApplicationProperties properties) {
         try {
-
             String internalIdentifier = DataResourceUtils.getInternalIdentifier(parentResource);
             if (internalIdentifier == null) {
                 throw new CustomInternalServerError("Data integrity error. No internal identifier assigned to resource.");

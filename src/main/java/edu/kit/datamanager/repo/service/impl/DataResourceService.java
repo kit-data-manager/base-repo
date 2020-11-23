@@ -243,7 +243,7 @@ public class DataResourceService implements IDataResourceService{
     }
 
     if(!haveCreationDate){
-      Instant now = Instant.now();
+      Instant now = Instant.now().truncatedTo( ChronoUnit.MILLIS );
       logger.debug("Adding current date {} as creation date.", now);
       edu.kit.datamanager.repo.domain.Date creationDate = new edu.kit.datamanager.repo.domain.Date();
       creationDate.setType(edu.kit.datamanager.repo.domain.Date.DATE_TYPE.CREATED);
@@ -260,7 +260,7 @@ public class DataResourceService implements IDataResourceService{
     }
 
     logger.trace("Setting resource's lastUpdate to now().");
-    resource.setLastUpdate(Instant.now());
+    resource.setLastUpdate(Instant.now().truncatedTo( ChronoUnit.MILLIS ));
 
     logger.trace("Persisting created resource.");
     resource = getDao().save(resource);
@@ -480,7 +480,7 @@ public class DataResourceService implements IDataResourceService{
     checkUniqueIdentifiers(identifierListBefore, identifierListAfter);
 
     logger.trace("Setting resource's lastUpdate to now().");
-    updated.setLastUpdate(Instant.now());
+    updated.setLastUpdate(Instant.now().truncatedTo( ChronoUnit.MILLIS ));
 
     logger.trace("Persisting updated resource.");
     DataResource result = getDao().save(updated);
@@ -533,7 +533,7 @@ public class DataResourceService implements IDataResourceService{
     }
 
     logger.trace("Setting resource's lastUpdate to now().");
-    newResource.setLastUpdate(Instant.now());
+    newResource.setLastUpdate(Instant.now().truncatedTo( ChronoUnit.MILLIS ));
 
     DataResource result = getDao().save(newResource);
 
@@ -613,7 +613,7 @@ public class DataResourceService implements IDataResourceService{
     resource.setState(newState);
 
     logger.trace("Setting resource's lastUpdate to now().");
-    resource.setLastUpdate(Instant.now());
+    resource.setLastUpdate(Instant.now().truncatedTo( ChronoUnit.MILLIS ));
 
     logger.trace("Persisting resource.");
     DataResource result = getDao().save(resource);

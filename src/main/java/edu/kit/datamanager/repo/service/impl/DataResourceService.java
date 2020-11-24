@@ -44,6 +44,7 @@ import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import edu.kit.datamanager.util.PatchUtil;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;

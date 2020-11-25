@@ -6,7 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
 - Truncating service-assigned times to milliseconds for compatibility reasons
+- Update to service-base 0.1.3
+
+### Fixed
+- Fixed wrong HATEOAS links for search endpoint
 
 ## [1.0] - 2020-08-18
 ### Changed

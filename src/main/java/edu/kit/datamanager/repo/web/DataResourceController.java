@@ -50,15 +50,14 @@ import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -197,7 +196,6 @@ public class DataResourceController implements IDataResourceController {
         Page<DataResource> page = dataResourceService.findByExample(example, lastUpdateFrom, lastUpdateUntil, AuthenticationHelper.getAuthorizationIdentities(),
                 AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()),
                 request);
-
         eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), request.getPageSize()));
         //set content-range header for react-admin (index_start-index_end/total
         response.addHeader("Content-Range", ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));

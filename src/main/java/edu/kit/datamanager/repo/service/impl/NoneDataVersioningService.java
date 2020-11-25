@@ -156,15 +156,7 @@ public class NoneDataVersioningService implements IVersioningService{
     String contentUriString = options.get("contentUri");
     logger.trace("Checking URI {}.", contentUriString);
 
-    System.out.println("CONTEN " + contentUriString);
-    System.out.println(Files.exists(Paths.get(URI.create(contentUriString))));
-    try{
-      System.out.println(Files.list(Paths.get(URI.create(contentUriString)).getParent()));
-    } catch(IOException ex){
-      ex.printStackTrace();
-    }
-
-    if(!Files.exists(Paths.get(URI.create(contentUriString)))){
+     if(!Files.exists(Paths.get(URI.create(contentUriString)))){
       logger.error("Content at URI {} seems not to exist.", contentUriString);
       throw new ResourceNotFoundException("The provided resource was not found on the server.");
     } else{

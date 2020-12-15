@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Truncating service-assigned times to milliseconds for compatibility reasons
-- Update to service-base 0.1.3
+- Change of messaging property names including documentation
+- Update to service-base 0.2.0
+- Update to generic-message-consumer 0.2.0
 
 ### Fixed
 - Fixed wrong HATEOAS links for search endpoint

@@ -50,6 +50,10 @@ compileJava {
         apply from: 'gradle/git_checkout.gradle'
         dependsOn checkoutProject
     }
-
 }
-   
+
+release {
+    tagTemplate = 'v${version}'
+    versionPropertyFile = 'gradle.properties'
+    versionProperties = ['version', 'mainversion']
+}

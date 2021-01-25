@@ -361,7 +361,8 @@ public class ContentInformationService implements IContentInformationService{
       throw new ResourceNotFoundException("No content information for identifier " + identifier + ", path " + relativePath + " found.");
     }
     ContentInformation result = contentInformation.get();
-    if(Objects.nonNull(version)){
+    
+    if(applicationProperties.isAuditEnabled() && Objects.nonNull(version)){
       logger.trace("Obtained content information for identifier {}. Checking for shadow of version {}.", result.getId(), version);
       Optional<ContentInformation> optAuditResult = auditService.getResourceByVersion(Long.toString(result.getId()), version);
       if(optAuditResult.isPresent()){

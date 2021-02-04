@@ -141,10 +141,14 @@ public class DataResourceController implements IDataResourceController {
             LOGGER.trace("Creating controller link for resource identifier {}.", result.getId());
             //do some hacking in order to properly escape the resource identifier
             //if escaping in beforehand, WebMvcLinkBuilder will escape again, which invalidated the link
-            String uriLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", applicationProperties.isAuditEnabled() ? 1l : null, request, response)).toString();
+            String uriLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", 1l, request, response)).toString();
+
             //replace placeholder with escaped identifier in order to ensure single-escaping
             uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getId(), "UTF-8"));
-            uriLink = uriLink.substring(0, uriLink.lastIndexOf("?"));
+            int qmIndex = uriLink.lastIndexOf("?");
+            if (qmIndex > 0) {
+                uriLink = uriLink.substring(0, qmIndex);
+            }
 
             LOGGER.trace("Created resource link is: {}", uriLink);
             return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").header("Resource-Version", Long.toString(1l)).body(result);
@@ -338,10 +342,15 @@ public class DataResourceController implements IDataResourceController {
 
             URIBuilder builder = new URIBuilder(link);
             builder.setPath(builder.getPath().replace("**", path));
-            URI resourceUri = null;
+
+            String resourceUri = null;
 
             try {
-                resourceUri = builder.build();
+                resourceUri = builder.build().toString();
+                int qmIndex = resourceUri.lastIndexOf("?");
+                if (qmIndex > 0) {
+                    resourceUri = resourceUri.substring(0, qmIndex);
+                }
             } catch (URISyntaxException ex) {
                 LOGGER.error("Failed to create location URI for path " + path + ". However, resource should be created.", ex);
                 throw new CustomInternalServerError("Resource creation successful, but unable to create resource linkfor path " + path + ".");
@@ -349,9 +358,9 @@ public class DataResourceController implements IDataResourceController {
 
             long currentVersion = contentAuditService.getCurrentVersion(Long.toString(result.getId()));
             if (currentVersion > 0) {
-                return ResponseEntity.created(resourceUri).header("Resource-Version", Long.toString(currentVersion)).build();
+                return ResponseEntity.created(URI.create(resourceUri)).header("Resource-Version", Long.toString(currentVersion)).build();
             } else {
-                return ResponseEntity.created(resourceUri).build();
+                return ResponseEntity.created(URI.create(resourceUri)).build();
             }
         } catch (IOException ex) {
             LOGGER.error("Failed to open file input stream.", ex);

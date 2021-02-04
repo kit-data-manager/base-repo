@@ -141,7 +141,7 @@ public class DataResourceController implements IDataResourceController {
             LOGGER.trace("Creating controller link for resource identifier {}.", result.getId());
             //do some hacking in order to properly escape the resource identifier
             //if escaping in beforehand, WebMvcLinkBuilder will escape again, which invalidated the link
-            String uriLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", 1l, request, response)).toString();
+            String uriLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById("WorkaroundPlaceholder", applicationProperties.isAuditEnabled() ? 1l : null, request, response)).toString();
             //replace placeholder with escaped identifier in order to ensure single-escaping
             uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getId(), "UTF-8"));
             uriLink = uriLink.substring(0, uriLink.lastIndexOf("?"));
@@ -202,7 +202,7 @@ public class DataResourceController implements IDataResourceController {
         } else {
             //comming via dataresources/ ... don't add search suffix
             eventPublisher.publishEvent(new PaginatedResultsRetrievedEvent<>(DataResource.class, uriBuilder, response, page.getNumber(), page.getTotalPages(), request.getPageSize()));
-        }        
+        }
         //set content-range header for react-admin (index_start-index_end/total
         response.addHeader("Content-Range", ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
         return ResponseEntity.ok().body(filterResources(page.getContent()));
@@ -331,7 +331,7 @@ public class DataResourceController implements IDataResourceController {
 
         DataResourceUtils.performPermissionCheck(resource, PERMISSION.WRITE);
 
-        URI link = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(resource.getId(), null, 1l, null, request, response, uriBuilder)).toUri();
+        URI link = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(resource.getId(), null, applicationProperties.isAuditEnabled() ? 1l : null, null, request, response, uriBuilder)).toUri();
 
         try {
             ContentInformation result = contentInformationService.create(contentInformation, resource, path, (file != null) ? file.getInputStream() : null, force);
@@ -469,7 +469,7 @@ public class DataResourceController implements IDataResourceController {
             final UriComponentsBuilder uriBuilder) {
         String path = getContentPathFromRequest(request);
         DataResource resource = getResourceByIdentifierOrRedirect(identifier, null, (t) -> {
-            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, 1l, null, request, response, uriBuilder)).toString();
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, applicationProperties.isAuditEnabled() ? 1l : null, null, request, response, uriBuilder)).toString();
         });
         DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
         LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getId());

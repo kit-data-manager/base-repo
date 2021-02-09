@@ -700,14 +700,24 @@ public class DataResourceController implements IDataResourceController {
 
         String id = resource.getParentResource().getId();
         resource.setParentResource(DataResource.factoryNewDataResource(id));
+
+       URI locationUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(Long.toString(resource.getId()), null, Long.parseLong(resource.getFileVersion()), null, null, null, null)).toUri();
+        String sLocationUri = locationUri.toString();
+        sLocationUri = sLocationUri.replaceAll("\\*\\*", resource.getRelativePath());
+        resource.setContentUri(sLocationUri);
         return resource;
     }
 
     private List<ContentInformation> filterContentInformation(List<ContentInformation> resources) {
         //hide all attributes but the id from the parent data resource in all content information entities
         resources.forEach((resource) -> {
-            String id = resource.getParentResource().getId();
-            resource.setParentResource(DataResource.factoryNewDataResource(id));
+//            String id = resource.getParentResource().getId();
+//            resource.setParentResource(DataResource.factoryNewDataResource(id));
+//             locationUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(Long.toString(resource.getId()), null, Long.parseLong(resource.getFileVersion()), null, null, null, null)).toUri();
+//        String sLocationUri = locationUri.toString();
+//        sLocationUri = sLocationUri.replaceAll("\\*\\*", resource.getRelativePath());
+//        resource.setContentUri(sLocationUri);
+filterContentInformation(resource);
         });
         return resources;
     }

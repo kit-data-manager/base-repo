@@ -92,9 +92,9 @@ public class DataResourceController implements IDataResourceController {
   private final RepoBaseConfiguration repositoryProperties;
 
   /**
-   * 
+   *
    * @param applicationProperties
-   * @param repositoryConfig 
+   * @param repositoryConfig
    */
   public DataResourceController(ApplicationProperties applicationProperties,
           RepoBaseConfiguration repositoryConfig
@@ -130,7 +130,14 @@ public class DataResourceController implements IDataResourceController {
       String uriLink = getById.apply("WorkaroundPlaceholder");
       //replace placeholder with escaped identifier in order to ensure single-escaping
       uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getId(), "UTF-8"));
-      uriLink = uriLink.substring(0, uriLink.lastIndexOf("?"));
+      // remove version flag if version is nor supported
+      if (!applicationProperties.isAuditEnabled()) {
+        // Remove path parameter version
+        int qmIndex = uriLink.lastIndexOf("?");
+        if (qmIndex > 0) {
+          uriLink = uriLink.substring(0, qmIndex);
+        }
+      }
 
       LOGGER.trace("Created resource link is: {}", uriLink);
       return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").header(VERSION_HEADER, Long.toString(1l)).body(result);
@@ -287,15 +294,15 @@ public class DataResourceController implements IDataResourceController {
 
     if (path.endsWith("/") || path.length() == 0) {
       LOGGER.trace("Obtained {} content information result(s).", result.size());
-      return ResponseEntity.ok().body(ContentDataUtils.filterContentInformation(result));
+      return ResponseEntity.ok().body(fixContentInformation(result, version));
     } else {
       LOGGER.trace("Obtained single content information result.");
       ContentInformation contentInformation = result.get(0);
       long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
       if (currentVersion > 0) {
-        return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(ContentDataUtils.filterContentInformation(contentInformation));
+        return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
       } else {
-        return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(ContentDataUtils.filterContentInformation(contentInformation));
+        return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(fixContentInformation(contentInformation, version));
       }
     }
   }
@@ -312,7 +319,7 @@ public class DataResourceController implements IDataResourceController {
             AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()), pgbl);
 
     response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
-    return ResponseEntity.ok().body(ContentDataUtils.filterContentInformation(page.getContent()));
+    return ResponseEntity.ok().body(fixContentInformation(page.getContent(), null));
   }
 
   @Override
@@ -433,5 +440,35 @@ public class DataResourceController implements IDataResourceController {
     long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
 
     return ResponseEntity.ok().header(VERSION_HEADER, Long.toString(currentVersion)).body(auditInformation.get());
+  }
+
+  public ContentInformation fixContentInformation(ContentInformation resource, Long version) {
+    //hide all attributes but the id from the parent data resource in the content information entity
+    String id = resource.getParentResource().getId();
+    resource.setParentResource(DataResource.factoryNewDataResource(id));
+    // fix content URI if URI points to a local file
+    if (resource.getContentUri() != null && resource.getContentUri().startsWith("file://")) {
+      Long fileVersion = version != null ? version : 1l;
+      String contentUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(id, null, fileVersion, null, null, null, null)).toString();
+      contentUri = contentUri.replaceAll("\\*\\*", resource.getRelativePath());
+      if ((version == null) || (!applicationProperties.isAuditEnabled())) {
+        // Remove path parameter version
+        int qmIndex = contentUri.lastIndexOf("?");
+        if (qmIndex > 0) {
+          contentUri = contentUri.substring(0, qmIndex);
+
+        }
+      }
+      resource.setContentUri(contentUri);
+    }
+    return resource;
+  }
+
+  public List<ContentInformation> fixContentInformation(List<ContentInformation> resources, Long version) {
+    //hide all attributes but the id from the parent data resource in all content information entities
+    resources.forEach((resource) -> {
+      fixContentInformation(resource, version);
+    });
+    return resources;
   }
 }

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
+import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
@@ -47,7 +48,9 @@ import edu.kit.datamanager.repo.domain.Subject;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
+import edu.kit.datamanager.repo.service.impl.ContentInformationAuditService;
 import edu.kit.datamanager.repo.service.impl.DataResourceService;
+import edu.kit.datamanager.repo.service.impl.NoneDataVersioningService;
 import edu.kit.datamanager.service.IAuditService;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,6 +82,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithSecurityContextTestExecutionListener;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
 import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
@@ -111,7 +115,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
   TransactionalTestExecutionListener.class,
   WithSecurityContextTestExecutionListener.class})
 @ActiveProfiles("test")
-public class DataResourceControllerTest{
+@TestPropertySource(properties = {"repo.readonly=true"})
+public class DataResourceControllerTestReadOnly{
 
   @Autowired
   private MockMvc mockMvc;
@@ -127,10 +132,13 @@ public class DataResourceControllerTest{
   @Autowired
   private IAllIdentifiersDao allIdentifiersDao;
 
+  @Autowired
+  private RepoBaseConfiguration repositoryConfig;
+
   private IAuditService<ContentInformation> contentInformationAuditService;
 
   @Autowired
-  private RepoBaseConfiguration repositoryConfig;
+  private ApplicationProperties applicationProperties;
 
   private String adminToken;
   private String userToken;
@@ -224,7 +232,6 @@ public class DataResourceControllerTest{
 
     otherResource = dataResourceDao.save(otherResource);
     ((DataResourceService)dataResourceService).saveIdentifiers(otherResource);
-    
 
     revokedResource = DataResource.factoryNewDataResource("revokedResource");
     revokedResource.getDescriptions().add(Description.factoryDescription("This is a description", Description.TYPE.OTHER, "en"));
@@ -370,13 +377,13 @@ public class DataResourceControllerTest{
     int resourcesBeforeWithoutRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), false).getNumberOfElements();
 
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isServiceUnavailable());
 
     int resourcesAfterWithRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), true).getNumberOfElements();
     int resourcesAfterWithoutRevoked = dataResourceService.findAll(example, PageRequest.of(0, 10), false).getNumberOfElements();
 
     Assert.assertEquals(resourcesBeforeWithRevoked, resourcesBeforeWithoutRevoked);
-    Assert.assertNotEquals(resourcesAfterWithRevoked, resourcesAfterWithoutRevoked);
+    Assert.assertEquals(resourcesAfterWithRevoked, resourcesAfterWithoutRevoked);
   }
 
   @Test
@@ -388,7 +395,7 @@ public class DataResourceControllerTest{
     int resourcesBeforeWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
 
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isServiceUnavailable());
 
     int resourcesAfterWithRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), true).getNumberOfElements();
     int resourcesAfterWithoutRevoked = dataResourceService.findAll(null, PageRequest.of(0, 10), false).getNumberOfElements();
@@ -397,7 +404,7 @@ public class DataResourceControllerTest{
     Assert.assertEquals(2, resourcesBeforeWithoutRevoked);
 
     Assert.assertEquals(4, resourcesAfterWithRevoked);
-    Assert.assertEquals(1, resourcesAfterWithoutRevoked);
+    Assert.assertEquals(2, resourcesAfterWithoutRevoked);
   }
 
   /**
@@ -462,39 +469,9 @@ public class DataResourceControllerTest{
     resource.setResourceType(ResourceType.createResourceType("autogenerated", ResourceType.TYPE_GENERAL.DATASET));
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Created Resource"));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
-  @Test
-  public void testCreateResourceTwiceWithSameId() throws Exception{
-    DataResource resource = new DataResource();
-    resource.getTitles().add(Title.factoryTitle("Created Resource", Title.TYPE.OTHER));
-    resource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"KIT"}));
-    resource.setResourceType(ResourceType.createResourceType("autogenerated", ResourceType.TYPE_GENERAL.DATASET));
-    ObjectMapper mapper = createObjectMapper();
-
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Created Resource"));
-    String contentAsString = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-    DataResource result = mapper.readValue(contentAsString, DataResource.class);
-      this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(result))).andExpect(status().isConflict());
-}
 
   @Test
   public void testCreateResourceWithAlternateIdentifier() throws Exception{
@@ -504,15 +481,8 @@ public class DataResourceControllerTest{
     resource.setResourceType(ResourceType.createResourceType("autogenerated"));
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers[0].value").value("test123"));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -524,7 +494,7 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = createObjectMapper();
 
     this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isBadRequest());
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -535,15 +505,8 @@ public class DataResourceControllerTest{
     resource.setResourceType(ResourceType.createResourceType("autogenerated"));
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-    //resource should have two identifiers: One of type OTHER and one INTERNAL
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers", Matchers.hasSize(2)));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -554,14 +517,8 @@ public class DataResourceControllerTest{
     resource.setResourceType(ResourceType.createResourceType("autogenerated"));
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.identifier.value").value("12.123/123"));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -569,7 +526,7 @@ public class DataResourceControllerTest{
     DataResource resource = new DataResource();
     ObjectMapper mapper = createObjectMapper();
 
-    this.mockMvc.perform(post("/api/v1/dataresources/").contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isUnauthorized());
+    this.mockMvc.perform(post("/api/v1/dataresources/").contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -581,7 +538,7 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = createObjectMapper();
 
     this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isConflict());
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
 
   }
 
@@ -592,7 +549,7 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = createObjectMapper();
 
     this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isBadRequest());
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -602,7 +559,7 @@ public class DataResourceControllerTest{
     ObjectMapper mapper = createObjectMapper();
 
     this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isBadRequest());
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -616,15 +573,8 @@ public class DataResourceControllerTest{
 
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publisher").value("me")).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("2018"));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -639,15 +589,8 @@ public class DataResourceControllerTest{
 
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.dates", Matchers.hasSize(1)));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -662,15 +605,8 @@ public class DataResourceControllerTest{
 
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.dates", Matchers.hasSize(2)));
+   this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -682,15 +618,8 @@ public class DataResourceControllerTest{
 
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.acls", Matchers.hasSize(1)));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -702,16 +631,8 @@ public class DataResourceControllerTest{
 
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    //As 'user' is the caller, the final permission should be ADMINISTRATE and not WRITE as provided
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.acls", Matchers.hasSize(1))).andExpect(MockMvcResultMatchers.jsonPath("$.acls[0].permission").value(PERMISSION.ADMINISTRATE.name()));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -723,16 +644,8 @@ public class DataResourceControllerTest{
 
     ObjectMapper mapper = createObjectMapper();
 
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    //As 'user' is the caller, the final permission should be ADMINISTRATE and not WRITE as provided
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.acls", Matchers.hasSize(2)));
+    this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isServiceUnavailable());
   }
 
   /**
@@ -746,7 +659,7 @@ public class DataResourceControllerTest{
   @Test
   public void testDeleteResourceAnonymous() throws Exception{
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId())
-            .header("If-Match", "anyEtag").contentType("application/json")).andExpect(status().isUnauthorized());
+            .header("If-Match", "anyEtag").contentType("application/json")).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -758,7 +671,7 @@ public class DataResourceControllerTest{
   @Test
   public void testDeleteInvalidResource() throws Exception{
     this.mockMvc.perform(delete("/api/v1/dataresources/0").header("If-Match", "anyEtag").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json")).andExpect(status().isNoContent());
+            "Bearer " + userToken).contentType("application/json")).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -767,7 +680,7 @@ public class DataResourceControllerTest{
             "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).contentType("application/json")).andExpect(status().isForbidden());
+            "Bearer " + otherUserToken).contentType("application/json")).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -776,24 +689,24 @@ public class DataResourceControllerTest{
             "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isServiceUnavailable());
 
     //try a second time...this should work
     etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isServiceUnavailable());
     //from now on, the resource should be in state GONE...HTTP GET should fail
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk());
 
   }
 
   @Test
   public void testDeleteResourceAsAdminWithWrongEtag() throws Exception{
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", "0").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isPreconditionFailed());
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -802,7 +715,7 @@ public class DataResourceControllerTest{
             "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
+            "Bearer " + adminToken).contentType("application/json")).andExpect(status().isServiceUnavailable());
 
     dataResourceDao.delete(sampleResource);
 
@@ -815,7 +728,6 @@ public class DataResourceControllerTest{
   /**
    * PATCH TESTS*
    */
-  @Test
   public void testPatchResourceAnonymousWithoutEtag() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isPreconditionRequired());
@@ -825,7 +737,7 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
-    this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isUnauthorized());
+    this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -841,7 +753,7 @@ public class DataResourceControllerTest{
      String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
    this.mockMvc.perform(patch("/api/v1/dataresources/0").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + adminToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -851,7 +763,7 @@ public class DataResourceControllerTest{
             "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -859,7 +771,7 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + revokedResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", "\"" + revokedResource.getEtag() + "\"").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + userToken).header("If-Match", "\"" + revokedResource.getEtag() + "\"").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -869,7 +781,7 @@ public class DataResourceControllerTest{
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + fixedResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -883,7 +795,7 @@ public class DataResourceControllerTest{
   public void testPatchResourceWithInvalidETag() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + revokedResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header("If-Match", "0").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isPreconditionFailed());
+            "Bearer " + adminToken).header("If-Match", "0").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -893,10 +805,10 @@ public class DataResourceControllerTest{
 
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"2017\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + adminToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("2017"));
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("2018"));
 
   }
 
@@ -907,10 +819,10 @@ public class DataResourceControllerTest{
 
     String patch = "[{\"op\": \"add\",\"path\": \"/alternateIdentifiers/1\",\"value\": {\"identifierType\":\"OTHER\", \"value\":\"another-identifier\"}}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers", Matchers.hasSize(2)));
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers", Matchers.hasSize(1)));
   }
 
   @Test
@@ -921,17 +833,17 @@ public class DataResourceControllerTest{
 
     String patch = "[{\"op\": \"add\",\"path\": \"/alternateIdentifiers/1\",\"value\": {\"identifierType\":\"OTHER\", \"value\":\"will-be-duplicated\"}}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(content().string(Matchers.containsString("will-be-duplicated")));
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(content().string(Matchers.containsString("otherResource")));
 
     //now change to sample resource and try to add identifier, too
     etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isConflict());
+            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
 
   }
 
@@ -942,10 +854,10 @@ public class DataResourceControllerTest{
 
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"2017\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("2017"));
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("2018"));
   }
 
   @Test
@@ -955,7 +867,7 @@ public class DataResourceControllerTest{
 
     String patch = "[{\"op\": \"replace\",\"path\": \"/id\",\"value\": \"0\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -965,7 +877,7 @@ public class DataResourceControllerTest{
 
     String patch = "[{\"op\": \"replace\",\"path\": \"/invalid\",\"value\": \"0\"}]";
     this.mockMvc.perform(patch("/api/v1/dataresources/" + otherResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isUnprocessableEntity());
+            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   /**
@@ -973,18 +885,8 @@ public class DataResourceControllerTest{
    */
   @Test
   public void testPutResourceAsAdmin() throws Exception{
-    MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk()).andReturn().getResponse();
-
-    String etag = response.getHeader("ETag");
-    String resourceString = response.getContentAsString();
-
-    ObjectMapper mapper = createObjectMapper();
-    DataResource resource = mapper.readValue(resourceString, DataResource.class);
-
-    resource.setPublisher("OtherPub");
-    this.mockMvc.perform(put("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publisher").value("OtherPub"));
+    this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk());
   }
 
   @Test
@@ -999,7 +901,7 @@ public class DataResourceControllerTest{
     DataResource resource = mapper.readValue(resourceString, DataResource.class);
 
     resource.setPublisher("Anonymous");
-    this.mockMvc.perform(put("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isUnauthorized());
+    this.mockMvc.perform(put("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1015,7 +917,7 @@ public class DataResourceControllerTest{
 
     resource.setPublisher("Guest");
     this.mockMvc.perform(put("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + guestToken).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + guestToken).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resource))).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1042,25 +944,8 @@ public class DataResourceControllerTest{
     MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
-    this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.relativePath").value("bibtex.txt"));
-  }
-
-  /**
-   * Upload tests
-   */
-  @Test
-  public void testUploadFileWithDataInPath() throws Exception{
-    Path temp = Files.createTempFile("testUploadFile", "test");
-    MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
-
-    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/test/data/bibtex.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
-
-    this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/test/data/bibtex.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.relativePath").value("test/data/bibtex.txt"));
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
   }
@@ -1071,14 +956,14 @@ public class DataResourceControllerTest{
     MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + otherUserToken)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
   public void testUploadFileAnonymous() throws Exception{
     Path temp = Files.createTempFile("testUploadFileAnonymous", "test");
     MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
-    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp)).andDo(print()).andExpect(status().isUnauthorized());
+    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1095,15 +980,11 @@ public class DataResourceControllerTest{
     Path temp = Files.createTempFile("testUploadExistingWithoutForce", "test");
     MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex1.txt", "multipart/form-data", Files.newInputStream(temp));
 
-    MockHttpServletResponse responseV1 = this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex1.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated()).andReturn().getResponse();
+    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex1.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
-    MockHttpServletResponse responseV2 = this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex1.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated()).andReturn().getResponse();
-    // As the content not changed the locationUrl should be the same.
-    Assert.assertEquals("1", responseV1.getHeader("Resource-Version"));
-    Assert.assertEquals("2", responseV2.getHeader("Resource-Version"));
-    Assert.assertEquals(responseV1.getHeader("Location"), responseV2.getHeader("Location"));
+    this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex1.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1112,10 +993,10 @@ public class DataResourceControllerTest{
     MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex2.txt", "multipart/form-data", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex2.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex2.txt").file(fstmp).param("force", Boolean.TRUE.toString()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1132,19 +1013,19 @@ public class DataResourceControllerTest{
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.metadata['test']").value("ok"));
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
 
     metadata.put("test", "changed");
     secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").file(fstmp).file(secmp).param("force", Boolean.TRUE.toString()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.metadata['test']").value("changed"));
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
   }
 
   @Test
@@ -1156,13 +1037,13 @@ public class DataResourceControllerTest{
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/google.de").file(secmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/google.de").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.contentUri").value("http://www.google.de"));
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/google.de").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isSeeOther()).andExpect(header().string("Location", equalTo("http://www.google.de")));
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isNotFound());
   }
 
   @Test
@@ -1174,13 +1055,13 @@ public class DataResourceControllerTest{
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/file.txt").file(secmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.contentUri").value("myProto://file.txt"));
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isNoContent()).andExpect(header().string("Content-Location", equalTo("myProto://file.txt")));
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isNotFound());
   }
 
   /**
@@ -1200,7 +1081,7 @@ public class DataResourceControllerTest{
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex4.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     cinfo = new ContentInformation();
 
@@ -1208,15 +1089,14 @@ public class DataResourceControllerTest{
     secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex5.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     //get by tag ... should return one element
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").param("tag", "testing").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).
             andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).
-            andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1))).
-            andExpect(MockMvcResultMatchers.jsonPath("$[0].tags[0]").value("testing"));
+            andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
 
     //get by unknown tag...should return all elements (result set size should not be 1)
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").param("tag", "other").header(HttpHeaders.AUTHORIZATION,
@@ -1243,7 +1123,7 @@ public class DataResourceControllerTest{
     MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex3.txt").file(fstmp).file(secmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     MvcResult res = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andReturn();
@@ -1258,7 +1138,7 @@ public class DataResourceControllerTest{
     example.setMediaType("text/plain");
     //expect one result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
 
     //get all content with type application/json
     example.setMediaType("application/json");
@@ -1271,7 +1151,7 @@ public class DataResourceControllerTest{
     example.setRelativePath("%.txt");
     //expect one result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
    
     
     //XXXXX
@@ -1282,7 +1162,7 @@ public class DataResourceControllerTest{
 
     //expect one result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
 
     //XXXXXX
     
@@ -1293,7 +1173,7 @@ public class DataResourceControllerTest{
     example.setMetadata(metadata);
     //expect one result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
 
     //test search by metadata with key and value
     metadata.clear();
@@ -1301,7 +1181,7 @@ public class DataResourceControllerTest{
     example.setMetadata(metadata);
     //expect one result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
 
     //test search by metadata only with wrong key
     metadata.clear();
@@ -1337,15 +1217,14 @@ public class DataResourceControllerTest{
     MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex5.txt", "application/json", Files.newInputStream(temp));
 
     this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex5.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+            "Bearer " + userToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     //CHECK THIS
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data//").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).
             andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$").isArray()).
-            andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1))).
-            andExpect(MockMvcResultMatchers.jsonPath("$[0].relativePath").value("bibtex5.txt"));
+            andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
   }
 
   /**
@@ -1474,10 +1353,10 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").param("tag", "success").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$[0].relativePath").value("validFile"));
+            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk());
   }
 
   @Test
@@ -1499,7 +1378,7 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"replace\",\"path\": \"/depth\",\"value\": \"132\"}]";
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1521,7 +1400,7 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isForbidden());
+            "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1529,7 +1408,7 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
 
     this.mockMvc.perform(patch("/api/v1/dataresources/0/data/validFile").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", "\"123456\"").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + userToken).header("If-Match", "\"123456\"").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1539,7 +1418,7 @@ public class DataResourceControllerTest{
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/notExist").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1558,7 +1437,7 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", "\"0\"").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isPreconditionFailed());
+            "Bearer " + userToken).header("If-Match", "\"0\"").contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1580,10 +1459,10 @@ public class DataResourceControllerTest{
     String patch = "[{\"op\": \"replace\",\"path\": \"/size\",\"value\": \"4711\"}]";
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + adminToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.size").value("4711"));
+            "Bearer " + adminToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.size").value("0"));
   }
 
   @Test
@@ -1604,7 +1483,7 @@ public class DataResourceControllerTest{
 
     String patch = "[{\"op\": \"replace\",\"path\": \"/size\",\"value\": \"4711\"}]";
 
-    this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isUnauthorized());
+    this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1629,25 +1508,25 @@ public class DataResourceControllerTest{
 
     //try with invalid etag
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header("If-Match", "0").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isPreconditionFailed());
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + adminToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk());
   }
 
   @Test
   public void testDeleteContentFromInvalidResource() throws Exception{
     this.mockMvc.perform(delete("/api/v1/dataresources/0/data/notExist").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header("If-Match", "0000")).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + adminToken).header("If-Match", "0000")).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
   public void testDeleteInvalidContent() throws Exception{
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId() + "/data/notExist").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken).header("If-Match", "\"" + sampleResource.getEtag() + "\"")).andDo(print()).andExpect(status().isNoContent());
+            "Bearer " + adminToken).header("If-Match", "\"" + sampleResource.getEtag() + "\"")).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
   @Test
@@ -1669,7 +1548,7 @@ public class DataResourceControllerTest{
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk());
 
-    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header("If-Match", etag)).andDo(print()).andExpect(status().isUnauthorized());
+    this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header("If-Match", etag)).andDo(print()).andExpect(status().isServiceUnavailable());
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/validFile").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk());
@@ -1682,116 +1561,4 @@ public class DataResourceControllerTest{
             .modules(new JavaTimeModule())
             .build();
   }
-
-  /**
-   * VERSIONING TESTS**
-   */
-  @Test
-  public void testCreateAndGetResourceWithVersion() throws Exception{
-    DataResource resource = new DataResource();
-    resource.setPublicationYear("2019");
-    resource.getTitles().add(Title.factoryTitle("Versioned Resource", Title.TYPE.OTHER));
-    resource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"KIT"}));
-    resource.setResourceType(ResourceType.createResourceType("autogenerated", ResourceType.TYPE_GENERAL.DATASET));
-    ObjectMapper mapper = createObjectMapper();
-
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "1").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Versioned Resource")).andReturn().getResponse().getHeader("ETag");
-
-    //patch resource
-    String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1999\"}]";
-    this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
-
-    //check current version of resource...publicationYear should be 1999
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("1999"));
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "2").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("1999"));
-
-    //check first version of resource...publicationYear should be 2019
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "1").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("2019"));
-
-    //check non existing version
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "3").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isNotFound());
-
-    //get version information
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.header().exists("Resource-Version")).andExpect(MockMvcResultMatchers.header().string("Resource-Version", "2"));
-  }
-
-  @Test
-  public void testCreateGetDeleteOfContentWithVersion() throws Exception{
-    DataResource resource = new DataResource();
-    resource.setPublicationYear("2019");
-    resource.getTitles().add(Title.factoryTitle("Versioned Resource", Title.TYPE.OTHER));
-    resource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"KIT"}));
-    resource.setResourceType(ResourceType.createResourceType("autogenerated", ResourceType.TYPE_GENERAL.DATASET));
-    ObjectMapper mapper = createObjectMapper();
-
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
-
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-
-    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "1").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Versioned Resource")).andReturn().getResponse().getHeader("ETag");
-
-    //upload a file
-    Path temp = Files.createTempFile("testUploadFile", "test");
-    MockMultipartFile fstmp = new MockMultipartFile("file", "file.txt", "multipart/form-data", Files.newInputStream(temp));
-
-    this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/file.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
-
-    String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
-
-    this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent());
-
-    //get patched content in different versions
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "2").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.tags[0]").value("success"));
-    //current version should be patched one
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.tags[0]").value("success"));
-
-    //get patched element from first version and expect no result
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "1").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.tags").isEmpty());
-
-    //get invalid version
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "666").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
-
-    //get version information for collection (should fail)
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isBadRequest());
-
-    //get version information
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.header().exists("Resource-Version")).andExpect(MockMvcResultMatchers.header().string("Resource-Version", "2"));
-
-    //delete content
-    this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header("If-Match", etag).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNoContent());
-
-    //get versions will fail
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "2").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "1").header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
-  }
-
-//  @Test
-//  public void testObtainHealthInformation() throws Exception{
-//    this.mockMvc.perform(get("/actuator/health")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.status").value("UP"));
-//  }
 }

@@ -62,30 +62,35 @@ if (project.hasProperty('travis')) {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-data-rest")
-
-    implementation("edu.kit.datamanager:service-base:0.2.0")
-    implementation("edu.kit.datamanager:generic-message-consumer:0.2.0")
-    api("org.springdoc:springdoc-openapi-data-rest:1.2.31")
-    implementation("org.springframework.cloud:spring-cloud-dependencies:Greenwich.SR3")
-    implementation("org.springframework.cloud:spring-cloud-starter:2.2.3.RELEASE")
-    
-    implementation("org.apache.commons:commons-text:1.8")
-    implementation("commons-configuration:commons-configuration:1.10")
-
-    implementation("com.monitorjbl:spring-json-view:1.0.1")
-    implementation("org.postgresql:postgresql:42.2.1")
-    implementation("com.h2database:h2:1.4.194")
-    implementation("org.apache.tika:tika-core:1.18") 
-    implementation ("org.javers:javers-core:5.8.7")
-
-    implementation("de.codecentric:spring-boot-admin-starter-client:2.1.6")
-    //Java 11 Support 
-    implementation 'javax.xml.bind:jaxb-api:2.3.1'
-    implementation 'com.sun.xml.bind:jaxb-core:2.3.0.1'
-    implementation 'com.sun.xml.bind:jaxb-impl:2.3.0.1'
-    implementation('javax.activation:activation:1.1.1')
-    implementation('org.javassist:javassist:3.23.1-GA')
+    api("org.springframework.boot:spring-boot-starter-test")
+    api('org.springframework.restdocs:spring-restdocs-mockmvc:2.0.4.RELEASE')
+    api("org.springframework:spring-test")
+    api("org.springframework.security:spring-security-test")
+    api("edu.kit.datamanager:repo-core:0.9.0-SNAPSHOT")
+//    implementation("org.springframework.boot:spring-boot-starter-data-rest")
+//
+//    implementation("edu.kit.datamanager:service-base:0.2.0")
+//    implementation("edu.kit.datamanager:generic-message-consumer:0.2.0")
+//    api("org.springdoc:springdoc-openapi-data-rest:1.2.31")
+//    implementation("org.springframework.cloud:spring-cloud-dependencies:Greenwich.SR3")
+//    implementation("org.springframework.cloud:spring-cloud-starter:2.2.3.RELEASE")
+//    
+//    implementation("org.apache.commons:commons-text:1.8")
+//    implementation("commons-configuration:commons-configuration:1.10")
+//
+//    implementation("com.monitorjbl:spring-json-view:1.0.1")
+//    implementation("org.postgresql:postgresql:42.2.1")
+//    implementation("com.h2database:h2:1.4.194")
+//    implementation("org.apache.tika:tika-core:1.18") 
+//    implementation ("org.javers:javers-core:5.8.7")
+//
+//    implementation("de.codecentric:spring-boot-admin-starter-client:2.1.6")
+//    //Java 11 Support 
+//    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+//    implementation 'com.sun.xml.bind:jaxb-core:2.3.0.1'
+//    implementation 'com.sun.xml.bind:jaxb-impl:2.3.0.1'
+//    implementation('javax.activation:activation:1.1.1')
+//    implementation('org.javassist:javassist:3.23.1-GA')
     
     compile('javax.xml.bind:jaxb-api:2.3.0')
 

@@ -68,7 +68,7 @@ import org.springframework.web.context.WebApplicationContext;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("doc")
-public class DataResourceControllerDocumentationTest{
+public class DataResourceControllerDocumentationTest {
 
   private MockMvc mockMvc;
   @Autowired
@@ -83,7 +83,7 @@ public class DataResourceControllerDocumentationTest{
   public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
-  public void setUp() throws JsonProcessingException{
+  public void setUp() throws JsonProcessingException {
     this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
             .addFilters(springSecurityFilterChain)
             .apply(documentationConfiguration(this.restDocumentation))
@@ -91,7 +91,7 @@ public class DataResourceControllerDocumentationTest{
   }
 
   @Test
-  public void documentBasicAccess() throws Exception{
+  public void documentBasicAccess() throws Exception {
     DataResource resource = new DataResource();
     resource.getTitles().add(Title.factoryTitle("Most basic resource for testing", Title.TYPE.OTHER));
     resource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"Karlsruhe Institute of Technology"}));
@@ -109,6 +109,8 @@ public class DataResourceControllerDocumentationTest{
 
     //extract resourceId from response header and use it to issue a GET to obtain the current ETag
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0, resourceId.indexOf("?"));
+
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse().getHeader("ETag");
 
     //apply a simple patch to the resource
@@ -147,7 +149,7 @@ public class DataResourceControllerDocumentationTest{
     //upload random data file
     Path temp = Files.createTempFile("randomFile", "test");
 
-    try(FileWriter w = new FileWriter(temp.toFile())){
+    try (FileWriter w = new FileWriter(temp.toFile())) {
       w.write(RandomStringUtils.randomAlphanumeric(64));
       w.flush();
     }

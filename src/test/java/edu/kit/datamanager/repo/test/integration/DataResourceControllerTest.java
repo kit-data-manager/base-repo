@@ -468,6 +468,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Created Resource"));
@@ -486,6 +487,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Created Resource"));
@@ -510,6 +512,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers[0].value").value("test123"));
@@ -541,6 +544,8 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
+
     //resource should have two identifiers: One of type OTHER and one INTERNAL
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.alternateIdentifiers", Matchers.hasSize(2)));
@@ -560,6 +565,8 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
+
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.identifier.value").value("12.123/123"));
   }
@@ -622,6 +629,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.publisher").value("me")).andExpect(MockMvcResultMatchers.jsonPath("$.publicationYear").value("2018"));
@@ -645,6 +653,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.dates", Matchers.hasSize(1)));
@@ -668,6 +677,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.dates", Matchers.hasSize(2)));
@@ -688,6 +698,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.acls", Matchers.hasSize(1)));
@@ -708,6 +719,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     //As 'user' is the caller, the final permission should be ADMINISTRATE and not WRITE as provided
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
@@ -729,6 +741,7 @@ public class DataResourceControllerTest{
     Assert.assertNotNull(location);
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     //As 'user' is the caller, the final permission should be ADMINISTRATE and not WRITE as provided
     this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.AUTHORIZATION,
@@ -1699,6 +1712,7 @@ public class DataResourceControllerTest{
             "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "1").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Versioned Resource")).andReturn().getResponse().getHeader("ETag");
@@ -1740,6 +1754,7 @@ public class DataResourceControllerTest{
             "Bearer " + userToken).contentType("application/json").content(mapper.writeValueAsString(resource))).andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
 
     String resourceId = location.substring(location.lastIndexOf("/") + 1);
+    resourceId = resourceId.substring(0,resourceId.indexOf("?"));
 
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "1").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Versioned Resource")).andReturn().getResponse().getHeader("ETag");

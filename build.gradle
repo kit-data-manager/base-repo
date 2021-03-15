@@ -53,6 +53,8 @@ lombok {
     sha256 = ""
 }
 
+println "Building ${name} version: ${version}"
+
 if (project.hasProperty('travis')) {
     println 'Using travis profile for building ' + project.getName()
     apply from: 'gradle/profile-travis.gradle'

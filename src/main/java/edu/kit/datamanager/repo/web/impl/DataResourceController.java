@@ -33,11 +33,6 @@ import org.springframework.web.context.request.WebRequest;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
-import edu.kit.datamanager.repo.service.IDataResourceService;
-import edu.kit.datamanager.repo.service.IRepoStorageService;
-import edu.kit.datamanager.repo.service.IRepoVersioningService;
-import edu.kit.datamanager.repo.service.impl.ContentInformationAuditService;
-import edu.kit.datamanager.repo.service.impl.DataResourceAuditService;
 import edu.kit.datamanager.repo.util.ContentDataUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.repo.web.IDataResourceController;
@@ -54,11 +49,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.http.client.utils.URIBuilder;
-import org.javers.core.Javers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
@@ -118,6 +111,7 @@ public class DataResourceController implements IDataResourceController {
           final WebRequest request,
           final HttpServletResponse response) {
 
+    LOGGER.trace("Creating resource with record '{}'.", resource);
     Function<String, String> getById;
     getById = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
@@ -152,6 +146,7 @@ public class DataResourceController implements IDataResourceController {
           @RequestParam(name = "version", required = false) final Long version,
           final WebRequest request,
           final HttpServletResponse response) {
+    LOGGER.trace("Get resource by id '{}' and version '{}'.", identifier, version);
     Function<String, String> getById;
     getById = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
@@ -177,6 +172,7 @@ public class DataResourceController implements IDataResourceController {
           final WebRequest req,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder) {
+    LOGGER.trace("Find resource by example '{}' from '{}' until '{}'", example, lastUpdateFrom, lastUpdateUntil);
     Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, example, lastUpdateFrom, lastUpdateUntil, pgbl, response, uriBuilder);
     //set content-range header for react-admin (index_start-index_end/total
     PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
@@ -190,6 +186,7 @@ public class DataResourceController implements IDataResourceController {
           @RequestBody final JsonPatch patch,
           final WebRequest request,
           final HttpServletResponse response) {
+    LOGGER.trace("Patch resource with id '{}': Patch '{}'", identifier, patch);
     Function<String, String> patchDataResource = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).patch(t, patch, request, response)).toString();
     };
@@ -211,6 +208,7 @@ public class DataResourceController implements IDataResourceController {
           @RequestBody final DataResource newResource,
           final WebRequest request,
           final HttpServletResponse response) {
+    LOGGER.trace("Update resource with id '{}': new resource: '{}'", identifier, newResource);
     Function<String, String> putWithId;
     putWithId = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
@@ -231,6 +229,7 @@ public class DataResourceController implements IDataResourceController {
   public ResponseEntity delete(@PathVariable("id") final String identifier,
           final WebRequest request,
           final HttpServletResponse response) {
+    LOGGER.trace("Delete resource with id '{}'", identifier);
     Function<String, String> getById;
     getById = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
@@ -247,6 +246,7 @@ public class DataResourceController implements IDataResourceController {
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder) {
+    LOGGER.trace("Create content for resource with id '{}'. Force: '{}'", identifier, force);
     Function<String, String> createContent = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).createContent(t, file, contentInformation, force, request, response, uriBuilder)).toString();
     };
@@ -283,7 +283,8 @@ public class DataResourceController implements IDataResourceController {
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder) {
-    Function<String, String> getContentMetadata = (t) -> {
+     LOGGER.trace("Get content metadata for resource with id '{}' and version '{}'", identifier, version);
+   Function<String, String> getContentMetadata = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, tag, version, pgbl, request, response, uriBuilder)).toString();
     };
     //check resource and permission
@@ -348,7 +349,9 @@ public class DataResourceController implements IDataResourceController {
           final WebRequest request,
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder) {
+     LOGGER.trace("Get content for resource with id '{}' and version '{}'", identifier, version);
     String path = ContentDataUtils.getContentPathFromRequest(request);
+     LOGGER.trace("Path: '{}'", path);
     String acceptHeader = request.getHeader(HttpHeaders.ACCEPT);
     DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, identifier, null, (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, 1l, null, request, response, uriBuilder)).toString();

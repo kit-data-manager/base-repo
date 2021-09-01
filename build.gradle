@@ -10,7 +10,7 @@ buildscript {
     }
   }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.2.2.RELEASE")
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:2.2.2.RELEASE"
         classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2'
         classpath 'net.researchgate:gradle-release:2.6.0'
     }
@@ -25,16 +25,14 @@ plugins {
 }
 
 apply plugin: 'java'
-apply plugin: 'java-library'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
-apply plugin: 'maven'
 apply plugin: 'jacoco'
 
 
 jar {
-    baseName = 'base-repo'
-    version = System.getenv('version')
+    archiveBaseName = 'base-repo'
+    archiveVersion = System.getenv('version')
 }
 
 repositories {
@@ -87,7 +85,7 @@ dependencies {
     implementation "org.springframework.cloud:spring-cloud-starter-config:3.0.4"
     implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.0.3"
 
-    implementation 'com.github.fge:json-patch:1.9'
+    implementation "com.github.fge:json-patch:1.9"
 
     
     
@@ -100,48 +98,48 @@ dependencies {
     implementation "edu.kit.datamanager:service-base:0.3.0-SNAPSHOT"
 
     implementation "org.javers:javers-core:${javersVersion}"
-//    implementation("org.springframework.boot:spring-boot-starter-data-rest")
+//    implementation "org.springframework.boot:spring-boot-starter-data-rest"
 //
-//    implementation("edu.kit.datamanager:service-base:0.2.0")
-//    implementation("edu.kit.datamanager:generic-message-consumer:0.2.0")
-//    api("org.springdoc:springdoc-openapi-data-rest:1.2.31")
-//    implementation("org.springframework.cloud:spring-cloud-dependencies:Greenwich.SR3")
-//    implementation("org.springframework.cloud:spring-cloud-starter:2.2.3.RELEASE")
+//    implementation "edu.kit.datamanager:service-base:0.2.0"
+//    implementation "edu.kit.datamanager:generic-message-consumer:0.2.0"
+//    api "org.springdoc:springdoc-openapi-data-rest:1.2.31"
+//    implementation "org.springframework.cloud:spring-cloud-dependencies:Greenwich.SR3"
+//    implementation "org.springframework.cloud:spring-cloud-starter:2.2.3.RELEASE"
 //    
-//    implementation("org.apache.commons:commons-text:1.8")
-//    implementation("commons-configuration:commons-configuration:1.10")
+//    implementation "org.apache.commons:commons-text:1.8"
+//    implementation "commons-configuration:commons-configuration:1.10"
 //
-//    implementation("com.monitorjbl:spring-json-view:1.0.1")
-//    implementation("org.postgresql:postgresql:42.2.1")
-//    implementation("com.h2database:h2:1.4.194")
-//    implementation("org.apache.tika:tika-core:1.18") 
-//    implementation ("org.javers:javers-core:5.8.7")
+//    implementation "com.monitorjbl:spring-json-view:1.0.1"
+//    implementation "org.postgresql:postgresql:42.2.1"
+//    implementation "com.h2database:h2:1.4.194"
+//    implementation "org.apache.tika:tika-core:1.18" 
+//    implementation  "org.javers:javers-core:5.8.7"
 //
-//    implementation("de.codecentric:spring-boot-admin-starter-client:2.1.6")
+//    implementation "de.codecentric:spring-boot-admin-starter-client:2.1.6"
 //    //Java 11 Support 
 //    implementation 'javax.xml.bind:jaxb-api:2.3.1'
 //    implementation 'com.sun.xml.bind:jaxb-core:2.3.0.1'
 //    implementation 'com.sun.xml.bind:jaxb-impl:2.3.0.1'
-//    implementation('javax.activation:activation:1.1.1')
-//    implementation('org.javassist:javassist:3.23.1-GA')
+//    implementation "javax.activation:activation:1.1.1"
+//    implementation "org.javassist:javassist:3.23.1-GA"
     
-    compile('javax.xml.bind:jaxb-api:2.3.0')
+    implementation "javax.xml.bind:jaxb-api:2.3.0"
 
-    testImplementation("com.h2database:h2:1.4.194") 
-    //testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework:spring-test")
-    testImplementation("org.springframework.security:spring-security-test")
+    testImplementation "com.h2database:h2:1.4.194" 
+    //testImplementation "org.springframework.restdocs:spring-restdocs-mockmvc"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation "org.springframework:spring-test"
+    testImplementation "org.springframework.security:spring-security-test"
    
     //Java 11 Support 
-    testImplementation("org.mockito:mockito-core:2.18.0")
-    testImplementation("org.powermock:powermock-module-junit4:2.0.0-beta.5")
-    testImplementation("org.powermock:powermock-api-mockito2:2.0.0-beta.5")
+    testImplementation "org.mockito:mockito-core:2.18.0"
+    testImplementation "org.powermock:powermock-module-junit4:2.0.0-beta.5"
+    testImplementation "org.powermock:powermock-api-mockito2:2.0.0-beta.5"
 
-    testImplementation('org.springframework.restdocs:spring-restdocs-mockmvc:2.0.4.RELEASE')
-    testImplementation('org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2')
-    asciidoctor('org.springframework.restdocs:spring-restdocs-asciidoctor:2.0.4.RELEASE')
-    asciidoctor('com.github.allati.asciidoctor.monotree:asciidoctor-extension-monotree:0.0.1')
+    testImplementation "org.springframework.restdocs:spring-restdocs-mockmvc:2.0.4.RELEASE"
+    testImplementation "org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2"
+    asciidoctor "org.springframework.restdocs:spring-restdocs-asciidoctor:2.0.4.RELEASE"
+    asciidoctor "com.github.allati.asciidoctor.monotree:asciidoctor-extension-monotree:0.0.1"
 }
 
 bootJar {

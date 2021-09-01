@@ -65,12 +65,41 @@ if (project.hasProperty('travis')) {
     apply from: 'gradle/profile-release.gradle'   
 }
 
+ext {
+  set('javersVersion', "6.2.3")
+  set('springDocVersion', "1.5.6")
+}
+
 dependencies {
-    api("org.springframework.boot:spring-boot-starter-test")
-    api('org.springframework.restdocs:spring-restdocs-mockmvc:2.0.4.RELEASE')
-    api("org.springframework:spring-test")
-    api("org.springframework.security:spring-security-test")
-    api("edu.kit.datamanager:repo-core:0.9.0-SNAPSHOT")
+   // boot starter
+    implementation "org.springframework.boot:spring-boot-starter-validation"    
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation "org.springframework.boot:spring-boot-starter-data-rest"
+    implementation "org.springframework.boot:spring-boot-starter-mail"
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+
+     
+    implementation "org.springframework:spring-messaging:5.3.9"
+    implementation "org.springframework.security:spring-security-web:5.5.2"
+    implementation "org.springframework.security:spring-security-config:5.5.2"
+    
+    // cloud support
+    implementation "org.springframework.cloud:spring-cloud-starter-config:3.0.4"
+    implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.0.3"
+
+    implementation 'com.github.fge:json-patch:1.9'
+
+    
+    
+    // springdoc
+    implementation "org.springdoc:springdoc-openapi-ui:${springDocVersion}"
+    implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
+    implementation "org.springdoc:springdoc-openapi-webmvc-core:${springDocVersion}"
+
+    implementation "edu.kit.datamanager:repo-core:0.9.0-SNAPSHOT"
+    implementation "edu.kit.datamanager:service-base:0.3.0-SNAPSHOT"
+
+    implementation "org.javers:javers-core:${javersVersion}"
 //    implementation("org.springframework.boot:spring-boot-starter-data-rest")
 //
 //    implementation("edu.kit.datamanager:service-base:0.2.0")

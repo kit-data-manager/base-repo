@@ -1,34 +1,16 @@
-buildscript {
-    repositories { 
-        mavenLocal()
-        jcenter()
-        mavenCentral()
-    }
-	 repositories {
-    maven {
-      url "https://plugins.gradle.org/m2/"
-    }
-  }
-    dependencies {
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:2.2.2.RELEASE"
-        classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2'
-        classpath 'net.researchgate:gradle-release:2.6.0'
-    }
-}
 
 plugins { 
-    id 'io.franzbecker.gradle-lombok' version '1.14'
-    id "io.spring.dependency-management" version "1.0.8.RELEASE" 
-    id "com.github.kt3k.coveralls" version "2.8.1" 
-    id "org.owasp.dependencycheck" version "3.1.2"
-    id "org.asciidoctor.convert" version "1.5.3"
+    id "org.springframework.boot" version "2.4.10"
+    id "io.spring.dependency-management" version "1.0.11.RELEASE" 
+    id "io.freefair.lombok" version "6.1.0"
+    id "io.freefair.maven-publish-java" version "6.1.0"
+    id "com.github.kt3k.coveralls" version "2.12.0" 
+    id "org.owasp.dependencycheck" version "6.2.2"
+    id 'org.asciidoctor.jvm.convert' version '3.3.2'
+    id 'net.researchgate.release' version '2.8.1'
+    id 'java'
+    id 'jacoco'
 }
-
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'io.spring.dependency-management'
-apply plugin: 'jacoco'
-
 
 jar {
     archiveBaseName = 'base-repo'
@@ -37,7 +19,6 @@ jar {
 
 repositories {
     mavenLocal() 
-    jcenter()
     mavenCentral()
 }
 
@@ -46,11 +27,6 @@ targetCompatibility = 1.8
  
 configurations {
     all*.exclude module : 'spring-boot-starter-logging'
-}
-
-lombok {
-    version = '1.18.10'
-    sha256 = ""
 }
 
 println "Building ${name} version: ${version}"
@@ -85,10 +61,6 @@ dependencies {
     implementation "org.springframework.cloud:spring-cloud-starter-config:3.0.4"
     implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.0.3"
 
-    implementation "com.github.fge:json-patch:1.9"
-
-    
-    
     // springdoc
     implementation "org.springdoc:springdoc-openapi-ui:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
@@ -98,34 +70,11 @@ dependencies {
     implementation "edu.kit.datamanager:service-base:0.3.0-SNAPSHOT"
 
     implementation "org.javers:javers-core:${javersVersion}"
-//    implementation "org.springframework.boot:spring-boot-starter-data-rest"
-//
-//    implementation "edu.kit.datamanager:service-base:0.2.0"
-//    implementation "edu.kit.datamanager:generic-message-consumer:0.2.0"
-//    api "org.springdoc:springdoc-openapi-data-rest:1.2.31"
-//    implementation "org.springframework.cloud:spring-cloud-dependencies:Greenwich.SR3"
-//    implementation "org.springframework.cloud:spring-cloud-starter:2.2.3.RELEASE"
-//    
-//    implementation "org.apache.commons:commons-text:1.8"
-//    implementation "commons-configuration:commons-configuration:1.10"
-//
-//    implementation "com.monitorjbl:spring-json-view:1.0.1"
-//    implementation "org.postgresql:postgresql:42.2.1"
-//    implementation "com.h2database:h2:1.4.194"
-//    implementation "org.apache.tika:tika-core:1.18" 
-//    implementation  "org.javers:javers-core:5.8.7"
-//
-//    implementation "de.codecentric:spring-boot-admin-starter-client:2.1.6"
-//    //Java 11 Support 
-//    implementation 'javax.xml.bind:jaxb-api:2.3.1'
-//    implementation 'com.sun.xml.bind:jaxb-core:2.3.0.1'
-//    implementation 'com.sun.xml.bind:jaxb-impl:2.3.0.1'
-//    implementation "javax.activation:activation:1.1.1"
-//    implementation "org.javassist:javassist:3.23.1-GA"
+    implementation "com.github.fge:json-patch:1.9"
     
     implementation "javax.xml.bind:jaxb-api:2.3.0"
 
-    testImplementation "com.h2database:h2:1.4.194" 
+    testImplementation "com.h2database:h2:1.4.200" 
     //testImplementation "org.springframework.restdocs:spring-restdocs-mockmvc"
     testImplementation "org.springframework.boot:spring-boot-starter-test"
     testImplementation "org.springframework:spring-test"
@@ -138,8 +87,6 @@ dependencies {
 
     testImplementation "org.springframework.restdocs:spring-restdocs-mockmvc:2.0.4.RELEASE"
     testImplementation "org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2"
-    asciidoctor "org.springframework.restdocs:spring-restdocs-asciidoctor:2.0.4.RELEASE"
-    asciidoctor "com.github.allati.asciidoctor.monotree:asciidoctor-extension-monotree:0.0.1"
 }
 
 bootJar {

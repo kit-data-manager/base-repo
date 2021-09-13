@@ -6,10 +6,6 @@ ext {
    snippetsDir = file("build/generated-snippets")
 }
 
-test { 
-   outputs.dir snippetsDir
-}
-  
 asciidoctor {
    attributes "snippets": snippetsDir,
             "version": jar.version,
@@ -22,7 +18,7 @@ asciidoctor {
 
 test {
    environment "spring.config.location", "classpath:/config/"
-   include '**/*DataResourceControllerDocumentationTest*'
+   outputs.dir snippetsDir
 }
 
 tasks.withType(Test) {

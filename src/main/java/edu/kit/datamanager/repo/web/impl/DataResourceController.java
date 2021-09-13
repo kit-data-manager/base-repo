@@ -75,7 +75,7 @@ public class DataResourceController implements IDataResourceController {
   // private final JsonResult json = JsonResult.instance();
   @Autowired
   private Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
-  ;
+  
   private final IContentInformationService contentInformationService;
   @Autowired
   private ApplicationProperties applicationProperties;

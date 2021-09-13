@@ -13,7 +13,7 @@ asciidoctor {
    inputs.dir snippetsDir
    dependsOn test  
    sourceDir "docs/"
-   outputDir "build/docs"
+   outputDir "build/docs/html5"
 }
 
 test {

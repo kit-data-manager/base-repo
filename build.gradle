@@ -14,6 +14,7 @@ plugins {
 
 jar {
     archiveBaseName = 'base-repo'
+    // version is defined in file 'gradle.properties'
     archiveVersion = System.getenv('version')
 }
 
@@ -87,18 +88,6 @@ dependencies {
     testImplementation "org.powermock:powermock-module-junit4:2.0.9"
     testImplementation "org.powermock:powermock-api-mockito2:2.0.9"
     testImplementation "junit:junit:4.13.2"
-}
-
-bootJar {
-    manifest {
-        attributes 'Main-Class': 'org.springframework.boot.loader.PropertiesLauncher'
-    }
-    dependsOn asciidoctor
-    from ("${asciidoctor.outputDir}") {
-        into 'static/docs'
-    }
-    archiveFileName = "${archiveBaseName.get()}.${archiveExtension.get()}"
-    launchScript()
 }
 
 test {

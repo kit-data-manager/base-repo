@@ -27,7 +27,7 @@ user@localhost:/home/user/base-repo$
 ```
 
 The Gradle wrapper will now take care of downloading the configured version of Gradle, checking out all required libraries, build these
-libraries and finally build the base-repo microservice itself. As a result, a fat jar containing the entire service is created at 'build/jars/base-repo.jar'.
+libraries and finally build the base-repo microservice itself. As a result, a fat jar containing the entire service is created at 'build/libs/base-repo.jar'.
 
 ## How to start
 

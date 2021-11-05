@@ -22,39 +22,42 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
-import org.datacite.schema.kernel_4.Resource;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
  *
  * @author jejkal
  */
-public class ResourceTypeSpec{
+public class ResourceTypeSpec {
 
-  /**
-   * Hidden constructor.
-   */
-  private ResourceTypeSpec(){
-  }
-
-  public static Specification<DataResource> toSpecification(final ResourceType resourceType){
-    Specification<DataResource> newSpec = Specification.where(null);
-    if(resourceType == null || (resourceType.getTypeGeneral() == null && resourceType.getValue() == null)){
-      return newSpec;
+    /**
+     * Hidden constructor.
+     */
+    private ResourceTypeSpec() {
     }
-    return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
-      query.distinct(true);
 
-      Join<DataResource, Resource.AlternateIdentifiers.AlternateIdentifier> altJoin = root.join("resourceType", JoinType.INNER);
+    public static Specification<DataResource> toSpecification(final ResourceType resourceType) {
+        Specification<DataResource> newSpec = Specification.where(null);
+        if (resourceType == null || (resourceType.getTypeGeneral() == null && resourceType.getValue() == null)) {
+            return newSpec;
+        }
+        return (Root<DataResource> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
+            query.distinct(true);
 
-      if(resourceType.getTypeGeneral() != null && resourceType.getValue() == null){
-        return builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral());
-      } else if(resourceType.getTypeGeneral() == null && resourceType.getValue() != null){
-        return builder.equal(altJoin.get("value"), resourceType.getValue());
-      }
+            Join<DataResource, ResourceType> altJoin = root.join("resourceType", JoinType.INNER);
 
-      //both are not null
-      return builder.and(builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral()), builder.like(altJoin.get("value"), "%" + resourceType.getValue() + "%"));
-    };
-  }
+            if (resourceType.getTypeGeneral() != null && resourceType.getValue() == null) {
+                return builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral());
+            } else if (resourceType.getTypeGeneral() == null && resourceType.getValue() != null) {
+                return builder.equal(altJoin.get("value"), resourceType.getValue());
+            }
+
+            //both are not null
+            return builder.
+                    and(
+                            builder.equal(altJoin.get("typeGeneral"), resourceType.getTypeGeneral()),
+                            builder.like(altJoin.get("value"), resourceType.getValue())
+                    );
+        };
+    }
 }

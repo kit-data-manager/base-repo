@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Versioning support for content elements
+
+### Changed
+- Additional field in content information metadata for providing the used versioning (none, simple, ocfl)
+- Update to service-base 0.2.1
+
+### Fixed
+- Fixed minor issues in queries of search endpoint if providing a search template resource, e.g., queries involving ResourceType or ACL information
+
 ## [1.1.0] - 2020-12-17
 ### Changed
 - Truncating service-assigned times to milliseconds for compatibility reasons

@@ -67,8 +67,8 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-webmvc-core:${springDocVersion}"
 
-    implementation "edu.kit.datamanager:repo-core:0.9.0-SNAPSHOT"
-    implementation "edu.kit.datamanager:service-base:0.3.0-SNAPSHOT"
+    implementation "edu.kit.datamanager:repo-core:0.9.1"
+    implementation "edu.kit.datamanager:service-base:0.3.0"
 
     implementation "org.javers:javers-core:${javersVersion}"
     implementation "com.github.fge:json-patch:1.9"

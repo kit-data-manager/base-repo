@@ -1,4 +1,3 @@
-
 plugins { 
     id "org.springframework.boot" version "2.4.10"
     id "io.spring.dependency-management" version "1.0.11.RELEASE" 
@@ -30,21 +29,24 @@ configurations {
     all*.exclude module : 'spring-boot-starter-logging'
 }
 
+ext {
+    set('javersVersion', "6.2.3")
+    set('springDocVersion', "1.5.6")
+
+    // directory for generated code snippets during tests
+    snippetsDir = file("build/generated-snippets")
+}
+
 println "Running gradle version: $gradle.gradleVersion"
 println "Building ${name} version: ${version}"
 println "JDK version: ${JavaVersion.current()}"
 
-if (project.hasProperty('travis')) {
-    println 'Using travis profile for building ' + project.getName()
-    apply from: 'gradle/profile-travis.gradle'
-} else if (project.hasProperty('release') || project.hasProperty('clean-release')) {
-    println 'Using release profile for building ' + project.getName()
-    apply from: 'gradle/profile-release.gradle'   
-}
-
-ext {
-  set('javersVersion', "6.2.3")
-  set('springDocVersion', "1.5.6")
+if (System.getProperty('profile') == 'minimal') {
+    println 'Using minimal profile for building ' + project.getName()
+    apply from: 'gradle/profile-minimal.gradle'   
+} else {
+    println 'Using default profile executing all tests for building ' + project.getName()
+    apply from: 'gradle/profile-complete.gradle'
 }
 
 dependencies {
@@ -99,3 +101,46 @@ test {
     }
 }
 
+import java.text.SimpleDateFormat
+
+tasks.register('testForSnippetsDir') {
+  doFirst {
+    println 'snippetsDir exists: ' + snippetsDir.exists()
+    if (!snippetsDir.exists()) {
+      println 'Create snippets dir...'
+      println 'WARNING: Don\'t skip tests for building production ready jar file!'
+      snippetsDir.mkdirs()
+    }
+  }
+} 
+
+asciidoctor {
+  dependsOn testForSnippetsDir
+    attributes "snippets": snippetsDir,
+               "version":  jar.archiveVersion,
+               "date":     new SimpleDateFormat("yyyy-MM-dd").format(new Date())
+    inputs.dir snippetsDir
+    dependsOn test  
+    sourceDir "docs/"
+    outputDir "build/docs/html5"
+}
+
+tasks.withType(Test) {
+    testLogging {
+        events 'started', 'passed'
+    }
+}
+
+bootJar {
+    println 'Create bootable jar...'
+    archiveFileName = "${archiveBaseName.get()}.${archiveExtension.get()}"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'org.springframework.boot.loader.PropertiesLauncher'
+    }
+    dependsOn asciidoctor
+    from ("${asciidoctor.outputDir}") {
+        into 'static/docs'
+    }
+    launchScript()
+}

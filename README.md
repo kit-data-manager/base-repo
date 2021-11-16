@@ -1,9 +1,9 @@
 # KIT Data Manager - Base Repository Service
 
-![Build Status](https://img.shields.io/travis/kit-data-manager/base-repo.svg)
-![Code Coverage](https://img.shields.io/coveralls/github/kit-data-manager/base-repo.svg)
+[![Build Status](https://github.com/kit-data-manager/base-repo/actions/workflows/gradle.yml/badge.svg)](https://github.com/kit-data-manager/base-repo/actions/workflows/gradle.yml)
+[![Codecov](https://codecov.io/gh/kit-data-manager/base-repo/branch/master/graph/badge.svg)](https://codecov.io/gh/kit-data-manager/base-repo)
 ![License](https://img.shields.io/github/license/kit-data-manager/base-repo.svg)
-![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/kitdm/base-repo)
+[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/kitdm/base-repo)](https://hub.docker.com/r/kitdm/base-repo/tags)
 ![Docker Image Version (latest semver)](https://img.shields.io/docker/v/kitdm/base-repo)
 
 This project contains the repository service microservice for the KIT DM infrastructure. The service provides

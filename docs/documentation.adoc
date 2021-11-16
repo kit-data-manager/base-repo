@@ -410,7 +410,7 @@ Beside of downloading single files, it's also possible to download all data of o
 With this structure, your are able to dowload either the entire content by addressing '/', only all experiment data by addressing 'experiment' or only the 'log' folder. In order to do so, you just address a virtual folder the same way you
 would address a single file, e.g. 
 
-include::get-collection.adoc[]
+include::docs/get-collection.adoc[]
 
 You can see, that the only differences compared to a single file download are the URLs ending with a slash, in order to address a virtual folder, and the provided content type in the 'Accept' header. In the example above, 'application/zip'
 indicates that all content within the addressed folder is downloaded in a single ZIP archive. Currently, the following content types are supported: 
@@ -507,7 +507,7 @@ Apart from the category (and an optional sub category) each message holds the as
 messages in the 'data' subcategory also contain 'contentPath', 'contentUri' and 'contentType' information as 'metadata' in order to allow quick decisions on whether a message should be handled or not. 
 The following snipped shows a sample message emitted after creating a new content element. 
 
-include::message.adoc[]
+include::docs/message.adoc[]
 
 You will find all default elements mentioned above as well as the 'metadata' elements containing additional metadata specific to messages from the 'data' sub category. Messages are created by the repository as soon as 
 the operation they are related to has successfully finished, jut before returning the result to the user. Therefor, a Message Queue service called RabbitMQ is used, which has to be installed in addition to the database 
@@ -550,7 +550,7 @@ This interface offers three methods, whereas two have to be implemented:
 2. configure(): This method is called at instantiation time and allows loading and validating handler-specific properties. The handler will be available only if configure() returns 'true'. Otherwise, the handler is deactivated.
 3. handle(BasicMessage message): This method is called for each and every message received by the repository's message queue. Thus, a handler should decide first if the message should be handled or not. If not, it might be rejected.
 
-include::LoggingHandler.adoc[]
+include::docs/LoggingHandler.adoc[]
 
 The code snippet above shows the implementation of the aforementioned interface for the sample-handler. You can see that no configuration is needed for this handler, 'getHandlerIdentifier' is not overwritten, therefore the default identifier
 is 'LoggingMessageHandler' and the only thing which is done is logging the message. One remarkable thing of this sample is the return value of the 'handle' method. As described in the code comment, we return REJECTED in order to not mark the 

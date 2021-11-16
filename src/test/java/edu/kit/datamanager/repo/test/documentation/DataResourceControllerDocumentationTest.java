@@ -43,6 +43,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.JUnitRestDocumentation;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
+import org.springframework.restdocs.operation.preprocess.Preprocessors;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
@@ -68,139 +69,145 @@ import org.springframework.web.context.WebApplicationContext;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("doc")
-public class DataResourceControllerDocumentationTest{
+public class DataResourceControllerDocumentationTest {
 
-  private MockMvc mockMvc;
-  @Autowired
-  private WebApplicationContext context;
-  @Autowired
-  private FilterChainProxy springSecurityFilterChain;
+    private MockMvc mockMvc;
+    @Autowired
+    private WebApplicationContext context;
+    @Autowired
+    private FilterChainProxy springSecurityFilterChain;
 //  @Autowired
 //  private IDataResourceDao dataResourceDao;
 //  @Autowired
 //  private IDataResourceService dataResourceService;
-  @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+    @Rule
+    public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
-  @Before
-  public void setUp() throws JsonProcessingException{
-    this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
-            .addFilters(springSecurityFilterChain)
-            .apply(documentationConfiguration(this.restDocumentation))
-            .build();
-  }
-
-  @Test
-  public void documentBasicAccess() throws Exception{
-    DataResource resource = new DataResource();
-    resource.getTitles().add(Title.factoryTitle("Most basic resource for testing", Title.TYPE.OTHER));
-    resource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"Karlsruhe Institute of Technology"}));
-    resource.setResourceType(ResourceType.createResourceType("testingSample", ResourceType.TYPE_GENERAL.DATASET));
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(new JavaTimeModule());
-
-    //create resource and obtain location from response header
-    String location = this.mockMvc.perform(post("/api/v1/dataresources/").contentType("application/json").content(mapper.writeValueAsString(resource))).
-            andExpect(status().isCreated()).
-            andDo(document("create-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).
-            andReturn().getResponse().getHeader("Location");
-
-    Assert.assertNotNull(location);
-
-    //extract resourceId from response header and use it to issue a GET to obtain the current ETag
-    String resourceId = location.substring(location.lastIndexOf("/") + 1);
-    String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse().getHeader("ETag");
-
-    //apply a simple patch to the resource
-    String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"2017\"}]";
-    this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent()).andDo(document("patch-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
-
-    //perform a GET for the patched resource...the publicationYear should be modified
-    etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-patched-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse().getHeader("ETag");
-
-    //do some more complex patch adding a new alternate identifier
-    patch = "[{\"op\": \"add\",\"path\": \"/alternateIdentifiers/1\",\"value\": {\"identifierType\":\"OTHER\", \"value\":\"resource-1-231118\"}}]";
-    this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent()).andDo(document("patch-resource-complex", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
-
-    //get the resource again together with the current ETag
-    MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-patched-resource-complex", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse();
-
-    //perform PUT operation 
-    etag = response.getHeader("ETag");
-    String resourceString = response.getContentAsString();
-    DataResource resourceToPut = mapper.readValue(resourceString, DataResource.class);
-    resourceToPut.setPublisher("KIT Data Manager");
-    this.mockMvc.perform(put("/api/v1/dataresources/" + resourceId).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resourceToPut))).andDo(print()).andExpect(status().isOk()).andDo(document("put-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
-
-    etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-put-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse().getHeader("ETag");
-
-    //try to GET the resource using the alternate identifier added a second ago
-    this.mockMvc.perform(get("/api/v1/dataresources/" + "resource-1-231118")).andExpect(status().isSeeOther()).andDo(document("get-resource-by-alt-id", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
-
-    //find by example
-    DataResource example = new DataResource();
-    example.setResourceType(ResourceType.createResourceType("testingSample"));
-    this.mockMvc.perform(post("/api/v1/dataresources/search").contentType("application/json").content(mapper.writeValueAsString(example))).
-            andExpect(status().isOk()).
-            andDo(document("find-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
-
-    //upload random data file
-    Path temp = Files.createTempFile("randomFile", "test");
-
-    try(FileWriter w = new FileWriter(temp.toFile())){
-      w.write(RandomStringUtils.randomAlphanumeric(64));
-      w.flush();
+    @Before
+    public void setUp() throws JsonProcessingException {
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
+                .addFilters(springSecurityFilterChain)
+                .apply(documentationConfiguration(this.restDocumentation)
+                        .uris().withPort(8080).and()
+                        .operationPreprocessors()
+                        .withRequestDefaults(prettyPrint())
+                        .withResponseDefaults(Preprocessors.removeHeaders("X-Content-Type-Options", "X-XSS-Protection", "X-Frame-Options"), prettyPrint()))
+                .build();
     }
 
-    MockMultipartFile fstmp = new MockMultipartFile("file", "randomFile.txt", "multipart/form-data", Files.newInputStream(temp));
-    this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt").file(fstmp)).andDo(print()).andExpect(status().isCreated()).andDo(document("upload-file", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+    @Test
+    public void documentBasicAccess() throws Exception {
+        DataResource resource = new DataResource();
+        resource.getTitles().add(Title.factoryTitle("Most basic resource for testing", Title.TYPE.OTHER));
+        resource.getCreators().add(Agent.factoryAgent("John", "Doe", new String[]{"Karlsruhe Institute of Technology"}));
+        resource.setResourceType(ResourceType.createResourceType("testingSample", ResourceType.TYPE_GENERAL.DATASET));
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
 
-    //upload random data file with metadata
-    ContentInformation cinfo = new ContentInformation();
-    Map<String, String> metadata = new HashMap<>();
-    metadata.put("test", "ok");
-    cinfo.setVersioningService("none");
-    cinfo.setMetadata(metadata);
-    fstmp = new MockMultipartFile("file", "randomFile2.txt", "multipart/form-data", Files.newInputStream(temp));
-    MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
-    this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/randomFile2.txt").file(fstmp).file(secmp)).andDo(print()).andExpect(status().isCreated()).andDo(document("upload-file-with-metadata", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        //create resource and obtain location from response header
+        String location = this.mockMvc.perform(post("/api/v1/dataresources/").contentType("application/json").content(mapper.writeValueAsString(resource))).
+                andExpect(status().isCreated()).
+                andDo(document("create-resource")).
+                andReturn().getResponse().getHeader("Location");
 
-    //upload referenced file
-    cinfo = new ContentInformation();
-    cinfo.setVersioningService("none");
-    cinfo.setContentUri("https://www.google.com");
-    secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
-    this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/referencedContent").file(secmp)).andDo(print()).andExpect(status().isCreated()).andDo(document("upload-file-with-reference", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        Assert.assertNotNull(location);
 
-    //obtain content metadata
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt").header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andExpect(status().isOk()).andDo(document("get-content-metadata", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        //extract resourceId from response header and use it to issue a GET to obtain the current ETag
+        String resourceId = location.substring(location.lastIndexOf("/") + 1);
+        resourceId = resourceId.substring(0, resourceId.indexOf("?"));
 
-    //obtain content metadata as listing
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/").header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andExpect(status().isOk()).andDo(document("get-content-listing", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-resource")).andReturn().getResponse().getHeader("ETag");
 
-    //download file
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt")).andExpect(status().isOk()).andDo(document("download-file", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        //apply a simple patch to the resource
+        String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"2017\"}]";
+        this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent()).andDo(document("patch-resource"));
 
-    //get audit information
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andExpect(status().isOk()).andDo(document("get-audit-information", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        //perform a GET for the patched resource...the publicationYear should be modified
+        etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-patched-resource")).andReturn().getResponse().getHeader("ETag");
 
-    //get particular version
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "2")).andExpect(status().isOk()).andDo(document("get-resource-version", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        //do some more complex patch adding a new alternate identifier
+        patch = "[{\"op\": \"add\",\"path\": \"/alternateIdentifiers/1\",\"value\": {\"identifierType\":\"OTHER\", \"value\":\"resource-1-231118\"}}]";
+        this.mockMvc.perform(patch("/api/v1/dataresources/" + resourceId).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isNoContent()).andDo(document("patch-resource-complex"));
 
-    //get particular version
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-current-resource-version", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        //get the resource again together with the current ETag
+        MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-patched-resource-complex")).andReturn().getResponse();
 
-    //perform a DELETE
-    this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId).header("If-Match", etag)).andExpect(status().isNoContent()).andDo(document("delete-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
-    //perform another GET to show that resources are still accessible by the owner/admin
-    etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-deleted-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint()))).andReturn().getResponse().getHeader("ETag");
+        //perform PUT operation 
+        etag = response.getHeader("ETag");
+        String resourceString = response.getContentAsString();
+        DataResource resourceToPut = mapper.readValue(resourceString, DataResource.class);
+        resourceToPut.setPublisher("KIT Data Manager");
+        this.mockMvc.perform(put("/api/v1/dataresources/" + resourceId).header("If-Match", etag).contentType("application/json").content(mapper.writeValueAsString(resourceToPut))).andDo(print()).andExpect(status().isOk()).andDo(document("put-resource"));
 
-    //perform a DELETE a second time
-    this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId).header("If-Match", etag)).andExpect(status().isNoContent()).andDo(document("delete-resource-twice", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-put-resource")).andReturn().getResponse().getHeader("ETag");
 
-    //perform a final GET to show that resources is no longer accessible if it is gone
-    this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isNotFound()).andDo(document("get-gone-resource", preprocessRequest(prettyPrint()), preprocessResponse(prettyPrint())));
+        //try to GET the resource using the alternate identifier added a second ago
+        this.mockMvc.perform(get("/api/v1/dataresources/" + "resource-1-231118")).andExpect(status().isSeeOther()).andDo(document("get-resource-by-alt-id"));
 
-  }
+        //find by example
+        DataResource example = new DataResource();
+        example.setResourceType(ResourceType.createResourceType("testingSample"));
+        this.mockMvc.perform(post("/api/v1/dataresources/search").contentType("application/json").content(mapper.writeValueAsString(example))).
+                andExpect(status().isOk()).
+                andDo(document("find-resource"));
+
+        //upload random data file
+        Path temp = Files.createTempFile("randomFile", "test");
+
+        try (FileWriter w = new FileWriter(temp.toFile())) {
+            w.write(RandomStringUtils.randomAlphanumeric(64));
+            w.flush();
+        }
+
+        MockMultipartFile fstmp = new MockMultipartFile("file", "randomFile.txt", "multipart/form-data", Files.newInputStream(temp));
+        this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt").file(fstmp)).andDo(print()).andExpect(status().isCreated()).andDo(document("upload-file"));
+
+        //upload random data file with metadata
+        ContentInformation cinfo = new ContentInformation();
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("test", "ok");
+        cinfo.setVersioningService("none");
+        cinfo.setMetadata(metadata);
+        fstmp = new MockMultipartFile("file", "randomFile2.txt", "multipart/form-data", Files.newInputStream(temp));
+        MockMultipartFile secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
+        this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/randomFile2.txt").file(fstmp).file(secmp)).andDo(print()).andExpect(status().isCreated()).andDo(document("upload-file-with-metadata"));
+
+        //upload referenced file
+        cinfo = new ContentInformation();
+        cinfo.setVersioningService("none");
+        cinfo.setContentUri("https://www.google.com");
+        secmp = new MockMultipartFile("metadata", "metadata.json", "application/json", mapper.writeValueAsBytes(cinfo));
+        this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/referencedContent").file(secmp)).andDo(print()).andExpect(status().isCreated()).andDo(document("upload-file-with-reference"));
+
+        //obtain content metadata
+        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt").header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andExpect(status().isOk()).andDo(document("get-content-metadata"));
+
+        //obtain content metadata as listing
+        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/").header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andExpect(status().isOk()).andDo(document("get-content-listing"));
+
+        //download file
+        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt")).andExpect(status().isOk()).andDo(document("download-file"));
+
+        //get audit information
+        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andExpect(status().isOk()).andDo(document("get-audit-information"));
+
+        //get particular version
+        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "2")).andExpect(status().isOk()).andDo(document("get-resource-version"));
+
+        //get particular version
+        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-current-resource-version"));
+
+        //perform a DELETE
+        this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId).header("If-Match", etag)).andExpect(status().isNoContent()).andDo(document("delete-resource"));
+        //perform another GET to show that resources are still accessible by the owner/admin
+        etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isOk()).andDo(document("get-deleted-resource")).andReturn().getResponse().getHeader("ETag");
+
+        //perform a DELETE a second time
+        this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId).header("If-Match", etag)).andExpect(status().isNoContent()).andDo(document("delete-resource-twice"));
+
+        //perform a final GET to show that resources is no longer accessible if it is gone
+        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId)).andExpect(status().isNotFound()).andDo(document("get-gone-resource"));
+
+    }
 
 }

@@ -12,6 +12,7 @@ on:
 env:
     # JDK version used for building jar file
     currentBuildVersion: 8
+    
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,10 +42,10 @@ jobs:
       uses: actions/setup-java@v2
       with:
         distribution: 'zulu' 
-        java-version: ${{ env.currentJDK }}
+        java-version: ${{ env.currentBuildVersion }}
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Build with Gradle (JDK ${{ env.currentJDK }})
+    - name: Build with Gradle (JDK ${{ env.currentBuildVersion }})
       run: ./gradlew -Ptravis clean check jacocoTestReport
     - name: Codecov
       uses: codecov/codecov-action@v1

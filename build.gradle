@@ -99,6 +99,7 @@ test {
         outputs.upToDateWhen {false}
         showStandardStreams = true
     }
+   environment "spring.config.location", "classpath:/test-config/"
 }
 
 import java.text.SimpleDateFormat

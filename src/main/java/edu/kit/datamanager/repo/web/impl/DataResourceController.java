@@ -116,6 +116,7 @@ public class DataResourceController implements IDataResourceController {
     getById = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
     };
+
     DataResource result = DataResourceUtils.createResource(repositoryProperties, resource);
     try {
       LOGGER.trace("Creating controller link for resource identifier {}.", result.getId());
@@ -190,7 +191,7 @@ public class DataResourceController implements IDataResourceController {
     Function<String, String> patchDataResource = (t) -> {
       return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).patch(t, patch, request, response)).toString();
     };
-    String path = ContentDataUtils.getContentPathFromRequest(request);
+    //String path = ContentDataUtils.getContentPathFromRequest(request);
     String eTag = ControllerUtils.getEtagFromHeader(request);
     DataResourceUtils.patchResource(repositoryProperties, identifier, patch, eTag, patchDataResource);
 

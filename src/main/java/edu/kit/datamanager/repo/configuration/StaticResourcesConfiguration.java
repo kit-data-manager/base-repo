@@ -15,9 +15,14 @@
  */
 package edu.kit.datamanager.repo.configuration;
 
+import edu.kit.datamanager.repo.web.converter.DataCiteMessageConverter;
+import java.util.List;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Configure the static resource location used to place documentation etc.
@@ -25,13 +30,25 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @author jejkal
  */
 @Configuration
-public class StaticResourcesConfiguration implements WebMvcConfigurer{
+public class StaticResourcesConfiguration implements WebMvcConfigurer {
 
-  private static final String[] CLASSPATH_RESOURCE_LOCATIONS = {
-    "classpath:/static/"};
+    private static final String[] CLASSPATH_RESOURCE_LOCATIONS = {
+        "classpath:/static/"};
 
-  @Override
-  public void addResourceHandlers(ResourceHandlerRegistry registry){
-    registry.addResourceHandler("/static/**").addResourceLocations(CLASSPATH_RESOURCE_LOCATIONS);
-  }
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/static/**").addResourceLocations(CLASSPATH_RESOURCE_LOCATIONS);
+    }
+
+    @Override
+    public void configureMessageConverters(List<HttpMessageConverter<?>> messageConverters) {
+        messageConverters.add(new DataCiteMessageConverter());
+    }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        UrlPathHelper urlPathHelper = new UrlPathHelper();
+        urlPathHelper.setUrlDecode(false);
+        configurer.setUrlPathHelper(urlPathHelper);
+    }
 }

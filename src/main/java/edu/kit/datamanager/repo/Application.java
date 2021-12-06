@@ -45,16 +45,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Scope;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import org.springframework.web.util.UrlPathHelper;
 
 /**
  *
@@ -65,15 +65,15 @@ import org.springframework.web.util.UrlPathHelper;
 @ComponentScan({"edu.kit.datamanager"})
 //@ComponentScan({"edu.kit.datamanager.repo", "edu.kit.datamanager.repo.configuration", "edu.kit.datamanager.service", "edu.kit.datamanager.configuration", "edu.kit.datamanager.repo.dao", "edu.kit.datamanager.repo.service", "edu.kit.datamanager.repo.service.impl", "edu.kit.datamanager.messaging.client"})
 //@ComponentScan({"edu.kit.datamanager.repo", "edu.kit.datamanager.service", "edu.kit.datamanager.service.impl", "edu.kit.datamanager.configuration", "edu.kit.datamanager.repo.dao", "edu.kit.datamanager.repo.service", "edu.kit.datamanager.messaging.client"})
-public class Application{
+public class Application {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
     @Autowired
     private Javers javers;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
-    @Autowired
-    private ApplicationProperties applicationProperties;
+
+    //private ApplicationProperties applicationProperties;
     @Autowired
     private IRepoVersioningService[] versioningServices;
     @Autowired
@@ -81,6 +81,8 @@ public class Application{
 
     @Autowired
     private IDataResourceDao dataResourceDao;
+
+    private ApplicationProperties applicationProperties;
 
     @Autowired
     private IDataResourceService dataResourceService;
@@ -115,6 +117,10 @@ public class Application{
                 .build();
     }
 
+    @EventListener(RefreshScopeRefreshedEvent.class)
+    public void onRefresh(RefreshScopeRefreshedEvent event) {
+        LOG.info("Refresh event detected. Configuration reloaded.");
+    }
 //  @Bean
 //  public WebMvcConfigurer corsConfigurer(){
 //    return new WebMvcConfigurer(){
@@ -133,6 +139,7 @@ public class Application{
 //  public JsonViewSupportFactoryBean views(){
 //    return new JsonViewSupportFactoryBean();
 //  }
+
     @Bean
     @ConfigurationProperties("repo")
     public ApplicationProperties applicationProperties() {
@@ -154,28 +161,45 @@ public class Application{
         return new RabbitMQMessagingService();
     }
 
+//    @Bean
+//    @ConditionalOnProperty(name = "spring.config.location", matchIfMissing = true)
+//    public PropertiesConfiguration applicationProperties(@Value("${spring.config.location}") String path) throws Exception {
+//        String filePath = new File(path.substring("file:".length())).getCanonicalPath();
+//       LOG.info("READING applicationProperties FROM {}", filePath);
+//        PropertiesConfiguration configuration = new PropertiesConfiguration(new File(filePath));
+//        configuration.setReloadingStrategy(new FileChangedReloadingStrategy() {
+//            @Override
+//            protected boolean hasChanged() {
+//                System.out.println("RELOADING BASE " + repositoryConfig());
+//                return super.hasChanged(); //To change body of generated methods, choose Tools | Templates.
+//            }
+//
+//        });
+//        return configuration;
+//    }
     @Bean
+    @RefreshScope
     public RepoBaseConfiguration repositoryConfig() {
-
+        LOG.info("Loading repository configuration.");
         IAuditService<DataResource> auditServiceDataResource;
         IAuditService<ContentInformation> contentAuditService;
         RepoBaseConfiguration rbc = new RepoBaseConfiguration();
-        rbc.setBasepath(this.applicationProperties.getBasepath());
-        rbc.setReadOnly(this.applicationProperties.isReadOnly());
+        rbc.setBasepath(applicationProperties().getBasepath());
+        rbc.setReadOnly(applicationProperties().isReadOnly());
         rbc.setDataResourceService(dataResourceService);
         rbc.setContentInformationService(contentInformationService);
         rbc.setEventPublisher(eventPublisher);
-        rbc.setJwtSecret(this.applicationProperties.getJwtSecret());
-        rbc.setAuthEnabled(this.applicationProperties.isAuthEnabled());
+        rbc.setJwtSecret(applicationProperties().getJwtSecret());
+        rbc.setAuthEnabled(applicationProperties().isAuthEnabled());
         for (IRepoVersioningService versioningService : this.versioningServices) {
-            if (applicationProperties.getDefaultVersioningService().equals(versioningService.getServiceName())) {
+            if (applicationProperties().getDefaultVersioningService().equals(versioningService.getServiceName())) {
                 LOG.info("Set versioning service: {}", versioningService.getServiceName());
                 rbc.setVersioningService(versioningService);
                 break;
             }
         }
         for (IRepoStorageService storageService : this.storageServices) {
-            if (applicationProperties.getDefaultStorageService().equals(storageService.getServiceName())) {
+            if (applicationProperties().getDefaultStorageService().equals(storageService.getServiceName())) {
                 LOG.info("Set storage service: {}", storageService.getServiceName());
                 rbc.setStorageService(storageService);
                 break;
@@ -198,7 +222,6 @@ public class Application{
     }
 
     public static void main(String[] args) {
-        System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
         ApplicationContext ctx = SpringApplication.run(Application.class, args);
         System.out.println("Spring is running!");
     }

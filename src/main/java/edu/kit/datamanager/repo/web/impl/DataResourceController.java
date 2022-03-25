@@ -87,7 +87,7 @@ public class DataResourceController implements IDataResourceController {
     /**
      *
      * @param applicationProperties
-     * @param repositoryConfig
+     *
      */
     public DataResourceController(ApplicationProperties applicationProperties,
             RepoBaseConfiguration repositoryConfig

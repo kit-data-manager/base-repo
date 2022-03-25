@@ -189,7 +189,7 @@ public class DataResourceControllerDocumentationTest {
         this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt")).andExpect(status().isOk()).andDo(document("download-file"));
 
         //get audit information
-     //   this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andExpect(status().isOk()).andDo(document("get-audit-information"));
+        this.mockMvc.perform(get("/api/v1/audit/" + resourceId).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andExpect(status().isOk()).andDo(document("get-audit-information"));
 
         //get particular version
         this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "2")).andExpect(status().isOk()).andDo(document("get-resource-version"));

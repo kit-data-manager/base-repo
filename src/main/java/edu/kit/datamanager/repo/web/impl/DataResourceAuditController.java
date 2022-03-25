@@ -66,7 +66,7 @@ public class DataResourceAuditController implements IDataResourceAuditController
 
     /**
      *
-     * @param applicationProperties
+     *
      * @param repositoryConfig
      */
     public DataResourceAuditController(ApplicationProperties applicationProperties,

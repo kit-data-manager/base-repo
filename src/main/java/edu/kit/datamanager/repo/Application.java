@@ -81,7 +81,7 @@ public class Application {
 
     @Autowired
     private IDataResourceDao dataResourceDao;
-
+    @Autowired
     private ApplicationProperties applicationProperties;
 
     @Autowired
@@ -222,8 +222,8 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        ApplicationContext ctx = SpringApplication.run(Application.class, args);
-        System.out.println("Spring is running!");
+       ApplicationContext ctx = SpringApplication.run(Application.class, args);
+       System.out.println("Spring is running!");
     }
 
 }

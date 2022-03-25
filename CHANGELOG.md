@@ -5,16 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Changed
-- Update to service-base 0.3.0
-- Update to repo-core 0.9.1 
-
 ### Added
-- Versioning support for content elements
+- File versioning support for content elements
+- Added Keycloak support for authentication
 
 ### Changed
 - Additional field in content information metadata for providing the used versioning (none, simple, ocfl)
-- Update to service-base 0.2.1
+- Moved endpoint for audit information to base path /api/v1/audit/
+- More consistent content-type handling
+- Update to repo-core 1.0.2
+- Update to service-base 1.0.1
+- Externalized documentation to [https://kit-data-manager.github.io/webpage/base-repo.html](https://kit-data-manager.github.io/webpage/base-repo.html)
 
 ### Fixed
 - Fixed minor issues in queries of search endpoint if providing a search template resource, e.g., queries involving ResourceType or ACL information

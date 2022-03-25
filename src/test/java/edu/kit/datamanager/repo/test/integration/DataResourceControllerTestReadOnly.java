@@ -48,9 +48,7 @@ import edu.kit.datamanager.repo.domain.Subject;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IDataResourceService;
-import edu.kit.datamanager.repo.service.impl.ContentInformationAuditService;
 import edu.kit.datamanager.repo.service.impl.DataResourceService;
-import edu.kit.datamanager.repo.service.impl.NoneDataVersioningService;
 import edu.kit.datamanager.service.IAuditService;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -736,7 +734,7 @@ public class DataResourceControllerTestReadOnly{
   public void testPatchResourceAnonymousWithEtag() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
 
@@ -751,7 +749,7 @@ public class DataResourceControllerTestReadOnly{
   public void testPatchUnknownResourceWithEtag() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
      String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
    this.mockMvc.perform(patch("/api/v1/dataresources/0").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
   }
@@ -760,7 +758,7 @@ public class DataResourceControllerTestReadOnly{
   public void testPatchResourceWithoutPermission() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+            "Bearer " + otherUserToken).header(HttpHeaders.ACCEPT, "application/json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + otherUserToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
@@ -778,7 +776,7 @@ public class DataResourceControllerTestReadOnly{
   public void testPatchFixedResourceWithoutPermission() throws Exception{
     String patch = "[{\"op\": \"replace\",\"path\": \"/publicationYear\",\"value\": \"1900\"}]";
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + fixedResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + fixedResource.getId()).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());
@@ -1415,7 +1413,7 @@ public class DataResourceControllerTestReadOnly{
   public void testPatchWithUnknownContent() throws Exception{
     String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
     String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
+            "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/json")).andDo(print()).andExpect(status().isOk()).andReturn().getResponse().getHeader("ETag");
 
     this.mockMvc.perform(patch("/api/v1/dataresources/" + sampleResource.getId() + "/data/notExist").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header("If-Match", etag).contentType("application/json-patch+json").content(patch)).andDo(print()).andExpect(status().isServiceUnavailable());

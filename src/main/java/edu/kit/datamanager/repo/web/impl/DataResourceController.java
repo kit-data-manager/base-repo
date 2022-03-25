@@ -70,409 +70,342 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Schema(description = "Data Resource Management")
 public class DataResourceController implements IDataResourceController {
 
-  public static final String VERSION_HEADER = "Resource-Version";
-  public static final String CONTENT_RANGE_HEADER = "Content-Range";
-  // private final JsonResult json = JsonResult.instance();
-  @Autowired
-  private Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
-  
-  private final IContentInformationService contentInformationService;
-  @Autowired
-  private ApplicationProperties applicationProperties;
+    public static final String VERSION_HEADER = "Resource-Version";
+    public static final String CONTENT_RANGE_HEADER = "Content-Range";
+    // private final JsonResult json = JsonResult.instance();
+    @Autowired
+    private Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
 
-  private final IAuditService<DataResource> auditService;
-  private final IAuditService<ContentInformation> contentAuditService;
-  private final RepoBaseConfiguration repositoryProperties;
+    private final IContentInformationService contentInformationService;
+    @Autowired
+    private ApplicationProperties applicationProperties;
 
-  /**
-   *
-   * @param applicationProperties
-   * @param repositoryConfig
-   */
-  public DataResourceController(ApplicationProperties applicationProperties,
-          RepoBaseConfiguration repositoryConfig
-  ) {
-    this.applicationProperties = applicationProperties;
-    this.contentInformationService = repositoryConfig.getContentInformationService();
-    auditService = repositoryConfig.getAuditService();
-    contentAuditService = repositoryConfig.getContentInformationAuditService();
-    repositoryProperties = repositoryConfig;
-    LOGGER.trace("Show Config: {}", repositoryConfig);
+    private final IAuditService<DataResource> auditService;
+    private final IAuditService<ContentInformation> contentAuditService;
+    private final RepoBaseConfiguration repositoryProperties;
 
-    if (!this.applicationProperties.isAuditEnabled() && !"none".equals(this.applicationProperties.getDefaultVersioningService())) {
-      String message = "Conflicting configuration properties detected. 'repo.audit.enabled' must be 'true' if 'repo.file.versioning.default' is not 'none'.";
-      LOGGER.warn(message);
-      throw new IllegalArgumentException(message);
-    }
-  }
+    /**
+     *
+     * @param applicationProperties
+     * @param repositoryConfig
+     */
+    public DataResourceController(ApplicationProperties applicationProperties,
+            RepoBaseConfiguration repositoryConfig
+    ) {
+        this.applicationProperties = applicationProperties;
+        this.contentInformationService = repositoryConfig.getContentInformationService();
+        auditService = repositoryConfig.getAuditService();
+        contentAuditService = repositoryConfig.getContentInformationAuditService();
+        repositoryProperties = repositoryConfig;
+        LOGGER.trace("Show Config: {}", repositoryConfig);
 
-  @Override
-  public ResponseEntity<DataResource> create(@RequestBody final DataResource resource,
-          final WebRequest request,
-          final HttpServletResponse response) {
-
-    LOGGER.trace("Creating resource with record '{}'.", resource);
-    Function<String, String> getById;
-    getById = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
-    };
-
-    DataResource result = DataResourceUtils.createResource(repositoryProperties, resource);
-    try {
-      LOGGER.trace("Creating controller link for resource identifier {}.", result.getId());
-      //do some hacking in order to properly escape the resource identifier
-      //if escaping in beforehand, WebMvcLinkBuilder will escape again, which invalidated the link
-      String uriLink = getById.apply("WorkaroundPlaceholder");
-      //replace placeholder with escaped identifier in order to ensure single-escaping
-      uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getId(), "UTF-8"));
-      // remove version flag if version is nor supported
-      if (!applicationProperties.isAuditEnabled()) {
-        // Remove path parameter version
-        int qmIndex = uriLink.lastIndexOf("?");
-        if (qmIndex > 0) {
-          uriLink = uriLink.substring(0, qmIndex);
+        if (!this.applicationProperties.isAuditEnabled() && !"none".equals(this.applicationProperties.getDefaultVersioningService())) {
+            String message = "Conflicting configuration properties detected. 'repo.audit.enabled' must be 'true' if 'repo.file.versioning.default' is not 'none'.";
+            LOGGER.warn(message);
+            throw new IllegalArgumentException(message);
         }
-      }
-
-      LOGGER.trace("Created resource link is: {}", uriLink);
-      return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").header(VERSION_HEADER, Long.toString(1l)).body(result);
-    } catch (UnsupportedEncodingException ex) {
-      LOGGER.error("Failed to encode resource identifier " + result.getId() + ".", ex);
-      throw new CustomInternalServerError("Failed to decode resource identifier " + result.getId() + ", but resource has been created.");
-    }
-  }
-
-  @Override
-  public ResponseEntity<DataResource> getById(@PathVariable("id") final String identifier,
-          @RequestParam(name = "version", required = false) final Long version,
-          final WebRequest request,
-          final HttpServletResponse response) {
-    LOGGER.trace("Get resource by id '{}' and version '{}'.", identifier, version);
-    Function<String, String> getById;
-    getById = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
-    };
-    return DataResourceUtils.readResource(repositoryProperties, identifier, version, getById);
-  }
-
-  @Override
-  public ResponseEntity<List<DataResource>> findAll(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
-          @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
-          final Pageable pgbl,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder) {
-    return findByExample(null, lastUpdateFrom, lastUpdateUntil, pgbl, request, response, uriBuilder);
-  }
-
-  @Override
-  public ResponseEntity<List<DataResource>> findByExample(@RequestBody DataResource example,
-          @RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
-          @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
-          final Pageable pgbl,
-          final WebRequest req,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder) {
-    LOGGER.trace("Find resource by example '{}' from '{}' until '{}'", example, lastUpdateFrom, lastUpdateUntil);
-    Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, example, lastUpdateFrom, lastUpdateUntil, pgbl, response, uriBuilder);
-    //set content-range header for react-admin (index_start-index_end/total
-    PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
-    response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
-    return ResponseEntity.ok().body(DataResourceUtils.filterResources(page.getContent()));
-
-  }
-
-  @Override
-  public ResponseEntity patch(@PathVariable("id") final String identifier,
-          @RequestBody final JsonPatch patch,
-          final WebRequest request,
-          final HttpServletResponse response) {
-    LOGGER.trace("Patch resource with id '{}': Patch '{}'", identifier, patch);
-    Function<String, String> patchDataResource = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).patch(t, patch, request, response)).toString();
-    };
-    //String path = ContentDataUtils.getContentPathFromRequest(request);
-    String eTag = ControllerUtils.getEtagFromHeader(request);
-    DataResourceUtils.patchResource(repositoryProperties, identifier, patch, eTag, patchDataResource);
-
-    long currentVersion = auditService.getCurrentVersion(identifier);
-    if (currentVersion > 0) {
-      return ResponseEntity.noContent().header(VERSION_HEADER, Long.toString(currentVersion)).build();
-    } else {
-      return ResponseEntity.noContent().build();
-
-    }
-  }
-
-  @Override
-  public ResponseEntity put(@PathVariable("id") final String identifier,
-          @RequestBody final DataResource newResource,
-          final WebRequest request,
-          final HttpServletResponse response) {
-    LOGGER.trace("Update resource with id '{}': new resource: '{}'", identifier, newResource);
-    Function<String, String> putWithId;
-    putWithId = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
-    };
-    DataResource result = DataResourceUtils.updateResource(repositoryProperties, identifier, newResource, request, putWithId);
-    long currentVersion = repositoryProperties.getAuditService().getCurrentVersion(result.getId());
-
-    if (currentVersion > 0) {
-      //trigger response creation and set etag...the response body is set automatically
-      return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(DataResourceUtils.filterResource(result));
-    } else {
-      return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").body(DataResourceUtils.filterResource(result));
     }
 
-  }
+    @Override
+    public ResponseEntity<DataResource> create(@RequestBody final DataResource resource,
+            final WebRequest request,
+            final HttpServletResponse response) {
 
-  @Override
-  public ResponseEntity delete(@PathVariable("id") final String identifier,
-          final WebRequest request,
-          final HttpServletResponse response) {
-    LOGGER.trace("Delete resource with id '{}'", identifier);
-    Function<String, String> getById;
-    getById = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
-    };
-    DataResourceUtils.deleteResource(repositoryProperties, identifier, request, getById);
-    return ResponseEntity.noContent().build();
-  }
+        LOGGER.trace("Creating resource with record '{}'.", resource);
+        Function<String, String> getById;
+        getById = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
+        };
 
-  @Override
-  public ResponseEntity createContent(@PathVariable(value = "id") final String identifier,
-          @RequestPart(name = "file", required = false) MultipartFile file,
-          @RequestPart(name = "metadata", required = false) final ContentInformation contentInformation,
-          @RequestParam(name = "force", defaultValue = "false") boolean force,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder) {
-    LOGGER.trace("Create content for resource with id '{}'. Force: '{}'", identifier, force);
-    Function<String, String> createContent = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).createContent(t, file, contentInformation, force, request, response, uriBuilder)).toString();
-    };
-    DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, identifier, null, createContent);
-    String path = ContentDataUtils.getContentPathFromRequest(request);
-    ContentInformation result = ContentDataUtils.addFile(repositoryProperties, resource, file, path, contentInformation, force, createContent);
+        DataResource result = DataResourceUtils.createResource(repositoryProperties, resource);
+        try {
+            LOGGER.trace("Creating controller link for resource identifier {}.", result.getId());
+            //do some hacking in order to properly escape the resource identifier
+            //if escaping in beforehand, WebMvcLinkBuilder will escape again, which invalidated the link
+            String uriLink = getById.apply("WorkaroundPlaceholder");
+            //replace placeholder with escaped identifier in order to ensure single-escaping
+            uriLink = uriLink.replaceFirst("WorkaroundPlaceholder", URLEncoder.encode(result.getId(), "UTF-8"));
+            // remove version flag if version is nor supported
+            if (!applicationProperties.isAuditEnabled()) {
+                // Remove path parameter version
+                int qmIndex = uriLink.lastIndexOf("?");
+                if (qmIndex > 0) {
+                    uriLink = uriLink.substring(0, qmIndex);
+                }
+            }
 
-    URI link = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(resource.getId(), null, 1l, null, request, response, uriBuilder)).toUri();
-
-    URIBuilder builder = new URIBuilder(link);
-    builder.setPath(builder.getPath().replace("**", path));
-    URI resourceUri = null;
-
-    try {
-      resourceUri = builder.build();
-    } catch (URISyntaxException ex) {
-      LOGGER.error("Failed to create location URI for path " + path + ". However, resource should be created.", ex);
-      throw new CustomInternalServerError("Resource creation successful, but unable to create resource linkfor path " + path + ".");
+            LOGGER.trace("Created resource link is: {}", uriLink);
+            return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").header(VERSION_HEADER, Long.toString(1l)).body(result);
+        } catch (UnsupportedEncodingException ex) {
+            LOGGER.error("Failed to encode resource identifier " + result.getId() + ".", ex);
+            throw new CustomInternalServerError("Failed to decode resource identifier " + result.getId() + ", but resource has been created.");
+        }
     }
 
-    long currentVersion = contentAuditService.getCurrentVersion(Long.toString(result.getId()));
-    if (currentVersion > 0) {
-      return ResponseEntity.created(resourceUri).header(VERSION_HEADER, Long.toString(currentVersion)).build();
-    } else {
-      return ResponseEntity.created(resourceUri).build();
-    }
-  }
-
-  @Override
-  public ResponseEntity getContentMetadata(@PathVariable(value = "id") final String identifier,
-          @RequestParam(name = "tag", required = false) final String tag,
-          @RequestParam(name = "version", required = false) final Long version,
-          final Pageable pgbl,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder) {
-     LOGGER.trace("Get content metadata for resource with id '{}' and version '{}'", identifier, version);
-   Function<String, String> getContentMetadata = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, tag, version, pgbl, request, response, uriBuilder)).toString();
-    };
-    //check resource and permission
-    DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, identifier, null, getContentMetadata);
-    String path = ContentDataUtils.getContentPathFromRequest(request);
-
-    List<ContentInformation> result = ContentDataUtils.readFiles(repositoryProperties, resource, path, tag, version, pgbl, getContentMetadata);
-
-    if (path.endsWith("/") || path.length() == 0) {
-      LOGGER.trace("Obtained {} content information result(s).", result.size());
-      return ResponseEntity.ok().body(fixContentInformation(result, version));
-    } else {
-      LOGGER.trace("Obtained single content information result.");
-      ContentInformation contentInformation = result.get(0);
-      long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
-      if (currentVersion > 0) {
-        return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
-      } else {
-        return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(fixContentInformation(contentInformation, version));
-      }
-    }
-  }
-
-  @Override
-  public ResponseEntity<List<ContentInformation>> findContentMetadataByExample(@RequestBody final ContentInformation example,
-          final Pageable pgbl,
-          final WebRequest wr,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder) {
-
-    PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
-    Page<ContentInformation> page = contentInformationService.findByExample(example, AuthenticationHelper.getAuthorizationIdentities(),
-            AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()), pgbl);
-
-    response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
-    return ResponseEntity.ok().body(fixContentInformation(page.getContent(), null));
-  }
-
-  @Override
-  public ResponseEntity patchContentMetadata(@PathVariable(value = "id") final String identifier,
-          final @RequestBody JsonPatch patch,
-          final WebRequest request,
-          final HttpServletResponse response) {
-    Function<String, String> patchContentMetadata = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
-    };
-    String path = ContentDataUtils.getContentPathFromRequest(request);
-    String eTag = ControllerUtils.getEtagFromHeader(request);
-    ContentInformation toUpdate = ContentDataUtils.patchContentInformation(repositoryProperties, identifier, path, patch, eTag, patchContentMetadata);
-
-    long currentVersion = contentAuditService.getCurrentVersion(Long.toString(toUpdate.getId()));
-    if (currentVersion > 0) {
-      return ResponseEntity.noContent().header(VERSION_HEADER, Long.toString(currentVersion)).build();
-    } else {
-      return ResponseEntity.noContent().build();
-    }
-  }
-
-  @Override
-  public void getContent(@PathVariable(value = "id") final String identifier,
-          @RequestParam(value = "version", required = false) Long version,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder) {
-     LOGGER.trace("Get content for resource with id '{}' and version '{}'", identifier, version);
-    String path = ContentDataUtils.getContentPathFromRequest(request);
-     LOGGER.trace("Path: '{}'", path);
-    String acceptHeader = request.getHeader(HttpHeaders.ACCEPT);
-    DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, identifier, null, (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, 1l, null, request, response, uriBuilder)).toString();
-    });
-    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
-    LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getId());
-    contentInformationService.read(resource, path, version, acceptHeader, response);
-  }
-
-  @Override
-  public ResponseEntity deleteContent(@PathVariable(value = "id")
-          final String identifier,
-          final WebRequest request,
-          final HttpServletResponse response) {
-    String path = ContentDataUtils.getContentPathFromRequest(request);
-    String eTag = ControllerUtils.getEtagFromHeader(request);
-    Function<String, String> deleteContent = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).deleteContent(t, request, response)).toString();
-    };
-    ContentDataUtils.deleteFile(repositoryProperties, identifier, path, eTag, deleteContent);
-
-    return ResponseEntity.noContent().build();
-  }
-
-  @Override
-  public ResponseEntity getAuditInformation(@PathVariable("id") final String resourceIdentifier,
-          final Pageable pgbl,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder ucb) {
-    LOGGER.trace("Performing getAuditInformation({}, {}).", resourceIdentifier, pgbl);
-    Function<String, String> getById;
-    getById = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, null, request, response)).toString();
-    };
-    Optional<String> auditInformation = DataResourceUtils.getAuditInformation(repositoryProperties, resourceIdentifier, pgbl, getById);
-
-    if (!auditInformation.isPresent()) {
-      LOGGER.trace("No audit information found for resource {}. Returning empty JSON array.", resourceIdentifier);
-      return ResponseEntity.ok().body("[]");
+    @Override
+    public ResponseEntity<DataResource> getById(@PathVariable("id") final String identifier,
+            @RequestParam(name = "version", required = false) final Long version,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        LOGGER.trace("Get resource by id '{}' and version '{}'.", identifier, version);
+        Function<String, String> getById;
+        getById = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
+        };
+        return DataResourceUtils.readResource(repositoryProperties, identifier, version, getById);
     }
 
-    long currentVersion = auditService.getCurrentVersion(resourceIdentifier);
-
-    LOGGER.trace("Audit information found, returning result.");
-    return ResponseEntity.ok().header(VERSION_HEADER, Long.toString(currentVersion)).body(auditInformation.get());
-  }
-
-  @Override
-  public ResponseEntity getContentAuditInformation(@PathVariable("id") final String resourceIdentifier,
-          final Pageable pgbl,
-          final WebRequest request,
-          final HttpServletResponse response,
-          final UriComponentsBuilder uriBuilder) {
-    LOGGER.trace("Performing getContentAuditInformation({}, {}).", resourceIdentifier, pgbl);
-    Function<String, String> getById;
-    getById = (t) -> {
-      return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, null, pgbl, request, response, uriBuilder)).toString();
-    };
-    String path = ContentDataUtils.getContentPathFromRequest(request);
-    //check resource and permission
-    DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, resourceIdentifier, null, getById);
-
-    DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
-
-    LOGGER.trace("Checking provided path {}.", path);
-    if (path.startsWith("/")) {
-      LOGGER.debug("Removing leading slash from path {}.", path);
-      //remove leading slash if present, which should actually never happen
-      path = path.substring(1);
+    @Override
+    public ResponseEntity<List<DataResource>> findAll(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
+            @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
+            final Pageable pgbl,
+            final WebRequest request,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        return findByExample(null, lastUpdateFrom, lastUpdateUntil, pgbl, request, response, uriBuilder);
     }
 
-    //switch between collection and element listing
-    if (path.endsWith("/") || path.length() == 0) {
-      LOGGER.error("Path ends with slash or is empty. Obtaining audit information for collection elements is not supported.");
-      throw new BadArgumentException("Provided path is invalid for obtaining audit information. Path must not be empty and must not end with a slash.");
+    @Override
+    public ResponseEntity<List<DataResource>> findByExample(@RequestBody DataResource example,
+            @RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
+            @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
+            final Pageable pgbl,
+            final WebRequest req,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        LOGGER.trace("Find resource by example '{}' from '{}' until '{}'", example, lastUpdateFrom, lastUpdateUntil);
+        Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, example, lastUpdateFrom, lastUpdateUntil, pgbl, response, uriBuilder);
+        //set content-range header for react-admin (index_start-index_end/total
+        PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
+        response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
+        return ResponseEntity.ok().body(DataResourceUtils.filterResources(page.getContent()));
+
     }
-    LOGGER.trace("Path does not end with slash and/or is not empty. Assuming single element access.");
-    ContentInformation contentInformation = contentInformationService.getContentInformation(resource.getId(), path, null);
 
-    Optional<String> auditInformation = contentInformationService.getAuditInformationAsJson(Long.toString(contentInformation.getId()), pgbl);
+    @Override
+    public ResponseEntity patch(@PathVariable("id") final String identifier,
+            @RequestBody final JsonPatch patch,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        LOGGER.trace("Patch resource with id '{}': Patch '{}'", identifier, patch);
+        Function<String, String> patchDataResource = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).patch(t, patch, request, response)).toString();
+        };
+        //String path = ContentDataUtils.getContentPathFromRequest(request);
+        String eTag = ControllerUtils.getEtagFromHeader(request);
+        DataResourceUtils.patchResource(repositoryProperties, identifier, patch, eTag, patchDataResource);
 
-    if (!auditInformation.isPresent()) {
-      LOGGER.trace("No audit information found for resource {} and path {}. Returning empty JSON array.", resourceIdentifier, path);
-      return ResponseEntity.ok().body("[]");
-    }
-
-    LOGGER.trace("Audit information found, returning result.");
-    long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
-
-    return ResponseEntity.ok().header(VERSION_HEADER, Long.toString(currentVersion)).body(auditInformation.get());
-  }
-
-  public ContentInformation fixContentInformation(ContentInformation resource, Long version) {
-    //hide all attributes but the id from the parent data resource in the content information entity
-    String id = resource.getParentResource().getId();
-    resource.setParentResource(DataResource.factoryNewDataResource(id));
-    // fix content URI if URI points to a local file
-    if (resource.getContentUri() != null && resource.getContentUri().startsWith("file://")) {
-      Long fileVersion = version != null ? version : 1l;
-      String contentUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(id, null, fileVersion, null, null, null, null)).toString();
-      contentUri = contentUri.replaceAll("\\*\\*", resource.getRelativePath());
-      if ((version == null) || (!applicationProperties.isAuditEnabled())) {
-        // Remove path parameter version
-        int qmIndex = contentUri.lastIndexOf("?");
-        if (qmIndex > 0) {
-          contentUri = contentUri.substring(0, qmIndex);
+        long currentVersion = auditService.getCurrentVersion(identifier);
+        if (currentVersion > 0) {
+            return ResponseEntity.noContent().header(VERSION_HEADER, Long.toString(currentVersion)).build();
+        } else {
+            return ResponseEntity.noContent().build();
 
         }
-      }
-      resource.setContentUri(contentUri);
     }
-    return resource;
-  }
 
-  public List<ContentInformation> fixContentInformation(List<ContentInformation> resources, Long version) {
-    //hide all attributes but the id from the parent data resource in all content information entities
-    resources.forEach((resource) -> {
-      fixContentInformation(resource, version);
-    });
-    return resources;
-  }
+    @Override
+    public ResponseEntity put(@PathVariable("id") final String identifier,
+            @RequestBody final DataResource newResource,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        LOGGER.trace("Update resource with id '{}': new resource: '{}'", identifier, newResource);
+        Function<String, String> putWithId;
+        putWithId = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
+        };
+        DataResource result = DataResourceUtils.updateResource(repositoryProperties, identifier, newResource, request, putWithId);
+        long currentVersion = repositoryProperties.getAuditService().getCurrentVersion(result.getId());
+
+        if (currentVersion > 0) {
+            //trigger response creation and set etag...the response body is set automatically
+            return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(DataResourceUtils.filterResource(result));
+        } else {
+            return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").body(DataResourceUtils.filterResource(result));
+        }
+
+    }
+
+    @Override
+    public ResponseEntity delete(@PathVariable("id") final String identifier,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        LOGGER.trace("Delete resource with id '{}'", identifier);
+        Function<String, String> getById;
+        getById = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
+        };
+        DataResourceUtils.deleteResource(repositoryProperties, identifier, request, getById);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity createContent(@PathVariable(value = "id") final String identifier,
+            @RequestPart(name = "file", required = false) MultipartFile file,
+            @RequestPart(name = "metadata", required = false) final ContentInformation contentInformation,
+            @RequestParam(name = "force", defaultValue = "false") boolean force,
+            final WebRequest request,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        LOGGER.trace("Create content for resource with id '{}'. Force: '{}'", identifier, force);
+        Function<String, String> createContent = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).createContent(t, file, contentInformation, force, request, response, uriBuilder)).toString();
+        };
+        DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, identifier, null, createContent);
+        String path = ContentDataUtils.getContentPathFromRequest(request);
+        ContentInformation result = ContentDataUtils.addFile(repositoryProperties, resource, file, path, contentInformation, force, createContent);
+
+        URI link = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(resource.getId(), null, 1l, null, request, response, uriBuilder)).toUri();
+
+        URIBuilder builder = new URIBuilder(link);
+        builder.setPath(builder.getPath().replace("**", path));
+        URI resourceUri = null;
+
+        try {
+            resourceUri = builder.build();
+        } catch (URISyntaxException ex) {
+            LOGGER.error("Failed to create location URI for path " + path + ". However, resource should be created.", ex);
+            throw new CustomInternalServerError("Resource creation successful, but unable to create resource linkfor path " + path + ".");
+        }
+
+        long currentVersion = contentAuditService.getCurrentVersion(Long.toString(result.getId()));
+        if (currentVersion > 0) {
+            return ResponseEntity.created(resourceUri).header(VERSION_HEADER, Long.toString(currentVersion)).build();
+        } else {
+            return ResponseEntity.created(resourceUri).build();
+        }
+    }
+
+    @Override
+    public ResponseEntity getContentMetadata(@PathVariable(value = "id") final String identifier,
+            @RequestParam(name = "tag", required = false) final String tag,
+            @RequestParam(name = "version", required = false) final Long version,
+            final Pageable pgbl,
+            final WebRequest request,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        LOGGER.trace("Get content metadata for resource with id '{}' and version '{}'", identifier, version);
+
+        Function<String, String> getContentMetadata = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, tag, version, pgbl, request, response, uriBuilder)).toString();
+        };
+        //check resource and permission
+        DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, identifier, null, getContentMetadata);
+        String path = ContentDataUtils.getContentPathFromRequest(request);
+
+        List<ContentInformation> result = ContentDataUtils.readFiles(repositoryProperties, resource, path, tag, version, pgbl, getContentMetadata);
+
+        if (path.endsWith("/") || path.length() == 0) {
+            LOGGER.trace("Obtained {} content information result(s).", result.size());
+            return ResponseEntity.ok().body(fixContentInformation(result, version));
+        } else {
+            LOGGER.trace("Obtained single content information result.");
+            ContentInformation contentInformation = result.get(0);
+            long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
+            if (currentVersion > 0) {
+                return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
+            } else {
+                return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(fixContentInformation(contentInformation, version));
+            }
+        }
+
+    }
+
+    @Override
+    public ResponseEntity<List<ContentInformation>> findContentMetadataByExample(@RequestBody final ContentInformation example,
+            final Pageable pgbl,
+            final WebRequest wr,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+
+        PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
+        Page<ContentInformation> page = contentInformationService.findByExample(example, AuthenticationHelper.getAuthorizationIdentities(),
+                AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString()), pgbl);
+
+        response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
+        return ResponseEntity.ok().body(fixContentInformation(page.getContent(), null));
+    }
+
+    @Override
+    public ResponseEntity patchContentMetadata(@PathVariable(value = "id") final String identifier,
+            final @RequestBody JsonPatch patch,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        Function<String, String> patchContentMetadata = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).patchContentMetadata(t, patch, request, response)).toString();
+        };
+        String path = ContentDataUtils.getContentPathFromRequest(request);
+        String eTag = ControllerUtils.getEtagFromHeader(request);
+        ContentInformation toUpdate = ContentDataUtils.patchContentInformation(repositoryProperties, identifier, path, patch, eTag, patchContentMetadata);
+
+        long currentVersion = contentAuditService.getCurrentVersion(Long.toString(toUpdate.getId()));
+        if (currentVersion > 0) {
+            return ResponseEntity.noContent().header(VERSION_HEADER, Long.toString(currentVersion)).build();
+        } else {
+            return ResponseEntity.noContent().build();
+        }
+    }
+
+    @Override
+    public void getContent(@PathVariable(value = "id") final String identifier,
+            @RequestParam(value = "version", required = false) Long version,
+            final WebRequest request,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        LOGGER.trace("Get content for resource with id '{}' and version '{}'", identifier, version);
+        String path = ContentDataUtils.getContentPathFromRequest(request);
+        LOGGER.trace("Path: '{}'", path);
+        String acceptHeader = request.getHeader(HttpHeaders.ACCEPT);
+        DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, identifier, null, (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(t, null, 1l, null, request, response, uriBuilder)).toString();
+        });
+        DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
+        LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getId());
+        contentInformationService.read(resource, path, version, acceptHeader, response);
+    }
+
+    @Override
+    public ResponseEntity deleteContent(@PathVariable(value = "id")
+            final String identifier,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        String path = ContentDataUtils.getContentPathFromRequest(request);
+        String eTag = ControllerUtils.getEtagFromHeader(request);
+        Function<String, String> deleteContent = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).deleteContent(t, request, response)).toString();
+        };
+        ContentDataUtils.deleteFile(repositoryProperties, identifier, path, eTag, deleteContent);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    public ContentInformation fixContentInformation(ContentInformation resource, Long version) {
+        //hide all attributes but the id from the parent data resource in the content information entity
+        String id = resource.getParentResource().getId();
+        resource.setParentResource(DataResource.factoryNewDataResource(id));
+        // fix content URI if URI points to a local file
+        if (resource.getContentUri() != null && resource.getContentUri().startsWith("file://")) {
+            Long fileVersion = version != null ? version : 1l;
+            String contentUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(id, null, fileVersion, null, null, null, null)).toString();
+            contentUri = contentUri.replaceAll("\\*\\*", resource.getRelativePath());
+            if ((version == null) || (!applicationProperties.isAuditEnabled())) {
+                // Remove path parameter version
+                int qmIndex = contentUri.lastIndexOf("?");
+                if (qmIndex > 0) {
+                    contentUri = contentUri.substring(0, qmIndex);
+
+                }
+            }
+            resource.setContentUri(contentUri);
+        }
+        return resource;
+    }
+
+    public List<ContentInformation> fixContentInformation(List<ContentInformation> resources, Long version) {
+        //hide all attributes but the id from the parent data resource in all content information entities
+        resources.forEach((resource) -> {
+            fixContentInformation(resource, version);
+        });
+        return resources;
+    }
 }

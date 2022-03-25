@@ -388,7 +388,7 @@ public class DataResourceController implements IDataResourceController {
             Long fileVersion = version != null ? version : 1l;
             String contentUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(id, null, fileVersion, null, null, null, null)).toString();
             contentUri = contentUri.replaceAll("\\*\\*", resource.getRelativePath());
-            if ((version == null) || (!applicationProperties.isAuditEnabled())) {
+            if ((version == null) ||  !applicationProperties.isAuditEnabled()) {
                 // Remove path parameter version
                 int qmIndex = contentUri.lastIndexOf("?");
                 if (qmIndex > 0) {

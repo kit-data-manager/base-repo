@@ -83,7 +83,7 @@ public class DataCiteMessageConverter implements HttpMessageConverter {
     @Override
     public Object read(Class arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
         LOGGER.trace("Resing HttpInputMessage for JOLT transformation.");
-        String data = new BufferedReader(new InputStreamReader(arg1.getBody(), UTF_8)).lines().collect(Collectors.joining("\n"));
+        String data = new BufferedReader(new InputStreamReader(arg1.getBody(), "UTF-8")).lines().collect(Collectors.joining("\n"));
         return applyJoltTransformation(data);
     }
 

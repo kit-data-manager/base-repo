@@ -28,6 +28,7 @@ import org.springframework.core.env.MutablePropertySources;
 import org.springframework.stereotype.Component;
 
 /**
+ * Logger helper for printing out env properties.
  *
  * @author jejkal
  */

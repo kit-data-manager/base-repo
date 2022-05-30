@@ -37,7 +37,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 
 /**
- *
+ * Message converter implementation from internal format to DataCite format.
  * @author jejkal
  */
 public class DataCiteMessageConverter implements HttpMessageConverter {
@@ -83,8 +83,10 @@ public class DataCiteMessageConverter implements HttpMessageConverter {
     @Override
     public Object read(Class arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
         LOGGER.trace("Resing HttpInputMessage for JOLT transformation.");
-        String data = new BufferedReader(new InputStreamReader(arg1.getBody())).lines().collect(Collectors.joining("\n"));
-        return applyJoltTransformation(data);
+        try (InputStreamReader reader = new InputStreamReader(arg1.getBody())) {
+            String data = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+            return applyJoltTransformation(data);
+        }
     }
 
     @Override

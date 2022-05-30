@@ -55,6 +55,12 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.github.victools.jsonschema.generator.OptionPreset;
+import com.github.victools.jsonschema.generator.SchemaGenerator;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaVersion;
 
 /**
  *
@@ -79,10 +85,10 @@ public class Application {
     @Autowired
     private IRepoStorageService[] storageServices;
 
-    @Autowired
-    private IDataResourceDao dataResourceDao;
-    @Autowired
-    private ApplicationProperties applicationProperties;
+//    @Autowired
+//    private IDataResourceDao dataResourceDao;
+//    @Autowired
+//    private ApplicationProperties applicationProperties;
 
     @Autowired
     private IDataResourceService dataResourceService;
@@ -182,7 +188,7 @@ public class Application {
     public RepoBaseConfiguration repositoryConfig() {
         LOG.info("Loading repository configuration.");
         IAuditService<DataResource> auditServiceDataResource;
-        IAuditService<ContentInformation> contentAuditService;
+        ContentInformationAuditService contentAuditService;
         RepoBaseConfiguration rbc = new RepoBaseConfiguration();
         rbc.setBasepath(applicationProperties().getBasepath());
         rbc.setReadOnly(applicationProperties().isReadOnly());
@@ -191,18 +197,22 @@ public class Application {
         rbc.setEventPublisher(eventPublisher);
         rbc.setJwtSecret(applicationProperties().getJwtSecret());
         rbc.setAuthEnabled(applicationProperties().isAuthEnabled());
-        for (IRepoVersioningService versioningService : this.versioningServices) {
-            if (applicationProperties().getDefaultVersioningService().equals(versioningService.getServiceName())) {
-                LOG.info("Set versioning service: {}", versioningService.getServiceName());
-                rbc.setVersioningService(versioningService);
-                break;
+        if (applicationProperties().getDefaultVersioningService() != null) {
+            for (IRepoVersioningService versioningService : this.versioningServices) {
+                if (applicationProperties().getDefaultVersioningService().equals(versioningService.getServiceName())) {
+                    LOG.info("Set versioning service: {}", versioningService.getServiceName());
+                    rbc.setVersioningService(versioningService);
+                    break;
+                }
             }
         }
-        for (IRepoStorageService storageService : this.storageServices) {
-            if (applicationProperties().getDefaultStorageService().equals(storageService.getServiceName())) {
-                LOG.info("Set storage service: {}", storageService.getServiceName());
-                rbc.setStorageService(storageService);
-                break;
+        if (applicationProperties().getDefaultStorageService() != null) {
+            for (IRepoStorageService storageService : this.storageServices) {
+                if (applicationProperties().getDefaultStorageService().equals(storageService.getServiceName())) {
+                    LOG.info("Set storage service: {}", storageService.getServiceName());
+                    rbc.setStorageService(storageService);
+                    break;
+                }
             }
         }
         auditServiceDataResource = new DataResourceAuditService(this.javers, rbc);
@@ -210,6 +220,7 @@ public class Application {
         dataResourceService.configure(rbc);
         contentInformationService.configure(rbc);
         rbc.setAuditService(auditServiceDataResource);
+        rbc.setContentInformationAuditService(contentAuditService);
         LOG.trace("Show Config: {}", rbc);
         LOG.trace("getBasepath {}", rbc.getBasepath());
         LOG.trace("getJwtSecret {}", rbc.getJwtSecret());
@@ -222,8 +233,15 @@ public class Application {
     }
 
     public static void main(String[] args) {
-       ApplicationContext ctx = SpringApplication.run(Application.class, args);
-       System.out.println("Spring is running!");
+          ApplicationContext ctx = SpringApplication.run(Application.class, args);
+         System.out.println("Spring is running!");
+
+//        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON);
+//        SchemaGeneratorConfig config = configBuilder.build();
+//        SchemaGenerator generator = new SchemaGenerator(config);
+//        JsonNode jsonSchema = generator.generateSchema(DataResource.class);
+//
+//        System.out.println(jsonSchema.toString());
     }
 
 }

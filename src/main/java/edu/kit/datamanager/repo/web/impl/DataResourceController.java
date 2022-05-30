@@ -62,6 +62,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
+ * Controller for data resource endpoints.
  *
  * @author jejkal
  */
@@ -74,7 +75,7 @@ public class DataResourceController implements IDataResourceController {
     public static final String CONTENT_RANGE_HEADER = "Content-Range";
     // private final JsonResult json = JsonResult.instance();
     @Autowired
-    private Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
 
     private final IContentInformationService contentInformationService;
     @Autowired
@@ -85,13 +86,13 @@ public class DataResourceController implements IDataResourceController {
     private final RepoBaseConfiguration repositoryProperties;
 
     /**
+     * Default constructor.
      *
-     * @param applicationProperties
-     * @param repositoryConfig
+     * @param applicationProperties Properties object.
+     * @param repositoryConfig Generic configuratation object.
      */
     public DataResourceController(ApplicationProperties applicationProperties,
-            RepoBaseConfiguration repositoryConfig
-    ) {
+            RepoBaseConfiguration repositoryConfig) {
         this.applicationProperties = applicationProperties;
         this.contentInformationService = repositoryConfig.getContentInformationService();
         auditService = repositoryConfig.getAuditService();

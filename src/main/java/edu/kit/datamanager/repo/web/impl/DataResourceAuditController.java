@@ -45,6 +45,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
+ * Controller for audit endpoints of data resource service.
  *
  * @author jejkal
  */

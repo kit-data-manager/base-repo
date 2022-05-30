@@ -44,9 +44,8 @@ import org.springframework.restdocs.JUnitRestDocumentation;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import org.springframework.restdocs.operation.preprocess.Preprocessors;
-import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
-import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import org.springframework.restdocs.templates.TemplateFormats;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -87,12 +86,13 @@ public class DataResourceControllerDocumentationTest {
     public void setUp() throws JsonProcessingException {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
                 .addFilters(springSecurityFilterChain)
-                .apply(documentationConfiguration(this.restDocumentation)
+                .apply(documentationConfiguration(this.restDocumentation).snippets()
+                        .withTemplateFormat(TemplateFormats.markdown()).and()
                         .uris().withPort(8080).and()
                         .operationPreprocessors()
                         .withRequestDefaults(prettyPrint())
-                        .withResponseDefaults(Preprocessors.removeHeaders("X-Content-Type-Options", "X-XSS-Protection", "X-Frame-Options"), prettyPrint()))
-                .build();
+                        .withResponseDefaults(Preprocessors.removeHeaders("X-Content-Type-Options", "X-XSS-Protection", "X-Frame-Options"), prettyPrint())
+                ).build();
     }
 
     @Test
@@ -189,7 +189,7 @@ public class DataResourceControllerDocumentationTest {
         this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/randomFile.txt")).andExpect(status().isOk()).andDo(document("download-file"));
 
         //get audit information
-        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andExpect(status().isOk()).andDo(document("get-audit-information"));
+        this.mockMvc.perform(get("/api/v1/audit/" + resourceId).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andExpect(status().isOk()).andDo(document("get-audit-information"));
 
         //get particular version
         this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "2")).andExpect(status().isOk()).andDo(document("get-resource-version"));

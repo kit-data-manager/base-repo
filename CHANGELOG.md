@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Security
+- Update to h2 2.1.212:
+  - Please migrate your database if you want to update base-repo while using h2!
+    See: https://h2database.com/html/migration-to-v2.html 
+
 ### Added
 - File versioning support for content elements
 - Added Keycloak support for authentication

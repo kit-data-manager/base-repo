@@ -38,6 +38,7 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 
 /**
  * Message converter implementation from internal format to DataCite format.
+ *
  * @author jejkal
  */
 public class DataCiteMessageConverter implements HttpMessageConverter {
@@ -66,7 +67,7 @@ public class DataCiteMessageConverter implements HttpMessageConverter {
             return false;
         }
         LOGGER.trace("Checking applicability of DataCiteMessageConverter for class {} and mediatype {}.", arg0, arg1);
-        return DataResource.class.equals(arg0) && arg1.toString().startsWith("application/json+datacite");
+        return DataResource.class.equals(arg0) && arg1.toString().startsWith("application/datacite+json");
     }
 
     @Override
@@ -77,7 +78,7 @@ public class DataCiteMessageConverter implements HttpMessageConverter {
 
     @Override
     public List getSupportedMediaTypes() {
-        return Arrays.asList(MediaType.valueOf("application/json+datacite"));
+        return Arrays.asList(MediaType.valueOf("application/datacite+json"));
     }
 
     @Override

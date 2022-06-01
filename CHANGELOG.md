@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - File versioning support for content elements
 - Added Keycloak support for authentication
+- Creating new DataResources accepts now official DataCite documents by providing Content-Type header with value 'application/datacite+json' 
 
 ### Changed
 - Additional field in content information metadata for providing the used versioning (none, simple, ocfl)

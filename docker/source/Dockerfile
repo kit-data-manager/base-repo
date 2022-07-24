@@ -1,8 +1,8 @@
-FROM openjdk:11-stretch AS build-env-java
+FROM openjdk:16-bullseye AS build-env-java
 MAINTAINER webmaster@datamanager.kit.edu
 LABEL stage=build-env
 
-RUN apt-get update && \
+RUN apt-get -y update && \
     apt-get upgrade --assume-yes && \
     apt-get install --assume-yes git && \
     mkdir -p /base-repo/
@@ -15,7 +15,7 @@ COPY build.sh /base-repo/
 
 RUN sh /base-repo/build.sh
 
-FROM openjdk:11-stretch AS run-base-repo
+FROM openjdk:16-bullseye AS run-base-repo
 MAINTAINER webmaster@datamanager.kit.edu
 LABEL stage=run
 

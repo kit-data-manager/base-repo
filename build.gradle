@@ -82,13 +82,13 @@ dependencies {
     implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
     implementation "com.nimbusds:nimbus-jose-jwt:9.15.2"
     implementation "io.jsonwebtoken:jjwt-api:0.11.2"
-    implementation "io.jsonwebtoken:jjwt-impl:0.11.2"
+    implementation "io.jsonwebtoken:jjwt-impl:0.11.5"
     implementation "io.jsonwebtoken:jjwt-jackson:0.11.2"
 
     implementation "org.javers:javers-core:${javersVersion}"
     implementation "com.github.fge:json-patch:1.9"
     implementation "com.bazaarvoice.jolt:jolt-core:0.1.7"    
-    implementation "com.bazaarvoice.jolt:json-utils:0.1.5"    
+    implementation "com.bazaarvoice.jolt:json-utils:0.1.7"    
 
     implementation "javax.xml.bind:jaxb-api:2.3.0"
 

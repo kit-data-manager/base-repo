@@ -55,9 +55,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -388,7 +390,7 @@ public class DataResourceController implements IDataResourceController {
             Long fileVersion = version != null ? version : 1l;
             String contentUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(id, null, fileVersion, null, null, null, null)).toString();
             contentUri = contentUri.replaceAll("\\*\\*", resource.getRelativePath());
-            if ((version == null) ||  !applicationProperties.isAuditEnabled()) {
+            if ((version == null) || !applicationProperties.isAuditEnabled()) {
                 // Remove path parameter version
                 int qmIndex = contentUri.lastIndexOf("?");
                 if (qmIndex > 0) {

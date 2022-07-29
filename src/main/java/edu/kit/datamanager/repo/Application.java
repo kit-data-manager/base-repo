@@ -64,8 +64,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @ComponentScan({"edu.kit.datamanager"})
-//@ComponentScan({"edu.kit.datamanager.repo", "edu.kit.datamanager.repo.configuration", "edu.kit.datamanager.service", "edu.kit.datamanager.configuration", "edu.kit.datamanager.repo.dao", "edu.kit.datamanager.repo.service", "edu.kit.datamanager.repo.service.impl", "edu.kit.datamanager.messaging.client"})
-//@ComponentScan({"edu.kit.datamanager.repo", "edu.kit.datamanager.service", "edu.kit.datamanager.service.impl", "edu.kit.datamanager.configuration", "edu.kit.datamanager.repo.dao", "edu.kit.datamanager.repo.service", "edu.kit.datamanager.messaging.client"})
 public class Application {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);

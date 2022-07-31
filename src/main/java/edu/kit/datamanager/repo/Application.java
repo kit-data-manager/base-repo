@@ -23,6 +23,7 @@ import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.configuration.DateBasedStorageProperties;
 import edu.kit.datamanager.repo.configuration.IdBasedStorageProperties;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
+import edu.kit.datamanager.repo.configuration.StorageServiceProperties;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -83,10 +84,10 @@ public class Application {
 //    @Autowired
 //    private ApplicationProperties applicationProperties;
 
-    @Autowired
+   /* @Autowired
     private IDataResourceService dataResourceService;
     @Autowired
-    private IContentInformationService contentInformationService;
+    private IContentInformationService contentInformationService;*/
 
 //  @Autowired
 //  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;  
@@ -154,6 +155,10 @@ public class Application {
     public DateBasedStorageProperties dateBasedStorageProperties() {
         return new DateBasedStorageProperties();
     }
+    @Bean
+    public StorageServiceProperties storageServiceProperties(){
+        return new StorageServiceProperties();
+    }
 
     @Bean
     public IMessagingService messagingService() {
@@ -185,8 +190,8 @@ public class Application {
         RepoBaseConfiguration rbc = new RepoBaseConfiguration();
         rbc.setBasepath(applicationProperties().getBasepath());
         rbc.setReadOnly(applicationProperties().isReadOnly());
-        rbc.setDataResourceService(dataResourceService);
-        rbc.setContentInformationService(contentInformationService);
+        rbc.setDataResourceService(dataResourceService());
+        rbc.setContentInformationService(contentInformationService());
         rbc.setEventPublisher(eventPublisher);
         rbc.setJwtSecret(applicationProperties().getJwtSecret());
         rbc.setAuthEnabled(applicationProperties().isAuthEnabled());
@@ -202,6 +207,7 @@ public class Application {
         if (applicationProperties().getDefaultStorageService() != null) {
             for (IRepoStorageService storageService : this.storageServices) {
                 if (applicationProperties().getDefaultStorageService().equals(storageService.getServiceName())) {
+                    storageService.configure(storageServiceProperties());
                     LOG.info("Set storage service: {}", storageService.getServiceName());
                     rbc.setStorageService(storageService);
                     break;
@@ -210,8 +216,8 @@ public class Application {
         }
         auditServiceDataResource = new DataResourceAuditService(this.javers, rbc);
         contentAuditService = new ContentInformationAuditService(this.javers, rbc);
-        dataResourceService.configure(rbc);
-        contentInformationService.configure(rbc);
+        dataResourceService().configure(rbc);
+        contentInformationService().configure(rbc);
         rbc.setAuditService(auditServiceDataResource);
         rbc.setContentInformationAuditService(contentAuditService);
         LOG.trace("Show Config: {}", rbc);

@@ -54,7 +54,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Schema(description = "Data Resource Audit Query")
 public class DataResourceAuditController implements IDataResourceAuditController {
 
-    @Autowired
     private Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
 
     private final IContentInformationService contentInformationService;

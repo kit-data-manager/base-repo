@@ -43,7 +43,6 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
  */
 public class DataCiteMessageConverter implements HttpMessageConverter {
 
-    @Autowired
     private Logger LOGGER = LoggerFactory.getLogger(DataCiteMessageConverter.class);
 
     private Object applyJoltTransformation(Object payload) {

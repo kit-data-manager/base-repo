@@ -75,7 +75,6 @@ public class DataResourceController implements IDataResourceController {
     public static final String VERSION_HEADER = "Resource-Version";
     public static final String CONTENT_RANGE_HEADER = "Content-Range";
     // private final JsonResult json = JsonResult.instance();
-    @Autowired
     private final Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
 
     private final IContentInformationService contentInformationService;

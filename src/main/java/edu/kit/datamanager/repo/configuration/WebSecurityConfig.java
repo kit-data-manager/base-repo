@@ -15,11 +15,13 @@
  */
 package edu.kit.datamanager.repo.configuration;
 
+import edu.kit.datamanager.repo.Application;
 import edu.kit.datamanager.security.filter.KeycloakJwtProperties;
 import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
 import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
 import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -47,13 +49,11 @@ import org.springframework.web.filter.CorsFilter;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    private Logger logger;
+    
+    private static final Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
 
     @Autowired
     private ApplicationProperties applicationProperties;
-    @Autowired
-    private KeycloakJwtProperties properties;
 
     public WebSecurityConfig() {
     }
@@ -114,11 +114,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public KeycloakTokenFilter keycloaktokenFilterBean() throws Exception {
         return new KeycloakTokenFilter(KeycloakTokenValidator.builder()
-                .readTimeout(properties.getReadTimeoutms())
-                .connectTimeout(properties.getConnectTimeoutms())
-                .sizeLimit(properties.getSizeLimit())
+                .readTimeout(properties().getReadTimeoutms())
+                .connectTimeout(properties().getConnectTimeoutms())
+                .sizeLimit(properties().getSizeLimit())
                 .jwtLocalSecret(applicationProperties.getJwtSecret())
-                .build(properties.getJwkUrl(), properties.getResource(), properties.getJwtClaim()));
+                .build(properties().getJwkUrl(), properties().getResource(), properties().getJwtClaim()));
     }
 
     @Bean

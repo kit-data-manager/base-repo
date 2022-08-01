@@ -18,7 +18,7 @@ In order to build this microservice you'll need:
 After obtaining the sources change to the folder where the sources are located perform the following steps:
 
 ```
-user@localhost:/home/user/base-repo$ ./gradlew -Pclean-release build
+user@localhost:/home/user/base-repo$ ./gradlew build
 > Configure project :
 Using release profile for building base-repo
 <-------------> 0% EXECUTING [0s]
@@ -65,8 +65,7 @@ As soon as the microservice is started, you can browse to
 
 http://localhost:8090/swagger-ui.html
 
-in order to see available RESTful endpoints and their documentation. Furthermore, you can use this Web interface to test single API calls in order to get familiar with the 
-service. A small documentation guiding you through the first steps of using the RESTful API you can find at
+in order to see available RESTful endpoints and their documentation. Furthermore, you can use this Web interface to test single API calls in order to get familiar with the service. A small documentation guiding you through the first steps of using the RESTful API you can find at
 
 http://localhost:8090/static/docs/documentation.html
 

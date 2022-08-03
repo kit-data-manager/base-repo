@@ -2,7 +2,7 @@ plugins {
     id "org.springframework.boot" version "2.7.2"
     id "io.spring.dependency-management" version "1.0.11.RELEASE" 
     id "io.freefair.lombok" version "6.5.0.3"
-    id "io.freefair.maven-publish-java" version "6.1.0"
+    id "io.freefair.maven-publish-java" version "6.5.0.3"
     id "com.github.kt3k.coveralls" version "2.12.0" 
     id "org.owasp.dependencycheck" version "7.1.1"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
@@ -60,7 +60,7 @@ dependencies {
 
      
     implementation "org.springframework:spring-messaging:5.3.22"
-    implementation "org.springframework.security:spring-security-web:5.5.2"
+    implementation "org.springframework.security:spring-security-web:5.7.2"
     implementation "org.springframework.security:spring-security-config:5.5.2"
     
     // cloud support
@@ -79,7 +79,7 @@ dependencies {
 
     //Keycloak
     implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
-    implementation "com.nimbusds:nimbus-jose-jwt:9.15.2"
+    implementation "com.nimbusds:nimbus-jose-jwt:9.23"
     implementation "io.jsonwebtoken:jjwt-api:0.11.2"
     implementation "io.jsonwebtoken:jjwt-impl:0.11.5"
     implementation "io.jsonwebtoken:jjwt-jackson:0.11.5"
@@ -94,7 +94,7 @@ dependencies {
     runtimeOnly    "org.apache.httpcomponents:httpclient:4.5.13"
 
      // driver for postgres
-    implementation "org.postgresql:postgresql:42.3.3"
+    implementation "org.postgresql:postgresql:42.4.0"
     //driver for h2
     implementation "com.h2database:h2:2.1.214"
 

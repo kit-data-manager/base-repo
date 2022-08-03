@@ -72,6 +72,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.1.0...HEAD
 [1.1.0]: https://github.com/kit-data-manager/base-repo/compare/v1.0...v1.1.0
-[1.0.0]: https://github.com/kit-data-manager/base-repo/compare/v0.0.1...v1.0
+[1.0]: https://github.com/kit-data-manager/base-repo/compare/v0.0.1...v1.0
 [0.0.1]: https://github.com/kit-data-manager/base-repo/releases/tag/v0.0.1
 

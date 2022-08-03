@@ -89,7 +89,7 @@ dependencies {
     implementation "com.bazaarvoice.jolt:jolt-core:0.1.7"    
     implementation "com.bazaarvoice.jolt:json-utils:0.1.7"    
 
-    implementation "javax.xml.bind:jaxb-api:2.3.0"
+    implementation "javax.xml.bind:jaxb-api:2.3.1"
 
     runtimeOnly    "org.apache.httpcomponents:httpclient:4.5.13"
 

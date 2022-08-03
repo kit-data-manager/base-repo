@@ -15,14 +15,15 @@
  */
 package edu.kit.datamanager.repo.configuration;
 
-import edu.kit.datamanager.repo.Application;
 import edu.kit.datamanager.security.filter.KeycloakJwtProperties;
 import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
 import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
 import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,11 +50,13 @@ import org.springframework.web.filter.CorsFilter;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    
     private static final Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
 
     @Autowired
     private ApplicationProperties applicationProperties;
+
+    @Autowired
+    private Optional<KeycloakTokenFilter> keycloaktokenFilterBean;
 
     public WebSecurityConfig() {
     }
@@ -71,14 +74,16 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 sessionManagement().
                 sessionCreationPolicy(SessionCreationPolicy.STATELESS).
                 and()
-                .csrf().disable()
-                // .addFilterBefore(corsFilter(), SessionManagementFilter.class)
-                //  .addFilterAfter(new JwtAuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class)
-                .addFilterAfter(keycloaktokenFilterBean(), BasicAuthenticationFilter.class);
+                .csrf().disable();
+        // .addFilterBefore(corsFilter(), SessionManagementFilter.class)
+        //  .addFilterAfter(new JwtAuthenticationFilter(authenticationManager()), BasicAuthenticationFilter.class)
+        if (keycloaktokenFilterBean.isPresent()) {
+            httpSecurity.addFilterAfter(keycloaktokenFilterBean.get(), BasicAuthenticationFilter.class);
+        }
 
         if (!applicationProperties.isAuthEnabled()) {
             logger.info("Authentication is DISABLED. Adding 'NoAuthenticationFilter' to authentication chain.");
-            httpSecurity = httpSecurity.addFilterAfter(new NoAuthenticationFilter(applicationProperties.getJwtSecret(), authenticationManager()), KeycloakTokenFilter.class);
+            httpSecurity = httpSecurity.addFilterAfter(new NoAuthenticationFilter(applicationProperties.getJwtSecret(), authenticationManager()), BasicAuthenticationFilter.class);
         } else {
             logger.info("Authentication is ENABLED.");
         }
@@ -111,20 +116,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //    source.registerCorsConfiguration("/**", config);
 //    return source;
 //  }
-    @Bean
-    public KeycloakTokenFilter keycloaktokenFilterBean() throws Exception {
-        return new KeycloakTokenFilter(KeycloakTokenValidator.builder()
-                .readTimeout(properties().getReadTimeoutms())
-                .connectTimeout(properties().getConnectTimeoutms())
-                .sizeLimit(properties().getSizeLimit())
-                .jwtLocalSecret(applicationProperties.getJwtSecret())
-                .build(properties().getJwkUrl(), properties().getResource(), properties().getJwtClaim()));
-    }
-
-    @Bean
-    public KeycloakJwtProperties properties() {
-        return new KeycloakJwtProperties();
-    }
+   
 
     @Bean
     public FilterRegistrationBean corsFilter() {

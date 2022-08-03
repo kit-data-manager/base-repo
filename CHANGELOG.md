@@ -29,10 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update to spring-cloud 3.1.3
 - Update to spring-messaging 5.3.22
 - Update to spring-restdocs-mockmvc 2.0.6.RELEASE
-- Update to postgresql 42.3.3
+- Update to postgresql 42.4.0
 
 ### Fixed
 - Fixed minor issues in queries of search endpoint if providing a search template resource, e.g., queries involving ResourceType or ACL information
+
+### Removed
+- Property 'repo.audit.enabled' is no longer needed. Instead, 'repo.plugin.versioning' should be either set to 'none' or 'simple' to disable/enable versioning of both, metadata and data.
 
 ## [1.1.0] - 2020-12-17
 ### Changed

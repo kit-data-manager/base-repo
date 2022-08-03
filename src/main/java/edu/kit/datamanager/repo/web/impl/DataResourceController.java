@@ -100,11 +100,11 @@ public class DataResourceController implements IDataResourceController {
         repositoryProperties = repositoryConfig;
         LOGGER.trace("Show Config: {}", repositoryConfig);
 
-        if (!this.applicationProperties.isAuditEnabled() && !"none".equals(this.applicationProperties.getDefaultVersioningService())) {
-            String message = "Conflicting configuration properties detected. 'repo.audit.enabled' must be 'true' if 'repo.file.versioning.default' is not 'none'.";
-            LOGGER.warn(message);
-            throw new IllegalArgumentException(message);
-        }
+//        if (!this.applicationProperties.isAuditEnabled() && !"none".equals(this.applicationProperties.getDefaultVersioningService())) {
+//            String message = "Conflicting configuration properties detected. 'repo.audit.enabled' must be 'true' if 'repo.file.versioning.default' is not 'none'.";
+//            LOGGER.warn(message);
+//            throw new IllegalArgumentException(message);
+//        }
     }
 
     @Override

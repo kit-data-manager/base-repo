@@ -35,6 +35,9 @@ import edu.kit.datamanager.repo.service.IRepoVersioningService;
 import edu.kit.datamanager.repo.service.impl.ContentInformationAuditService;
 import edu.kit.datamanager.repo.service.impl.ContentInformationService;
 import edu.kit.datamanager.repo.service.impl.DataResourceAuditService;
+import edu.kit.datamanager.security.filter.KeycloakJwtProperties;
+import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
+import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.service.impl.RabbitMQMessagingService;
@@ -45,6 +48,7 @@ import org.springframework.beans.factory.InjectionPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
@@ -56,7 +60,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
-
 
 /**
  *
@@ -84,11 +87,10 @@ public class Application {
 //    @Autowired
 //    private ApplicationProperties applicationProperties;
 
-   /* @Autowired
+    /* @Autowired
     private IDataResourceService dataResourceService;
     @Autowired
     private IContentInformationService contentInformationService;*/
-
 //  @Autowired
 //  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;  
     @Bean
@@ -146,7 +148,7 @@ public class Application {
         return new ApplicationProperties();
     }
 
-   /* @Bean
+    /* @Bean
     public IdBasedStorageProperties idBasedStorageProperties() {
         return new IdBasedStorageProperties();
     }
@@ -156,10 +158,10 @@ public class Application {
         return new DateBasedStorageProperties();
     }*/
     @Bean
-    public StorageServiceProperties storageServiceProperties(){
+    public StorageServiceProperties storageServiceProperties() {
         return new StorageServiceProperties();
     }
-    
+
     @Bean
     public IMessagingService messagingService() {
         return new RabbitMQMessagingService();
@@ -182,6 +184,25 @@ public class Application {
 //        return configuration;
 //    }
     @Bean
+    public KeycloakJwtProperties keycloakProperties() {
+        return new KeycloakJwtProperties();
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            value = "repo.auth.enabled",
+            havingValue = "true",
+            matchIfMissing = false)
+    public KeycloakTokenFilter keycloaktokenFilterBean() throws Exception {
+        return new KeycloakTokenFilter(KeycloakTokenValidator.builder()
+                .readTimeout(keycloakProperties().getReadTimeoutms())
+                .connectTimeout(keycloakProperties().getConnectTimeoutms())
+                .sizeLimit(keycloakProperties().getSizeLimit())
+                .jwtLocalSecret(applicationProperties().getJwtSecret())
+                .build(keycloakProperties().getJwkUrl(), keycloakProperties().getResource(), keycloakProperties().getJwtClaim()));
+    }
+
+    @Bean
     @RefreshScope
     public RepoBaseConfiguration repositoryConfig() {
         LOG.info("Loading repository configuration.");
@@ -195,7 +216,7 @@ public class Application {
         rbc.setEventPublisher(eventPublisher);
         rbc.setJwtSecret(applicationProperties().getJwtSecret());
         rbc.setAuthEnabled(applicationProperties().isAuthEnabled());
-         if (applicationProperties().getDefaultStorageService() != null) {
+        if (applicationProperties().getDefaultStorageService() != null) {
             for (IRepoStorageService storageService : this.storageServices) {
                 if (applicationProperties().getDefaultStorageService().equals(storageService.getServiceName())) {
                     storageService.configure(storageServiceProperties());
@@ -205,13 +226,10 @@ public class Application {
                 }
             }
         }
-         
+
         if (applicationProperties().getDefaultVersioningService() != null) {
             for (IRepoVersioningService versioningService : this.versioningServices) {
                 if (applicationProperties().getDefaultVersioningService().equals(versioningService.getServiceName())) {
-                    RepoBaseConfiguration tmp = new RepoBaseConfiguration();
-                    tmp.setBasepath(rbc.getBasepath());
-                    tmp.setStorageService(rbc.getStorageService());
                     versioningService.configure(rbc);
                     LOG.info("Set versioning service: {}", versioningService.getServiceName());
                     rbc.setVersioningService(versioningService);
@@ -219,7 +237,7 @@ public class Application {
                 }
             }
         }
-       
+
         auditServiceDataResource = new DataResourceAuditService(this.javers, rbc);
         contentAuditService = new ContentInformationAuditService(this.javers, rbc);
         dataResourceService().configure(rbc);
@@ -238,8 +256,8 @@ public class Application {
     }
 
     public static void main(String[] args) {
-          ApplicationContext ctx = SpringApplication.run(Application.class, args);
-         System.out.println("Spring is running!");
+        ApplicationContext ctx = SpringApplication.run(Application.class, args);
+        System.out.println("Spring is running!");
 
 //        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON);
 //        SchemaGeneratorConfig config = configBuilder.build();

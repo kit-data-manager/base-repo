@@ -146,7 +146,7 @@ public class Application {
         return new ApplicationProperties();
     }
 
-    @Bean
+   /* @Bean
     public IdBasedStorageProperties idBasedStorageProperties() {
         return new IdBasedStorageProperties();
     }
@@ -154,12 +154,12 @@ public class Application {
     @Bean
     public DateBasedStorageProperties dateBasedStorageProperties() {
         return new DateBasedStorageProperties();
-    }
+    }*/
     @Bean
     public StorageServiceProperties storageServiceProperties(){
         return new StorageServiceProperties();
     }
-
+    
     @Bean
     public IMessagingService messagingService() {
         return new RabbitMQMessagingService();
@@ -195,16 +195,7 @@ public class Application {
         rbc.setEventPublisher(eventPublisher);
         rbc.setJwtSecret(applicationProperties().getJwtSecret());
         rbc.setAuthEnabled(applicationProperties().isAuthEnabled());
-        if (applicationProperties().getDefaultVersioningService() != null) {
-            for (IRepoVersioningService versioningService : this.versioningServices) {
-                if (applicationProperties().getDefaultVersioningService().equals(versioningService.getServiceName())) {
-                    LOG.info("Set versioning service: {}", versioningService.getServiceName());
-                    rbc.setVersioningService(versioningService);
-                    break;
-                }
-            }
-        }
-        if (applicationProperties().getDefaultStorageService() != null) {
+         if (applicationProperties().getDefaultStorageService() != null) {
             for (IRepoStorageService storageService : this.storageServices) {
                 if (applicationProperties().getDefaultStorageService().equals(storageService.getServiceName())) {
                     storageService.configure(storageServiceProperties());
@@ -214,6 +205,21 @@ public class Application {
                 }
             }
         }
+         
+        if (applicationProperties().getDefaultVersioningService() != null) {
+            for (IRepoVersioningService versioningService : this.versioningServices) {
+                if (applicationProperties().getDefaultVersioningService().equals(versioningService.getServiceName())) {
+                    RepoBaseConfiguration tmp = new RepoBaseConfiguration();
+                    tmp.setBasepath(rbc.getBasepath());
+                    tmp.setStorageService(rbc.getStorageService());
+                    versioningService.configure(rbc);
+                    LOG.info("Set versioning service: {}", versioningService.getServiceName());
+                    rbc.setVersioningService(versioningService);
+                    break;
+                }
+            }
+        }
+       
         auditServiceDataResource = new DataResourceAuditService(this.javers, rbc);
         contentAuditService = new ContentInformationAuditService(this.javers, rbc);
         dataResourceService().configure(rbc);

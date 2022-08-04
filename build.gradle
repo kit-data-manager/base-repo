@@ -6,6 +6,7 @@ plugins {
     id "com.github.kt3k.coveralls" version "2.12.0" 
     id "org.owasp.dependencycheck" version "7.1.1"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
+    id "net.researchgate.release" version "3.0.0"
     id 'java'
     id 'jacoco'
 }
@@ -132,4 +133,11 @@ bootJar {
         attributes 'Main-Class': 'org.springframework.boot.loader.PropertiesLauncher'
     }
     launchScript()
+}
+
+// task for printing project name.
+task printProjectName {
+    doLast {
+        println "${project.name}"
+    }
 }

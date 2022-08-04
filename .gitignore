@@ -3,6 +3,7 @@
 /.nb-gradle/
 /.nb-gradle-properties
 /.settings/
+/.vscode/
 /lib/
 /bin/
 **/application.properties

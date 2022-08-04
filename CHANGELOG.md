@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Security
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.2.0] - 2022-08-04
+### Security
 - Update to h2 2.1.214:
   - Please migrate your database if you want to update base-repo while using h2!
     See: https://h2database.com/html/migration-to-v2.html 
@@ -70,7 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - none
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/kit-data-manager/base-repo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/kit-data-manager/base-repo/compare/v1.0...v1.1.0
 [1.0]: https://github.com/kit-data-manager/base-repo/compare/v0.0.1...v1.0
 [0.0.1]: https://github.com/kit-data-manager/base-repo/releases/tag/v0.0.1

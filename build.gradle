@@ -111,6 +111,11 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
 }
 
+if (project.hasProperty('release')) {
+    println 'Using \'release\' profile for building ' + project.getName()
+    apply from: 'gradle/profile-deploy.gradle'
+}
+
 test {
     testLogging {
         outputs.upToDateWhen {false}

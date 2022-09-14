@@ -17,7 +17,7 @@
 ################################################################################
 function usage {
 ################################################################################
-  echo "Script for creating metastore service."
+  echo "Script for creating base-repo service."
   echo "USAGE:"
   echo "  $0 [/path/to/installation/dir]"
   echo "IMPORTANT: Please enter an empty or new directory as installation directory."

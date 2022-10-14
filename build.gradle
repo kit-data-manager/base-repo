@@ -1,5 +1,5 @@
 plugins { 
-    id "org.springframework.boot" version "2.7.3"
+    id "org.springframework.boot" version "2.7.4"
     id "io.spring.dependency-management" version "1.0.13.RELEASE" 
     id "io.freefair.lombok" version "6.5.1"
     id "io.freefair.maven-publish-java" version "6.5.1"
@@ -60,7 +60,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-actuator"
 
      
-    implementation "org.springframework:spring-messaging:5.3.22"
+    implementation "org.springframework:spring-messaging:5.3.23"
     implementation "org.springframework.security:spring-security-web:5.7.3"
     implementation "org.springframework.security:spring-security-config:5.7.3"
     

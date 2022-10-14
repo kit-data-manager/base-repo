@@ -15,15 +15,12 @@
  */
 package edu.kit.datamanager.repo.configuration;
 
-import edu.kit.datamanager.security.filter.KeycloakJwtProperties;
 import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
-import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
 import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -18,7 +18,6 @@ package edu.kit.datamanager.repo.web.impl;
 import com.github.fge.jsonpatch.JsonPatch;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
-import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
@@ -32,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.context.request.WebRequest;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
+import edu.kit.datamanager.repo.domain.TabulatorLocalPagination;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.ContentDataUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
@@ -55,11 +55,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -165,6 +163,24 @@ public class DataResourceController implements IDataResourceController {
             final UriComponentsBuilder uriBuilder) {
         return findByExample(null, lastUpdateFrom, lastUpdateUntil, pgbl, request, response, uriBuilder);
     }
+    
+    
+    @Override
+    public ResponseEntity<TabulatorLocalPagination> findAllForTabulator(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
+            @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
+            final Pageable pgbl,
+            final WebRequest request,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, null, lastUpdateFrom, lastUpdateUntil, pgbl, response, uriBuilder);
+        PageRequest pageRequest = ControllerUtils.checkPaginationInformation(pgbl);
+        response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), pageRequest.getPageSize(), page.getTotalElements()));
+        TabulatorLocalPagination tabulatorLocalPagination = TabulatorLocalPagination.builder()
+                .lastPage(page.getTotalPages())
+                .data(DataResourceUtils.filterResources(page.getContent()))
+                .build();
+        return ResponseEntity.ok().body(tabulatorLocalPagination);
+     }
 
     @Override
     public ResponseEntity<List<DataResource>> findByExample(@RequestBody DataResource example,
@@ -180,7 +196,6 @@ public class DataResourceController implements IDataResourceController {
         PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
         response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
         return ResponseEntity.ok().body(DataResourceUtils.filterResources(page.getContent()));
-
     }
 
     @Override

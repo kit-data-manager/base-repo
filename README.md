@@ -18,9 +18,11 @@ In order to build this microservice you'll need:
 After obtaining the sources change to the folder where the sources are located perform the following steps:
 
 ```
-user@localhost:/home/user/base-repo$ ./gradlew build
-> Configure project :
-Using release profile for building base-repo
+user@localhost:/home/user/base-repo$ ./gradlew -Dprofile=minimal build
+Running gradle version: 7.4.2
+Building base-repo version: 1.2.1-SNAPSHOT
+JDK version: 11
+Using minimal profile for building base-repoo
 <-------------> 0% EXECUTING [0s]
 [...]
 user@localhost:/home/user/base-repo$
@@ -37,9 +39,8 @@ libraries and finally build the base-repo microservice itself. As a result, a fa
 * RabbitMQ 3.7.3 or higher (in case you want to use the messaging feature, which is recommended)
 
 ### Setup
-Before you are able to start the repository microservice, you have to modify the file 'application.properties' according to your local setup. 
-Therefor, copy the file 'settings/application.properties' to your project folder and customize it. Special attentioned should be payed to the datasource url as well as 
-to the repository base path. Also, the property 'repo.messaging.enabled' should be changed to 'true' in case you want to use the messaging feature of the repository.
+Before you are able to start the repository microservice, you have provide a configuration file according to your local setup. 
+Therefor, copy the file 'config/application-default.properties' to your project folder, rename it to 'application.properties' and customize it as required. Special attentioned should be payed to the datasource url as well as to the repository base path. Also, the property 'repo.messaging.enabled' should be changed to 'true' in case you want to use the messaging feature of the repository.
 
 As soon as you finished modifying 'application.properties', you may start the repository microservice by executing the following command inside the project folder, 
 e.g. where the service has been built before:
@@ -71,10 +72,7 @@ http://localhost:8090/static/docs/documentation.html
 
 ### Enhanced Startup
 
-At certain points, KIT DM 2.0 offers and will offer extension points allowing to add custom features that are not part of the default distribution, e.g. custom message handlers.
-If you are familiar with software development, it might be no big deal to include an additional dependency to 'build.gradle' of base-repo. However, in some cases this might not
-be desirable or possible. Therefor, KIT DM 2.0 allows to place additional libraries required at runtime in a separate folder which is then loaded as soon as the microservice
-starts and made available using the dependency injection feature of Spring Boot. 
+At certain points, base-repo offers and will offer extension points allowing to add custom features that are not part of the default distribution, e.g. custom message handlers. If you are familiar with software development, it might be no big deal to include an additional dependency to 'build.gradle' of base-repo. However, in some cases this might not be desirable or possible. Therefor, base-repo allows to place additional libraries required at runtime in a separate folder which is then loaded as soon as the microservice starts and made available using the dependency injection feature of Spring Boot. 
 
 In order to tell Spring Boot where to look for additional libraries, you have to define an environment variable JAVA_OPTS looking as follows:
 
@@ -101,6 +99,9 @@ functionality should be available.
 
 ## More Information
 
+* [Getting Started & Documentation](https://kit-data-manager.github.io/webpage/base-repo/index.html)
+* [API documentation](https://kit-data-manager.github.io/webpage/base-repo/documentation/api-docs.html)
+* [Docker container](https://hub.docker.com/r/kitdm/base-repo)
 * [Information about the DataCite metadata schema](https://schema.datacite.org/)
 
 ## License

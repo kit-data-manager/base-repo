@@ -79,11 +79,11 @@ dependencies {
     //implementation "com.github.victools:jsonschema-generator:4.23.0"
 
     //Keycloak
-    implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
-    implementation "com.nimbusds:nimbus-jose-jwt:9.24.3"
-    implementation "io.jsonwebtoken:jjwt-api:0.11.5"
-    implementation "io.jsonwebtoken:jjwt-impl:0.11.5"
-    implementation "io.jsonwebtoken:jjwt-jackson:0.11.5"
+   // implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
+    //implementation "com.nimbusds:nimbus-jose-jwt:9.24.3"
+   // implementation "io.jsonwebtoken:jjwt-api:0.11.5"
+   // implementation "io.jsonwebtoken:jjwt-impl:0.11.5"
+   // implementation "io.jsonwebtoken:jjwt-jackson:0.11.5"
 
     implementation "org.javers:javers-core:${javersVersion}"
     implementation "com.github.fge:json-patch:1.9"

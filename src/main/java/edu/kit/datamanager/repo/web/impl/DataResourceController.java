@@ -163,8 +163,7 @@ public class DataResourceController implements IDataResourceController {
             final UriComponentsBuilder uriBuilder) {
         return findByExample(null, lastUpdateFrom, lastUpdateUntil, pgbl, request, response, uriBuilder);
     }
-    
-    
+
     @Override
     public ResponseEntity<TabulatorLocalPagination> findAllForTabulator(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
             @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
@@ -172,7 +171,11 @@ public class DataResourceController implements IDataResourceController {
             final WebRequest request,
             final HttpServletResponse response,
             final UriComponentsBuilder uriBuilder) {
-        Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, null, lastUpdateFrom, lastUpdateUntil, pgbl, response, uriBuilder);
+        //change from 1-based to 0-based index as required by tabulator
+        int startPage = pgbl.getPageNumber() - 1;
+        startPage = startPage < 0 ? 0 : startPage;
+        PageRequest pr = PageRequest.of(startPage, pgbl.getPageSize(), pgbl.getSort());
+        Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, null, lastUpdateFrom, lastUpdateUntil, pr, response, uriBuilder);
         PageRequest pageRequest = ControllerUtils.checkPaginationInformation(pgbl);
         response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), pageRequest.getPageSize(), page.getTotalElements()));
         TabulatorLocalPagination tabulatorLocalPagination = TabulatorLocalPagination.builder()
@@ -180,7 +183,7 @@ public class DataResourceController implements IDataResourceController {
                 .data(DataResourceUtils.filterResources(page.getContent()))
                 .build();
         return ResponseEntity.ok().body(tabulatorLocalPagination);
-     }
+    }
 
     @Override
     public ResponseEntity<List<DataResource>> findByExample(@RequestBody DataResource example,

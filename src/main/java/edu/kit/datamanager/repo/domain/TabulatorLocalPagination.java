@@ -10,14 +10,16 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
+ * Helper object for local pagination using the Tabulator.js library.
  *
  * @author jejkal
  */
 @Getter
 @Builder
 public class TabulatorLocalPagination {
+
     @JsonProperty("last_page")
     private int lastPage;
-    
+
     private List<?> data;
 }

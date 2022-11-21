@@ -32,6 +32,8 @@ import org.springframework.web.context.request.WebRequest;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.TabulatorLocalPagination;
+import edu.kit.datamanager.repo.elastic.DataResourceRepository;
+import edu.kit.datamanager.repo.elastic.ElasticWrapper;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.ContentDataUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
@@ -82,6 +84,8 @@ public class DataResourceController implements IDataResourceController {
     private final IAuditService<DataResource> auditService;
     private final IAuditService<ContentInformation> contentAuditService;
     private final RepoBaseConfiguration repositoryProperties;
+    @Autowired
+    private DataResourceRepository dataResourceRepository;
 
     /**
      * Default constructor.
@@ -195,6 +199,11 @@ public class DataResourceController implements IDataResourceController {
             final UriComponentsBuilder uriBuilder) {
         LOGGER.trace("Find resource by example '{}' from '{}' until '{}'", example, lastUpdateFrom, lastUpdateUntil);
         Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, example, lastUpdateFrom, lastUpdateUntil, pgbl, response, uriBuilder);
+
+        page.getContent().stream().map(res -> new ElasticWrapper(res)).forEachOrdered(wrapper -> {
+            dataResourceRepository.save(wrapper);
+        });
+
         //set content-range header for react-admin (index_start-index_end/total
         PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
         response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));

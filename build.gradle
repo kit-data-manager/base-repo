@@ -58,8 +58,8 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-rest"
     implementation "org.springframework.boot:spring-boot-starter-mail"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation 'org.springframework.data:spring-data-elasticsearch:4.4.6'
 
-     
     implementation "org.springframework:spring-messaging:5.3.23"
     implementation "org.springframework.security:spring-security-web:5.7.4"
     implementation "org.springframework.security:spring-security-config:5.7.4"
@@ -73,7 +73,7 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-webmvc-core:${springDocVersion}"
 
-    implementation "edu.kit.datamanager:repo-core:1.0.4"
+    implementation "edu.kit.datamanager:repo-core:1.0.5-SNAPSHOT"
     implementation "edu.kit.datamanager:service-base:1.0.7"
 
     //implementation "com.github.victools:jsonschema-generator:4.23.0"

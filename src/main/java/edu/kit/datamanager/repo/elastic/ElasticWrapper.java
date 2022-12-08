@@ -39,8 +39,8 @@ public class ElasticWrapper {
     @Field(type = FieldType.Nested, includeInParent = true)
     private List<ContentInformation> content = new ArrayList<>();
 
-    @Field(type = FieldType.Nested, includeInParent = true)
-    private List<String> readSids = new ArrayList<>();
+    @Field(type = FieldType.Text)
+    private List<String> read = new ArrayList<>();
 
     private Map<String, String> links = new HashMap<>();
 
@@ -61,13 +61,8 @@ public class ElasticWrapper {
         this.content = content;
         for (AclEntry entry : resource.getAcls()) {
             String sid = entry.getSid();
-            if ("anonyous".equals(sid)) {
-                //public access
-                readSids.clear();
-                break;
-            }
             if (entry.getPermission().atLeast(PERMISSION.READ)) {
-                readSids.add(sid);
+                read.add(sid);
             }
         }
 

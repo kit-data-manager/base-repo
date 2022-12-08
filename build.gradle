@@ -22,15 +22,13 @@ repositories {
     mavenCentral()
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
- 
+
 configurations {
     all*.exclude module : 'spring-boot-starter-logging'
 }
 
 ext {
-    set('javersVersion', "6.6.5")
+    set('javersVersion', "6.8.0")
     set('springBootVersion', "2.7.5")
     set('springDocVersion', "1.6.9")
     set('keycloakVersion', "19.0.0")
@@ -42,6 +40,9 @@ ext {
 println "Running gradle version: $gradle.gradleVersion"
 println "Building ${name} version: ${version}"
 println "JDK version: ${JavaVersion.current()}"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 if (System.getProperty('profile') == 'minimal') {
     println 'Using minimal profile for building ' + project.getName()
@@ -67,14 +68,16 @@ dependencies {
     // cloud support
     implementation "org.springframework.cloud:spring-cloud-starter-config:3.1.5"
     implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.1.4"
+    implementation "org.springframework.cloud:spring-cloud-gateway-mvc:3.1.4"
+
 
     // springdoc
     implementation "org.springdoc:springdoc-openapi-ui:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-webmvc-core:${springDocVersion}"
 
-    implementation "edu.kit.datamanager:repo-core:1.0.5-SNAPSHOT"
-    implementation "edu.kit.datamanager:service-base:1.0.7"
+    implementation "edu.kit.datamanager:repo-core:1.0.5"
+    implementation "edu.kit.datamanager:service-base:1.0.8"
 
     //implementation "com.github.victools:jsonschema-generator:4.23.0"
 

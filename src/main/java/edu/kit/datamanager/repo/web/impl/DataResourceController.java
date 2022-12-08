@@ -48,6 +48,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -85,7 +86,7 @@ public class DataResourceController implements IDataResourceController {
     private final IAuditService<ContentInformation> contentAuditService;
     private final RepoBaseConfiguration repositoryProperties;
     @Autowired
-    private DataResourceRepository dataResourceRepository;
+    private Optional<DataResourceRepository> dataResourceRepository;
 
     /**
      * Default constructor.
@@ -200,9 +201,11 @@ public class DataResourceController implements IDataResourceController {
         LOGGER.trace("Find resource by example '{}' from '{}' until '{}'", example, lastUpdateFrom, lastUpdateUntil);
         Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, example, lastUpdateFrom, lastUpdateUntil, pgbl, response, uriBuilder);
 
-        page.getContent().stream().map(res -> new ElasticWrapper(res)).forEachOrdered(wrapper -> {
-            dataResourceRepository.save(wrapper);
-        });
+        if (dataResourceRepository.isPresent()) {
+            page.getContent().stream().map(res -> new ElasticWrapper(res)).forEachOrdered(wrapper -> {
+                dataResourceRepository.get().save(wrapper);
+            });
+        }
 
         //set content-range header for react-admin (index_start-index_end/total
         PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);

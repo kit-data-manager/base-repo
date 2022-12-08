@@ -1,10 +1,24 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Copyright 2022 Karlsruhe Institute of Technology.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package edu.kit.datamanager.repo.configuration;
 
+import edu.kit.datamanager.configuration.SearchConfiguration;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +36,11 @@ import org.springframework.http.HttpHeaders;
 @Configuration
 @EnableElasticsearchRepositories(basePackages = "edu.kit.datamanager.repo")
 @ComponentScan(basePackages = {"edu.kit.datamanager"})
+@ConditionalOnProperty(prefix = "repo.search", name = "enabled", havingValue = "true")
 public class ElasticConfiguration {
+
+    @Autowired
+    private SearchConfiguration searchConfiguration;
 
     @Bean
     public RestHighLevelClient client() {
@@ -31,10 +49,13 @@ public class ElasticConfiguration {
         compatibilityHeaders.add("Accept", "application/vnd.elasticsearch+json;compatible-with=7");
         compatibilityHeaders.add("Content-Type", "application/vnd.elasticsearch+json;compatible-with=7");
 
+        String hostnamePort = searchConfiguration.getUrl();
+        hostnamePort = hostnamePort.substring(hostnamePort.indexOf("//") + 2);
+
         ClientConfiguration clientConfiguration
                 = ClientConfiguration.builder()
-                        .connectedTo("localhost:9200")
-                        .withDefaultHeaders(compatibilityHeaders)  
+                        .connectedTo(hostnamePort)
+                        .withDefaultHeaders(compatibilityHeaders)
                         .build();
 
         return RestClients.create(clientConfiguration).rest();

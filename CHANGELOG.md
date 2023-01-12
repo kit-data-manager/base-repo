@@ -6,12 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Security
+- Bump postgresql from 42.4.1 to 42.5.0 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/68
+- Bump spring-cloud-starter-netflix-eureka-client from 3.1.3 to 3.1.4 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/69
+- Bump io.freefair.maven-publish-java from 6.5.0.3 to 6.5.1 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/70
+- Bump mockito-core from 4.6.1 to 4.8.0 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/72
+- Bump io.freefair.lombok from 6.5.0.3 to 6.5.1 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/71
+- Bump spring-messaging from 5.3.22 to 5.3.23 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/77
+- Bump org.owasp.dependencycheck from 7.1.1 to 7.2.1 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/80
+- Bump net.researchgate.release from 3.0.0 to 3.0.2 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/73
+- Bump nimbus-jose-jwt from 9.23 to 9.25.6 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/82
+- Bump org.springframework.boot from 2.7.2 to 2.7.4 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/83
+- Bump io.spring.dependency-management from 1.0.11.RELEASE to 1.0.14.RELEASE by @dependabot in https://github.com/kit-data-manager/base-repo/pull/84
+- Bump spring-security-config from 5.5.2 to 5.7.5 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/92
+- Bump spring-security-web from 5.7.2 to 5.7.5 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/91
+- Bump spring-cloud-starter-config from 3.1.3 to 3.1.5 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/93
+- Bump mockito-inline from 4.8.1 to 4.9.0 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/94
 
 ### Added
+- Added CSRF and CORS configuration support to application.properties
+- Added support for indexing and searching for DataResources via Elastic
+- Added new endpoint at GET /api/v1/dataresources for content type 'application/tabulator+json' for direct support of listing in [Tabulator](https://tabulator.info/) 
 
 ### Changed
+- Attempts to write DataResources if repository is in readOnly mode now returns HTTP 403 (FORBIDDEN) instead of HTTP 503 (SERVICE_UNAVAILABLE)
+- Attempts to write DataResources without permissions now returns HTTP 403 (FORBIDDEN) instead of HTTP 401 (UNAUTHORIZED)
 
-### Fixed
+### Fixed 
 
 ### Removed
 

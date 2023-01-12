@@ -49,8 +49,8 @@ public class ElasticConfiguration {
         compatibilityHeaders.add("Accept", "application/vnd.elasticsearch+json;compatible-with=7");
         compatibilityHeaders.add("Content-Type", "application/vnd.elasticsearch+json;compatible-with=7");
 
-        String hostnamePort = searchConfiguration.getUrl();
-        hostnamePort = hostnamePort.substring(hostnamePort.indexOf("//") + 2);
+        String indexUrl = searchConfiguration.getUrl().toString();
+        String hostnamePort = indexUrl.substring(indexUrl.indexOf("//") + 2);
 
         ClientConfiguration clientConfiguration
                 = ClientConfiguration.builder()

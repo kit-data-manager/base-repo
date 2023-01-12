@@ -147,6 +147,7 @@ public class Application {
 
     @Bean
     @ConfigurationProperties("repo")
+    @ConditionalOnProperty(prefix = "repo.search", name = "enabled", havingValue = "true")
     public SearchConfiguration searchConfiguration() {
         return new SearchConfiguration();
     }

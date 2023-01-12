@@ -66,7 +66,7 @@ public class ElasticWrapper {
             }
         }
 
-        resource.getDates().stream().filter(d -> (edu.kit.datamanager.entities.repo.Date.DATE_TYPE.CREATED.equals(d.getType()))).forEachOrdered(d -> {
+        resource.getDates().stream().filter(d -> (edu.kit.datamanager.repo.domain.Date.DATE_TYPE.CREATED.equals(d.getType()))).forEachOrdered(d -> {
             created = Date.from(d.getValue());
         });
 

@@ -5,6 +5,7 @@
 ![License](https://img.shields.io/github/license/kit-data-manager/base-repo.svg)
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/kitdm/base-repo)](https://hub.docker.com/r/kitdm/base-repo/tags)
 ![Docker Image Version (latest semver)](https://img.shields.io/docker/v/kitdm/base-repo)
+[![SQAaaS badge shields.io](https://img.shields.io/badge/sqaaas%20software-silver-lightgrey)](https://api.eu.badgr.io/public/assertions/onNKx_lhTn68bPKnMAg-eQ "SQAaaS silver badge achieved")
 
 This project contains the repository service microservice for the KIT DM infrastructure. The service provides
 data resource management, e.g. register DataCite-oriented metadata and upload/download content to data resources.

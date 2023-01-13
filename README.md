@@ -17,7 +17,7 @@ In order to build this microservice you'll need:
 
 After obtaining the sources change to the folder where the sources are located perform the following steps:
 
-```
+```bash
 user@localhost:/home/user/base-repo$ ./gradlew -Dprofile=minimal build
 Running gradle version: 7.4.2
 Building base-repo version: 1.2.1-SNAPSHOT
@@ -39,13 +39,14 @@ libraries and finally build the base-repo microservice itself. As a result, a fa
 * RabbitMQ 3.7.3 or higher (in case you want to use the messaging feature, which is recommended)
 
 ### Setup
-Before you are able to start the repository microservice, you have provide a configuration file according to your local setup. 
+
+Before you are able to start the repository microservice, you have provide a configuration file according to your local setup.
 Therefor, copy the file 'config/application-default.properties' to your project folder, rename it to 'application.properties' and customize it as required. Special attentioned should be payed to the datasource url as well as to the repository base path. Also, the property 'repo.messaging.enabled' should be changed to 'true' in case you want to use the messaging feature of the repository.
 
-As soon as you finished modifying 'application.properties', you may start the repository microservice by executing the following command inside the project folder, 
+As soon as you finished modifying 'application.properties', you may start the repository microservice by executing the following command inside the project folder,
 e.g. where the service has been built before:
 
-```
+```bash
 user@localhost:/home/user/base-repo$ ./build/libs/base-repo.jar
 
   .   ____          _            __ _ _
@@ -62,33 +63,33 @@ user@localhost:/home/user/base-repo$ ./build/libs/base-repo.jar
 
 If your 'application.properties' is not located inside the project folder you can provide it using the command line argument --spring.config.location=<PATH_TO_APPLICATION.PROPERTIES>
 
-As soon as the microservice is started, you can browse to 
+As soon as the microservice is started, you can browse to
 
-http://localhost:8090/swagger-ui.html
+<http://localhost:8090/swagger-ui.html>
 
 in order to see available RESTful endpoints and their documentation. Furthermore, you can use this Web interface to test single API calls in order to get familiar with the service. A small documentation guiding you through the first steps of using the RESTful API you can find at
 
-http://localhost:8090/static/docs/documentation.html
+<http://localhost:8090/static/docs/documentation.html>
 
 ### Enhanced Startup
 
-At certain points, base-repo offers and will offer extension points allowing to add custom features that are not part of the default distribution, e.g. custom message handlers. If you are familiar with software development, it might be no big deal to include an additional dependency to 'build.gradle' of base-repo. However, in some cases this might not be desirable or possible. Therefor, base-repo allows to place additional libraries required at runtime in a separate folder which is then loaded as soon as the microservice starts and made available using the dependency injection feature of Spring Boot. 
+At certain points, base-repo offers and will offer extension points allowing to add custom features that are not part of the default distribution, e.g. custom message handlers. If you are familiar with software development, it might be no big deal to include an additional dependency to 'build.gradle' of base-repo. However, in some cases this might not be desirable or possible. Therefor, base-repo allows to place additional libraries required at runtime in a separate folder which is then loaded as soon as the microservice starts and made available using the dependency injection feature of Spring Boot.
 
 In order to tell Spring Boot where to look for additional libraries, you have to define an environment variable JAVA_OPTS looking as follows:
 
-```
+```bash
 export JAVA_OPTS="-cp .:./config:./base-repo.jar -Dloader.path=./base-repo.jar,./lib/,."
 ```
 
-The first part '-cp' has to contain three elements divided by ':': 
+The first part '-cp' has to contain three elements divided by ':':
 
 1. The configuration folder where your application.properties is located (this element can be omitted, if application.properties
 is located in the current folder),
 2. the current folder,
-3. and the microservice jar file. 
- 
+3. and the microservice jar file.
+
 The second part '-Dloader.path' basically contains the same information as '-cp' but with the difference, that the config folder is not required, whereas the folder
-containing all additional libraries has to be provided, in our case it's './lib'. 
+containing all additional libraries has to be provided, in our case it's './lib'.
 
 Please keep in mind that all arguments shown in the example assume, that you are in the same folder where your microservice jar file is located and that you start the service
 by calling './base-repo.jar'. If your microservice jar is located elsewhere, you should consider to provide absolute paths for all arguments above.

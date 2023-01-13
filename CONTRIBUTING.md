@@ -7,10 +7,8 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 ## Pull Request Process
 
-1. Ensure any install or build dependencies are removed before the end of the layer when doing a
-   build.
-2. State in the Pull Request details of changes to the interface, this includes new environment
-   variables, exposed ports, useful file locations and container parameters.
+1. Ensure any install or build dependencies are removed before the end of the layer when doing a build.
+2. State in the Pull Request details of changes to the interface, this includes new environment variables, exposed ports, useful file locations and container parameters.
 3. Pull Requests are merged after successful review of at least one of the project owners.
 
 ## Code of Conduct
@@ -37,14 +35,11 @@ include:
 
 Examples of unacceptable behavior by participants include:
 
-* The use of sexualized language or imagery and unwelcome sexual attention or
-advances
+* The use of sexualized language or imagery and unwelcome sexual attention or advances
 * Trolling, insulting/derogatory comments, and personal or political attacks
 * Public or private harassment
-* Publishing others' private information, such as a physical or electronic
-  address, without explicit permission
-* Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+* Publishing others' private information, such as a physical or electronic address, without explicit permission
+* Other conduct which could reasonably be considered inappropriate in a professional setting
 
 ### Our Responsibilities
 

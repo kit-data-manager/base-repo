@@ -7,7 +7,6 @@ package edu.kit.datamanager.repo.elastic;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
-import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,12 +58,12 @@ public class ElasticWrapper {
         pid = (resource.getIdentifier() != null) ? resource.getIdentifier().getValue() : null;
         metadata = resource;
         this.content = content;
-        for (AclEntry entry : resource.getAcls()) {
+        resource.getAcls().forEach(entry -> {
             String sid = entry.getSid();
             if (entry.getPermission().atLeast(PERMISSION.READ)) {
                 read.add(sid);
             }
-        }
+        });
 
         resource.getDates().stream().filter(d -> (edu.kit.datamanager.repo.domain.Date.DATE_TYPE.CREATED.equals(d.getType()))).forEachOrdered(d -> {
             created = Date.from(d.getValue());

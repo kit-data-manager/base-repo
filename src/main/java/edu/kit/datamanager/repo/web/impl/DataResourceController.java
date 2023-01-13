@@ -16,11 +16,14 @@
 package edu.kit.datamanager.repo.web.impl;
 
 import com.github.fge.jsonpatch.JsonPatch;
+import edu.kit.datamanager.dao.StringFieldSpecification;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
+import edu.kit.datamanager.repo.dao.IContentInformationDao;
+import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -51,11 +54,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.nio.entity.ContentListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -81,6 +87,11 @@ public class DataResourceController implements IDataResourceController {
     private final IContentInformationService contentInformationService;
     @Autowired
     private ApplicationProperties applicationProperties;
+
+    @Autowired
+    private IDataResourceDao dataResourceDao;
+    @Autowired
+    private IContentInformationDao contentInformationDao;
 
     private final IAuditService<DataResource> auditService;
     private final IAuditService<ContentInformation> contentAuditService;
@@ -138,6 +149,8 @@ public class DataResourceController implements IDataResourceController {
                 }
             }
 
+            indexResource(resource.getId(), false);
+
             LOGGER.trace("Created resource link is: {}", uriLink);
             return ResponseEntity.created(URI.create(uriLink)).eTag("\"" + result.getEtag() + "\"").header(VERSION_HEADER, Long.toString(1l)).body(result);
         } catch (UnsupportedEncodingException ex) {
@@ -152,8 +165,7 @@ public class DataResourceController implements IDataResourceController {
             final WebRequest request,
             final HttpServletResponse response) {
         LOGGER.trace("Get resource by id '{}' and version '{}'.", identifier, version);
-        Function<String, String> getById;
-        getById = (t) -> {
+        Function<String, String> getById = (t) -> {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
         };
         return DataResourceUtils.readResource(repositoryProperties, identifier, version, getById);
@@ -201,12 +213,6 @@ public class DataResourceController implements IDataResourceController {
         LOGGER.trace("Find resource by example '{}' from '{}' until '{}'", example, lastUpdateFrom, lastUpdateUntil);
         Page<DataResource> page = DataResourceUtils.readAllResourcesFilteredByExample(repositoryProperties, example, lastUpdateFrom, lastUpdateUntil, pgbl, response, uriBuilder);
 
-        if (dataResourceRepository.isPresent()) {
-            page.getContent().stream().map(res -> new ElasticWrapper(res)).forEachOrdered(wrapper -> {
-                dataResourceRepository.get().save(wrapper);
-            });
-        }
-
         //set content-range header for react-admin (index_start-index_end/total
         PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
         response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
@@ -225,6 +231,8 @@ public class DataResourceController implements IDataResourceController {
         //String path = ContentDataUtils.getContentPathFromRequest(request);
         String eTag = ControllerUtils.getEtagFromHeader(request);
         DataResourceUtils.patchResource(repositoryProperties, identifier, patch, eTag, patchDataResource);
+
+        indexResource(identifier, true);
 
         long currentVersion = auditService.getCurrentVersion(identifier);
         if (currentVersion > 0) {
@@ -246,6 +254,9 @@ public class DataResourceController implements IDataResourceController {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).put(t, newResource, request, response)).toString();
         };
         DataResource result = DataResourceUtils.updateResource(repositoryProperties, identifier, newResource, request, putWithId);
+
+        indexResource(identifier, true);
+
         long currentVersion = repositoryProperties.getAuditService().getCurrentVersion(result.getId());
 
         if (currentVersion > 0) {
@@ -254,7 +265,6 @@ public class DataResourceController implements IDataResourceController {
         } else {
             return ResponseEntity.ok().eTag("\"" + result.getEtag() + "\"").body(DataResourceUtils.filterResource(result));
         }
-
     }
 
     @Override
@@ -262,11 +272,13 @@ public class DataResourceController implements IDataResourceController {
             final WebRequest request,
             final HttpServletResponse response) {
         LOGGER.trace("Delete resource with id '{}'", identifier);
-        Function<String, String> getById;
-        getById = (t) -> {
+        Function<String, String> getById = (t) -> {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
         };
         DataResourceUtils.deleteResource(repositoryProperties, identifier, request, getById);
+
+        unindexResource(identifier);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -298,6 +310,8 @@ public class DataResourceController implements IDataResourceController {
             LOGGER.error("Failed to create location URI for path " + path + ". However, resource should be created.", ex);
             throw new CustomInternalServerError("Resource creation successful, but unable to create resource linkfor path " + path + ".");
         }
+
+        indexResource(identifier, true);
 
         long currentVersion = contentAuditService.getCurrentVersion(Long.toString(result.getId()));
         if (currentVersion > 0) {
@@ -369,6 +383,8 @@ public class DataResourceController implements IDataResourceController {
         String eTag = ControllerUtils.getEtagFromHeader(request);
         ContentInformation toUpdate = ContentDataUtils.patchContentInformation(repositoryProperties, identifier, path, patch, eTag, patchContentMetadata);
 
+        indexResource(identifier, true);
+
         long currentVersion = contentAuditService.getCurrentVersion(Long.toString(toUpdate.getId()));
         if (currentVersion > 0) {
             return ResponseEntity.noContent().header(VERSION_HEADER, Long.toString(currentVersion)).build();
@@ -407,10 +423,12 @@ public class DataResourceController implements IDataResourceController {
         };
         ContentDataUtils.deleteFile(repositoryProperties, identifier, path, eTag, deleteContent);
 
+        indexResource(identifier, true);
+
         return ResponseEntity.noContent().build();
     }
 
-    public ContentInformation fixContentInformation(ContentInformation resource, Long version) {
+    private ContentInformation fixContentInformation(ContentInformation resource, Long version) {
         //hide all attributes but the id from the parent data resource in the content information entity
         String id = resource.getParentResource().getId();
         resource.setParentResource(DataResource.factoryNewDataResource(id));
@@ -432,11 +450,46 @@ public class DataResourceController implements IDataResourceController {
         return resource;
     }
 
-    public List<ContentInformation> fixContentInformation(List<ContentInformation> resources, Long version) {
+    private List<ContentInformation> fixContentInformation(List<ContentInformation> resources, Long version) {
         //hide all attributes but the id from the parent data resource in all content information entities
         resources.forEach((resource) -> {
             fixContentInformation(resource, version);
         });
         return resources;
+    }
+
+    private void indexResource(
+            String identifier,
+            boolean includeContent) {
+        if (dataResourceRepository.isPresent()) {
+            LOGGER.trace("Indexing data resource {} {} content information.", identifier, (includeContent ? "with" : "without"));
+            Optional<DataResource> resource = dataResourceDao.findById(identifier);
+            ElasticWrapper wrapper;
+
+            if (includeContent) {
+                LOGGER.trace("Reading content information for resource {}.", identifier);
+                Page<ContentInformation> page = contentInformationDao.findByParentResource(resource.get(), PageRequest.of(0, Integer.MAX_VALUE));
+                List<ContentInformation> infoList = page.toList();
+                LOGGER.trace("Obtained {} content information element(s). Removing resource reference.", infoList.size());
+                infoList.forEach(info -> {
+                    info.setParentResource(null);
+                });
+                LOGGER.trace("Creating Elastic wrapper with data resource and content information.");
+                wrapper = new ElasticWrapper(resource.get(), infoList);
+
+            } else {
+                LOGGER.trace("Creating Elastic wrapper with data resource.");
+                wrapper = new ElasticWrapper(resource.get());
+            }
+            LOGGER.trace("Indexing Elastic wrapper.");
+            dataResourceRepository.get().save(wrapper);
+        }
+    }
+
+    private void unindexResource(
+            String id) {
+        if (dataResourceRepository.isPresent()) {
+            dataResourceRepository.get().deleteById(id);
+        }
     }
 }

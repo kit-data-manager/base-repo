@@ -7,6 +7,7 @@ plugins {
     id "org.owasp.dependencycheck" version "7.3.0"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
     id "net.researchgate.release" version "3.0.2"
+    id "com.gorylenko.gradle-git-properties" version "2.4.1"
     id 'java'
     id 'jacoco'
 }
@@ -69,6 +70,7 @@ dependencies {
     implementation "org.springframework.cloud:spring-cloud-starter-config:3.1.5"
     implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.1.4"
     implementation "org.springframework.cloud:spring-cloud-gateway-mvc:3.1.4"
+    implementation 'de.codecentric:spring-boot-admin-starter-client:2.7.10'
 
 
     // springdoc
@@ -76,17 +78,17 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-webmvc-core:${springDocVersion}"
 
-    implementation "edu.kit.datamanager:repo-core:1.1.0"
+    implementation "edu.kit.datamanager:repo-core:1.1.1-SNAPSHOT"
     implementation "edu.kit.datamanager:service-base:1.1.0"
 
     //implementation "com.github.victools:jsonschema-generator:4.23.0"
 
     //Keycloak
-   // implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
-    //implementation "com.nimbusds:nimbus-jose-jwt:9.24.3"
-   // implementation "io.jsonwebtoken:jjwt-api:0.11.5"
-   // implementation "io.jsonwebtoken:jjwt-impl:0.11.5"
-   // implementation "io.jsonwebtoken:jjwt-jackson:0.11.5"
+    // implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
+    implementation "com.nimbusds:nimbus-jose-jwt:9.24.3"
+    implementation "io.jsonwebtoken:jjwt-api:0.11.5"
+    implementation "io.jsonwebtoken:jjwt-impl:0.11.5"
+    implementation "io.jsonwebtoken:jjwt-jackson:0.11.5"
 
     implementation "org.javers:javers-core:${javersVersion}"
     implementation "com.github.fge:json-patch:1.9"
@@ -129,6 +131,10 @@ tasks.withType(Test) {
     testLogging {
         events 'started', 'passed'
     }
+}
+
+springBoot {    
+    buildInfo()
 }
 
 bootJar {

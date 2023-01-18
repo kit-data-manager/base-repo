@@ -38,6 +38,7 @@ import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.service.impl.RabbitMQMessagingService;
+import java.util.Optional;
 import org.javers.core.Javers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,10 +166,12 @@ public class Application {
     public StorageServiceProperties storageServiceProperties() {
         return new StorageServiceProperties();
     }
-
+    
     @Bean
-    public IMessagingService messagingService() {
-        return new RabbitMQMessagingService();
+    @ConfigurationProperties("repo")
+    @ConditionalOnProperty(prefix = "repo.messaging", name = "enabled", havingValue = "true")
+    public Optional<IMessagingService> messagingService() {
+        return Optional.of(new RabbitMQMessagingService());
     }
 
 //    @Bean

@@ -64,8 +64,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //    }
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        HttpSecurity httpSecurity = http.authorizeRequests()
-                .antMatchers(HttpMethod.OPTIONS, "/**").
+        HttpSecurity httpSecurity = http.authorizeRequests().
+                antMatchers(HttpMethod.OPTIONS, "/**").
                 permitAll().
                 and().
                 sessionManagement().
@@ -113,8 +113,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //    source.registerCorsConfiguration("/**", config);
 //    return source;
 //  }
-   
-
     @Bean
     public FilterRegistrationBean corsFilter() {
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

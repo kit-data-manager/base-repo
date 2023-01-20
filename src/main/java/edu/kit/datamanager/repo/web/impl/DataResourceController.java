@@ -469,9 +469,10 @@ public class DataResourceController implements IDataResourceController {
                 LOGGER.trace("Reading content information for resource {}.", identifier);
                 Page<ContentInformation> page = contentInformationDao.findByParentResource(resource.get(), PageRequest.of(0, Integer.MAX_VALUE));
                 List<ContentInformation> infoList = page.toList();
-                LOGGER.trace("Obtained {} content information element(s). Removing resource reference.", infoList.size());
+                LOGGER.trace("Obtained {} content information element(s). Shortening resource to reference.", infoList.size());
                 infoList.forEach(info -> {
-                    info.setParentResource(null);
+                    DataResource res = DataResource.factoryNewDataResource(info.getParentResource().getId());
+                    info.setParentResource(res);
                 });
                 LOGGER.trace("Creating Elastic wrapper with data resource and content information.");
                 wrapper = new ElasticWrapper(resource.get(), infoList);

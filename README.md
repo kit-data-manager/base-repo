@@ -38,6 +38,7 @@ libraries and finally build the base-repo microservice itself. As a result, a fa
 
 * PostgreSQL 9.1 or higher
 * RabbitMQ 3.7.3 or higher (in case you want to use the messaging feature, which is recommended)
+* Elastic 7.X or higher (in case you want to use the search feature)
 
 ### Setup
 
@@ -68,9 +69,7 @@ As soon as the microservice is started, you can browse to
 
 <http://localhost:8090/swagger-ui.html>
 
-in order to see available RESTful endpoints and their documentation. Furthermore, you can use this Web interface to test single API calls in order to get familiar with the service. A small documentation guiding you through the first steps of using the RESTful API you can find at
-
-<http://localhost:8090/static/docs/documentation.html>
+in order to see available RESTful endpoints and their documentation.
 
 ### Enhanced Startup
 
@@ -96,8 +95,7 @@ Please keep in mind that all arguments shown in the example assume, that you are
 by calling './base-repo.jar'. If your microservice jar is located elsewhere, you should consider to provide absolute paths for all arguments above.
 In case you want to choose a different folder for placing your additional libraries, you have to rename it in JAVA_OPTS accordingly.
 
-What you now have to do before you start the microservice is to place additional jar files (and required dependencies!) in the 'lib' folder. At the next startup, the new
-functionality should be available.
+What you now have to do before you start the microservice is to place additional jar files (and required dependencies!) in the 'lib' folder. At the next startup, the new functionality should be available.
 
 ## More Information
 

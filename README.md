@@ -21,7 +21,7 @@ After obtaining the sources change to the folder where the sources are located p
 ```bash
 user@localhost:/home/user/base-repo$ ./gradlew -Dprofile=minimal build
 Running gradle version: 7.4.2
-Building base-repo version: 1.2.1-SNAPSHOT
+Building base-repo version: 1.3.0
 JDK version: 11
 Using minimal profile for building base-repoo
 <-------------> 0% EXECUTING [0s]

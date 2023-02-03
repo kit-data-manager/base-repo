@@ -41,7 +41,7 @@ ENV SERVICE_DIRECTORY=${SERVICE_ROOT_DIRECTORY_DEFAULT}/${REPO_NAME_DEFAULT}
 RUN mkdir -p /git/base-repo/
 WORKDIR /git/base-repo/
 COPY . .
-RUN cp config/application-docker.properties settings/application-default.properties
+RUN cp settings/application-docker.properties settings/application-default.properties
 # Build service in given directory
 RUN bash ./build.sh $SERVICE_DIRECTORY
 

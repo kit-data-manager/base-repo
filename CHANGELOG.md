@@ -9,21 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Security
 
-- Bump postgresql from 42.4.1 to 42.5.0 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/68>
-- Bump spring-cloud-starter-netflix-eureka-client from 3.1.3 to 3.1.4 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/69>
-- Bump io.freefair.maven-publish-java from 6.5.0.3 to 6.5.1 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/70>
-- Bump mockito-core from 4.6.1 to 4.8.0 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/72>
-- Bump io.freefair.lombok from 6.5.0.3 to 6.5.1 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/71>
-- Bump spring-messaging from 5.3.22 to 5.3.23 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/77>
-- Bump org.owasp.dependencycheck from 7.1.1 to 7.2.1 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/80>
-- Bump net.researchgate.release from 3.0.0 to 3.0.2 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/73>
-- Bump nimbus-jose-jwt from 9.23 to 9.25.6 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/82>
-- Bump org.springframework.boot from 2.7.2 to 2.7.4 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/83>
-- Bump io.spring.dependency-management from 1.0.11.RELEASE to 1.0.14.RELEASE by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/84>
-- Bump spring-security-config from 5.5.2 to 5.7.5 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/92>
-- Bump spring-security-web from 5.7.2 to 5.7.5 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/91>
-- Bump spring-cloud-starter-config from 3.1.3 to 3.1.5 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/93>
-- Bump mockito-inline from 4.8.1 to 4.9.0 by @dependabot in <https://github.com/kit-data-manager/base-repo/pull/94>
+Added
+
+Changed
+
+Fixed
+
+## [1.3.0] - 2023-02-03
+
+Security
+
+* Bump spring-security-config from 5.5.2 to 5.7.3 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/58
+* Bump postgresql from 42.4.1 to 42.5.0 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/68
+* Bump spring-cloud-starter-netflix-eureka-client from 3.1.3 to 3.1.4 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/69
+* Bump io.freefair.maven-publish-java from 6.5.0.3 to 6.5.1 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/70
+* Bump io.freefair.lombok from 6.5.0.3 to 6.5.1 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/71
+* Bump spring-messaging from 5.3.22 to 5.3.23 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/77
+* Bump org.owasp.dependencycheck from 7.1.2 to 7.2.1 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/80
+* Bump net.researchgate.release from 3.0.1 to 3.0.2 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/73
+* Bump nimbus-jose-jwt from 9.24.3 to 9.25.6 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/82
+* Bump io.spring.dependency-management from 1.0.13.RELEASE to 1.0.14.RELEASE by @dependabot in https://github.com/kit-data-manager/base-repo/pull/84
+* Bump spring-security-config from 5.7.4 to 5.7.5 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/92
+* Bump spring-security-web from 5.7.4 to 5.7.5 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/91
+* Bump spring-cloud-starter-config from 3.1.4 to 3.1.5 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/93
+* Bump mockito-inline from 4.8.1 to 4.9.0 by @dependabot in https://github.com/kit-data-manager/base-repo/pull/94
+* Bump Gradle from 7.4.2 to 7.6 by @VolkerHartmann in https://github.com/kit-data-manager/base-repo/pull/110
+* Bump org.springframework.boot from 2.7.3 to 2.7.5 
+* Bump javers from 6.6.5 to 6.8.0 
+* Bump service-base from 1.0.4 to 1.1.0
+* Bump repo-core from 1.0.3 to 1.1.1
 
 Added
 
@@ -104,7 +118,8 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/kit-data-manager/base-repo/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/kit-data-manager/base-repo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/kit-data-manager/base-repo/compare/v1.0...v1.1.0
 [1.0]: https://github.com/kit-data-manager/base-repo/compare/v0.0.1...v1.0

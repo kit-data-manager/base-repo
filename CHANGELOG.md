@@ -36,6 +36,10 @@ Changed
 - Attempts to write DataResources if repository is in readOnly mode now returns HTTP 403 (FORBIDDEN) instead of HTTP 503 (SERVICE_UNAVAILABLE)
 - Attempts to write DataResources without permissions now returns HTTP 403 (FORBIDDEN) instead of HTTP 401 (UNAUTHORIZED)
 
+Fixed
+
+- MediaType detection and providing mediaType by user now properly works for ContentInformation
+
 ## [1.2.0] - 2022-08-04
 
 Security

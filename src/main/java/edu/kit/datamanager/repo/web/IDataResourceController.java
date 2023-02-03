@@ -19,9 +19,11 @@ import com.github.fge.jsonpatch.JsonPatch;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.controller.IGenericResourceController;
 import edu.kit.datamanager.repo.domain.ContentInformation;
+import edu.kit.datamanager.repo.domain.TabulatorLocalPagination;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import java.time.Instant;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
@@ -77,6 +79,25 @@ public interface IDataResourceController extends IGenericResourceController<Data
     public ResponseEntity<DataResource> create(@Parameter(description = "Json representation of the resource to create.", required = true)
             @RequestBody DataResource arg0, WebRequest arg1, HttpServletResponse arg2);
 
+    
+  @Operation(operationId = "listResourcesForTabulator",
+          summary = "List all resources and return them in a format supported by the Tabulator.js library.",
+          description = "List all resources in a paginated and/or sorted form. Possible queries are: listing with default values (X elements on first page sorted by database), "
+          + "listing page wise, sorted query page wise, and combinations of the options above. "
+          + "The total number of resources may differ between calls if single resources have access restrictions. "
+          + "Furthermore, anonymous listing of resources may or may not be supported.", security = {
+            @SecurityRequirement(name = "bearer-jwt")})
+  @RequestMapping(value = "/", method = RequestMethod.GET, produces={"application/tabulator+json"})
+  @ResponseBody
+  @PageableAsQueryParam
+  public ResponseEntity<TabulatorLocalPagination> findAllForTabulator(
+          @Parameter(description = "The UTC time of the earliest update of a returned resource.", example = "2017-05-10T10:41:00Z",required = false) @RequestParam(value = "The UTC time of the earliest update of a returned resource.", name = "from", required = false) final Instant lastUpdateFrom,
+          @Parameter(description = "The UTC time of the latest update of a returned resource.", example = "2017-05-10T10:41:00Z",required = false) @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
+          @Parameter(hidden = true) final Pageable pgbl,
+          final WebRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder uriBuilder);
+  
     @Operation(operationId = "uploadContent",
             summary = "Assign content to a resource.",
             description = "This endpoint allows to upload or assign data and content metadata to the resource with the given id. "
@@ -165,7 +186,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
             + "Both restrictions only apply if authentication and authorization is enabled.",
             security = {
                 @SecurityRequirement(name = "bearer-jwt")})
-    @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
+        @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
     @ResponseBody
     public ResponseEntity patchContentMetadata(
             @Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,

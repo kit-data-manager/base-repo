@@ -50,4 +50,8 @@ public class ApplicationProperties extends GenericApplicationProperties {
     private String defaultVersioningService;
     @Value("${repo.plugin.storage:dateBased}")
     private String defaultStorageService;
+    @Value("${repo.security.enable-csrf:false}")
+    private boolean enableCsrf;
+    @Value("${repo.security.allowedOriginPattern:http://localhost:*}")
+    private String allowedOriginPattern;
 }

@@ -1,12 +1,13 @@
 plugins { 
-    id "org.springframework.boot" version "2.7.2"
-    id "io.spring.dependency-management" version "1.0.11.RELEASE" 
-    id "io.freefair.lombok" version "6.5.0.3"
-    id "io.freefair.maven-publish-java" version "6.5.0.3"
+    id "org.springframework.boot" version "2.7.5"
+    id "io.spring.dependency-management" version "1.1.0" 
+    id "io.freefair.lombok" version "6.5.1"
+    id "io.freefair.maven-publish-java" version "6.5.1"
     id "com.github.kt3k.coveralls" version "2.12.0" 
-    id "org.owasp.dependencycheck" version "7.1.1"
+    id "org.owasp.dependencycheck" version "7.3.0"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
-    id "net.researchgate.release" version "3.0.0"
+    id "net.researchgate.release" version "3.0.2"
+    id "com.gorylenko.gradle-git-properties" version "2.4.1"
     id 'java'
     id 'jacoco'
 }
@@ -22,16 +23,14 @@ repositories {
     mavenCentral()
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
- 
-configurations {
-    all*.exclude module : 'spring-boot-starter-logging'
-}
+
+//configurations {
+ //   all*.exclude module : 'spring-boot-starter-logging'
+//}
 
 ext {
-    set('javersVersion', "6.6.5")
-    set('springBootVersion', "2.7.2")
+    set('javersVersion', "6.8.0")
+    set('springBootVersion', "2.7.5")
     set('springDocVersion', "1.6.9")
     set('keycloakVersion', "19.0.0")
 
@@ -42,6 +41,9 @@ ext {
 println "Running gradle version: $gradle.gradleVersion"
 println "Building ${name} version: ${version}"
 println "JDK version: ${JavaVersion.current()}"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 if (System.getProperty('profile') == 'minimal') {
     println 'Using minimal profile for building ' + project.getName()
@@ -58,29 +60,32 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-rest"
     implementation "org.springframework.boot:spring-boot-starter-mail"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation 'org.springframework.data:spring-data-elasticsearch:4.4.6'
 
-     
-    implementation "org.springframework:spring-messaging:5.3.22"
-    implementation "org.springframework.security:spring-security-web:5.7.2"
-    implementation "org.springframework.security:spring-security-config:5.5.2"
+    implementation "org.springframework:spring-messaging:5.3.23"
+    implementation "org.springframework.security:spring-security-web:5.7.5"
+    implementation "org.springframework.security:spring-security-config:5.7.5"
     
     // cloud support
-    implementation "org.springframework.cloud:spring-cloud-starter-config:3.1.3"
-    implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.1.3"
+    implementation "org.springframework.cloud:spring-cloud-starter-config:3.1.5"
+    implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.1.4"
+    implementation "org.springframework.cloud:spring-cloud-gateway-mvc:3.1.4"
+    implementation 'de.codecentric:spring-boot-admin-starter-client:2.7.10'
+
 
     // springdoc
     implementation "org.springdoc:springdoc-openapi-ui:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-webmvc-core:${springDocVersion}"
 
-    implementation "edu.kit.datamanager:repo-core:1.0.3"
-    implementation "edu.kit.datamanager:service-base:1.0.4"
+    implementation "edu.kit.datamanager:repo-core:1.1.1"
+    implementation "edu.kit.datamanager:service-base:1.1.0"
 
     //implementation "com.github.victools:jsonschema-generator:4.23.0"
 
     //Keycloak
-    implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
-    implementation "com.nimbusds:nimbus-jose-jwt:9.23"
+    // implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
+    implementation "com.nimbusds:nimbus-jose-jwt:9.24.3"
     implementation "io.jsonwebtoken:jjwt-api:0.11.5"
     implementation "io.jsonwebtoken:jjwt-impl:0.11.5"
     implementation "io.jsonwebtoken:jjwt-jackson:0.11.5"
@@ -95,7 +100,7 @@ dependencies {
     runtimeOnly    "org.apache.httpcomponents:httpclient:4.5.13"
 
      // driver for postgres
-    implementation "org.postgresql:postgresql:42.4.0"
+    implementation "org.postgresql:postgresql:42.5.0"
     //driver for h2
     implementation "com.h2database:h2:2.1.214"
 
@@ -105,9 +110,7 @@ dependencies {
     testImplementation "org.springframework.security:spring-security-test"
    
     //Java 11 Support 
-    testImplementation "org.mockito:mockito-core:4.6.1"
-    testImplementation "org.powermock:powermock-module-junit4:2.0.9"
-    testImplementation "org.powermock:powermock-api-mockito2:2.0.9"
+    testImplementation "org.mockito:mockito-inline:4.9.0"
     testImplementation "junit:junit:4.13.2"
 }
 
@@ -128,6 +131,10 @@ tasks.withType(Test) {
     testLogging {
         events 'started', 'passed'
     }
+}
+
+springBoot {    
+    buildInfo()
 }
 
 bootJar {

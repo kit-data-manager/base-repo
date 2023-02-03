@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Jejkal"
+  given-names: "Thomas"
+  affiliation: Karlsruhe Institute of Technology
+  email: thomas.jejkal@kit.edu
+  orcid: "https://orcid.org/0000-0003-2804-688X"
+- family-names: "Hartmann"
+  given-names: "Volker"
+  affiliation: Karlsruhe Institute of Technology
+  email: volker.hartmann@kit.edu
+  orcid: "https://orcid.org/0000-0001-6383-5214"
+title: "base-repo"
+type: software
+abstract: This project contains the repository service microservice for the KIT DM infrastructure. The service provides data resource management, e.g. register DataCite-compliant metadata and upload/download content to data resources.
+date-released: 2020-10-06
+url: "https://github.com/kit-data-manager/base-repo"
+repository-code: "https://github.com/kit-data-manager/base-repo"
+license: Apache-2.0

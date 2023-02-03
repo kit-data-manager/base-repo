@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
@@ -82,7 +81,7 @@ public class DataCiteMessageConverter implements HttpMessageConverter {
 
     @Override
     public Object read(Class arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
-        LOGGER.trace("Resing HttpInputMessage for JOLT transformation.");
+        LOGGER.trace("Reading HttpInputMessage for JOLT transformation.");
         try (InputStreamReader reader = new InputStreamReader(arg1.getBody(), "UTF-8")) {
             String data = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
             return applyJoltTransformation(data);

@@ -1098,7 +1098,7 @@ public class DataResourceControllerTest {
     public void testUploadFileAnonymous() throws Exception {
         Path temp = Files.createTempFile("testUploadFileAnonymous", "test");
         MockMultipartFile fstmp = new MockMultipartFile("file", "bibtex.txt", "multipart/form-data", Files.newInputStream(temp));
-        this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp)).andDo(print()).andExpect(status().isUnauthorized());
+        this.mockMvc.perform(multipart("/api/v1/dataresources/" + sampleResource.getId() + "/data/bibtex.txt").file(fstmp)).andDo(print()).andExpect(status().isForbidden());
     }
 
     @Test

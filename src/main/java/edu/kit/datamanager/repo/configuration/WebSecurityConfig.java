@@ -15,25 +15,27 @@
  */
 package edu.kit.datamanager.repo.configuration;
 
-import edu.kit.datamanager.security.filter.KeycloakJwtProperties;
 import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
-import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
 import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.info.InfoEndpoint;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
@@ -67,10 +69,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //    }
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        HttpSecurity httpSecurity = http.authorizeRequests()
-                .antMatchers(HttpMethod.OPTIONS, "/**").
-                permitAll().
-                and().
+        HttpSecurity httpSecurity = http.authorizeRequests().
+                requestMatchers(EndpointRequest.to(
+                        InfoEndpoint.class,
+                        HealthEndpoint.class
+                )).permitAll().
+                requestMatchers(EndpointRequest.toAnyEndpoint()). //
+                hasAnyRole("ADMIN", "ACTUATOR"). //
+                antMatchers(HttpMethod.OPTIONS, "/**").
+                permitAll().and().
                 sessionManagement().
                 sessionCreationPolicy(SessionCreationPolicy.STATELESS).
                 and()
@@ -106,7 +113,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(WebSecurity web) throws Exception {
         web.httpFirewall(allowUrlEncodedSlashHttpFirewall());
     }
-
+ 
 //  @Bean
 //  CorsConfigurationSource corsConfigurationSource(){
 //    final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -116,8 +123,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //    source.registerCorsConfiguration("/**", config);
 //    return source;
 //  }
-   
-
     @Bean
     public FilterRegistrationBean corsFilter() {
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

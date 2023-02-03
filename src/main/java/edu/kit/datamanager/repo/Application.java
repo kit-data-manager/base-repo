@@ -19,13 +19,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import edu.kit.datamanager.configuration.SearchConfiguration;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
-import edu.kit.datamanager.repo.configuration.DateBasedStorageProperties;
-import edu.kit.datamanager.repo.configuration.IdBasedStorageProperties;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
 import edu.kit.datamanager.repo.configuration.StorageServiceProperties;
-import edu.kit.datamanager.repo.dao.IDataResourceDao;
-import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.service.impl.DataResourceService;
@@ -41,6 +38,7 @@ import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.service.impl.RabbitMQMessagingService;
+import java.util.Optional;
 import org.javers.core.Javers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,17 +47,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 
 /**
  *
@@ -148,6 +146,13 @@ public class Application {
         return new ApplicationProperties();
     }
 
+    @Bean
+    @ConfigurationProperties("repo")
+    @ConditionalOnProperty(prefix = "repo.search", name = "enabled", havingValue = "true")
+    public SearchConfiguration searchConfiguration() {
+        return new SearchConfiguration();
+    }
+
     /* @Bean
     public IdBasedStorageProperties idBasedStorageProperties() {
         return new IdBasedStorageProperties();
@@ -161,10 +166,12 @@ public class Application {
     public StorageServiceProperties storageServiceProperties() {
         return new StorageServiceProperties();
     }
-
+    
     @Bean
-    public IMessagingService messagingService() {
-        return new RabbitMQMessagingService();
+    @ConfigurationProperties("repo")
+    @ConditionalOnProperty(prefix = "repo.messaging", name = "enabled", havingValue = "true")
+    public Optional<IMessagingService> messagingService() {
+        return Optional.of(new RabbitMQMessagingService());
     }
 
 //    @Bean

@@ -16,7 +16,6 @@
 package edu.kit.datamanager.repo.web.impl;
 
 import com.github.fge.jsonpatch.JsonPatch;
-import edu.kit.datamanager.dao.StringFieldSpecification;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
@@ -59,8 +58,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.RequestParam;

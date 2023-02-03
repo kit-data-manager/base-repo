@@ -65,9 +65,10 @@ public class DataResourceAuditController implements IDataResourceAuditController
     private final RepoBaseConfiguration repositoryProperties;
 
     /**
+     * Default constructor.
      *
-     *
-     *
+     * @param applicationProperties The application properties.
+     * @param repositoryConfig The repository config.
      */
     public DataResourceAuditController(ApplicationProperties applicationProperties,
             RepoBaseConfiguration repositoryConfig

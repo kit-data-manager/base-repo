@@ -186,7 +186,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
             + "Both restrictions only apply if authentication and authorization is enabled.",
             security = {
                 @SecurityRequirement(name = "bearer-jwt")})
-    @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
+        @RequestMapping(path = "/{id}/data/**", method = RequestMethod.PATCH, consumes = "application/json-patch+json")
     @ResponseBody
     public ResponseEntity patchContentMetadata(
             @Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String id,

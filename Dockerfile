@@ -42,7 +42,7 @@ RUN mkdir -p /git/base-repo/
 RUN mkdir -p /git/base-repo/settings
 WORKDIR /git/base-repo/
 COPY . .
-RUN cp docker/application-docker.properties settings/application-default.properties
+RUN cp config/application-docker.properties settings/application-default.properties
 # Build service in given directory
 RUN bash ./build.sh $SERVICE_DIRECTORY
 

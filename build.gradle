@@ -78,7 +78,7 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
     implementation "org.springdoc:springdoc-openapi-webmvc-core:${springDocVersion}"
 
-    implementation "edu.kit.datamanager:repo-core:1.1.1"
+    implementation "edu.kit.datamanager:repo-core:1.1.1-SNAPSHOT"
     implementation "edu.kit.datamanager:service-base:1.1.0"
 
     //implementation "com.github.victools:jsonschema-generator:4.23.0"

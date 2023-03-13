@@ -90,7 +90,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
             + "and the ResourceType. Other mandatory elements, i.e., a Creator, publicationYear and publisher, are automatically assigned if not provided.<br/>"
             + "If enabled, authentication and authorization may restrict creation to existing users.", security = {
                 @SecurityRequirement(name = "bearer-jwt")})
-    @RequestMapping(value = {"/"}, method = {RequestMethod.POST}, consumes = {"application/json", "application/vnd.datacite.org+json"})
+    @RequestMapping(value = {"/"}, method = {RequestMethod.POST}, consumes = {"application/json", "application/vnd.datacite.org+json", "application/vnd.zenodo.org+json"})
     @ResponseBody
     @Override
     public ResponseEntity<DataResource> create(@Parameter(description = "Json representation of the resource to create.", required = true)

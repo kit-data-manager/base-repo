@@ -356,9 +356,9 @@ public class DataResourceController implements IDataResourceController {
 
         long currentVersion = contentAuditService.getCurrentVersion(Long.toString(result.getId()));
         if (currentVersion > 0) {
-            return ResponseEntity.created(resourceUri).header(VERSION_HEADER, Long.toString(currentVersion)).build();
+            return ResponseEntity.created(resourceUri).header(VERSION_HEADER, Long.toString(currentVersion)).eTag("\"" + result.getEtag() + "\"").build();
         } else {
-            return ResponseEntity.created(resourceUri).build();
+            return ResponseEntity.created(resourceUri).eTag("\"" + result.getEtag() + "\"").build();
         }
     }
 
@@ -399,11 +399,12 @@ public class DataResourceController implements IDataResourceController {
         } else {
             LOGGER.trace("Obtained single content information result.");
             ContentInformation contentInformation = result.get(0);
+            
             long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
             if (currentVersion > 0) {
-                return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
+                return ResponseEntity.ok().eTag("\"" + contentInformation.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
             } else {
-                return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(fixContentInformation(contentInformation, version));
+                return ResponseEntity.ok().eTag("\"" + contentInformation.getEtag() + "\"").body(fixContentInformation(contentInformation, version));
             }
         }
 

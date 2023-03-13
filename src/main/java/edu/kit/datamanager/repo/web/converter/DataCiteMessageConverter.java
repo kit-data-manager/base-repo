@@ -18,6 +18,7 @@ package edu.kit.datamanager.repo.web.converter;
 import edu.kit.datamanager.repo.domain.DataResource;
 import com.nimbusds.jose.util.JSONObjectUtils;
 import edu.kit.datamanager.entities.Identifier;
+import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.repo.domain.Agent;
 import edu.kit.datamanager.repo.domain.Contributor;
 import edu.kit.datamanager.repo.domain.Date;
@@ -27,6 +28,8 @@ import edu.kit.datamanager.repo.domain.ResourceType;
 import edu.kit.datamanager.repo.domain.Scheme;
 import edu.kit.datamanager.repo.domain.Subject;
 import edu.kit.datamanager.repo.domain.Title;
+import edu.kit.datamanager.repo.domain.acl.AclEntry;
+import edu.kit.datamanager.util.AuthenticationHelper;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -59,21 +62,6 @@ public class DataCiteMessageConverter implements HttpMessageConverter {
 
     private Logger LOGGER = LoggerFactory.getLogger(DataCiteMessageConverter.class);
 
-  /*  private Object applyJoltTransformation(Object payload) {
-        LOGGER.trace("Reading JOLT spec from /datacite.jolt");
-        List chainrSpecJSON = JsonUtils.classpathToList("/datacite.jolt");
-        Chainr chainr = Chainr.fromSpec(chainrSpecJSON);
-        LOGGER.trace("Transforming input string {} to object.", payload);
-        Object result = chainr.transform(JsonUtils.jsonToObject((String) payload));
-        try {
-            LOGGER.trace("Converting transformation result {} to DataResource.", result);
-            return new ObjectMapper().readValue((String) JsonUtils.toJsonString(result), DataResource.class);
-        } catch (JsonProcessingException ex) {
-            LOGGER.error("Failed to transform JOLT result to DataResource.", ex);
-        }
-        return null;
-    }
-*/
     @Override
     public boolean canRead(Class arg0, MediaType arg1) {
         if (arg0 == null || arg1 == null) {
@@ -91,12 +79,12 @@ public class DataCiteMessageConverter implements HttpMessageConverter {
 
     @Override
     public List getSupportedMediaTypes() {
-        return Arrays.asList(MediaType.valueOf("application/datacite+json"));
+        return Arrays.asList(MediaType.valueOf("application/vnd.datacite.org+json"));
     }
 
     @Override
     public Object read(Class arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
-        LOGGER.trace("Reading HttpInputMessage for JOLT transformation.");
+        LOGGER.trace("Reading HttpInputMessage for transformation.");
         try (InputStreamReader reader = new InputStreamReader(arg1.getBody(), "UTF-8")) {
             String data = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
             try {
@@ -281,6 +269,9 @@ public class DataCiteMessageConverter implements HttpMessageConverter {
             }
             res.getContributors().add(Contributor.factoryContributor(agent, type));
         });
+        
+        res.getAcls().add(new AclEntry(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL, PERMISSION.READ));
+        
         return res;
     }
 

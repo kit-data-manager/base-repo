@@ -1261,17 +1261,15 @@ public class DataResourceControllerTestWithoutVersioning {
     MvcResult res = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andReturn();
 
-    //ContentInformation result = mapper.
-    //res.getResponse().getContentAsString()
-    //get all content with type text/plain
+    //get all content with type application/json
     ContentInformation example = new ContentInformation();
-    example.setMediaType("text/plain");
+    example.setMediaType("application/json");
     //expect one result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
 
-    //get all content with type application/json
-    example.setMediaType("application/json");
+    //get all content with type text/plain
+    example.setMediaType("text/plain");
     //expect no result
     this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
             "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));

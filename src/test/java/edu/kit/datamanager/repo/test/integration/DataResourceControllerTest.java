@@ -1268,17 +1268,15 @@ public class DataResourceControllerTest {
         MvcResult res = this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId() + "/data/").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andReturn();
 
-        //ContentInformation result = mapper.
-        //res.getResponse().getContentAsString()
-        //get all content with type text/plain
+        //get all content with type application/json
         ContentInformation example = new ContentInformation();
-        example.setMediaType("text/plain");
+        example.setMediaType("application/json");
         //expect one result
         this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1)));
 
-        //get all content with type application/json
-        example.setMediaType("application/json");
+        //get all content with type text/plain
+        example.setMediaType("text/plain");
         //expect no result
         this.mockMvc.perform(post("/api/v1/dataresources/search/data").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "0").param("size", "10").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(0)));
@@ -1757,15 +1755,15 @@ public class DataResourceControllerTest {
         String resourceId = location.substring(location.lastIndexOf("/") + 1);
         resourceId = resourceId.substring(0, resourceId.indexOf("?"));
 
-        String etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "1").header(HttpHeaders.AUTHORIZATION,
-                "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Versioned Resource")).andReturn().getResponse().getHeader("ETag");
+        this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId).param("version", "1").header(HttpHeaders.AUTHORIZATION,
+                "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.titles[0].value").value("Versioned Resource"));
 
         //upload a file
         Path temp = Files.createTempFile("testUploadFile", "test");
         MockMultipartFile fstmp = new MockMultipartFile("file", "file.txt", "multipart/form-data", Files.newInputStream(temp));
 
-        this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/file.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
-                "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated());
+        String etag = this.mockMvc.perform(multipart("/api/v1/dataresources/" + resourceId + "/data/file.txt").file(fstmp).header(HttpHeaders.AUTHORIZATION,
+                "Bearer " + userToken)).andDo(print()).andExpect(status().isCreated()).andReturn().getResponse().getHeader("ETag");
 
         String patch = "[{\"op\": \"add\",\"path\": \"/tags/0\",\"value\": \"success\"}]";
 
@@ -1795,6 +1793,10 @@ public class DataResourceControllerTest {
         this.mockMvc.perform(get("/api/v1/audit/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.header().exists("Resource-Version")).andExpect(MockMvcResultMatchers.header().string("Resource-Version", "2"));
 
+         //get ETag
+        etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
+                "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.tags[0]").value("success")).andReturn().getResponse().getHeader("ETag");
+  
         //delete content
         this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken).header("If-Match", etag).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNoContent());

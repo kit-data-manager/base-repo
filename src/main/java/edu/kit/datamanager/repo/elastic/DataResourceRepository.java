@@ -22,6 +22,7 @@ import org.springframework.data.elasticsearch.repository.ElasticsearchRepository
 import org.springframework.stereotype.Repository;
 
 /**
+ * Elastic repository for indexing DataResources.
  *
  * @author jejkal
  */

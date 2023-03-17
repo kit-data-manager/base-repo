@@ -15,6 +15,7 @@
  */
 package edu.kit.datamanager.repo.web.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
@@ -44,15 +45,19 @@ import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.http.client.utils.URIBuilder;
+import org.javers.common.collections.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,12 +114,6 @@ public class DataResourceController implements IDataResourceController {
         contentAuditService = repositoryConfig.getContentInformationAuditService();
         repositoryProperties = repositoryConfig;
         LOGGER.trace("Show Config: {}", repositoryConfig);
-
-//        if (!this.applicationProperties.isAuditEnabled() && !"none".equals(this.applicationProperties.getDefaultVersioningService())) {
-//            String message = "Conflicting configuration properties detected. 'repo.audit.enabled' must be 'true' if 'repo.file.versioning.default' is not 'none'.";
-//            LOGGER.warn(message);
-//            throw new IllegalArgumentException(message);
-//        }
     }
 
     @Override
@@ -165,6 +164,15 @@ public class DataResourceController implements IDataResourceController {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
         };
         return DataResourceUtils.readResource(repositoryProperties, identifier, version, getById);
+    }
+
+    @Override
+    public ResponseEntity<DataResource> getByPid(@PathVariable("prefix") final String prefix,
+            @PathVariable("suffix") final String suffix,
+            @RequestParam(name = "version", required = false) final Long version,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        return getById(prefix + "/" + suffix, version, request, response);
     }
 
     @Override
@@ -240,6 +248,15 @@ public class DataResourceController implements IDataResourceController {
     }
 
     @Override
+    public ResponseEntity patchPid(@PathVariable("prefix") final String prefix,
+            @PathVariable("suffix") final String suffix,
+            @RequestBody final JsonPatch patch,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        return patch(prefix + "/" + suffix, patch, request, response);
+    }
+
+    @Override
     public ResponseEntity put(@PathVariable("id") final String identifier,
             @RequestBody final DataResource newResource,
             final WebRequest request,
@@ -264,6 +281,15 @@ public class DataResourceController implements IDataResourceController {
     }
 
     @Override
+    public ResponseEntity putPid(@PathVariable("prefix") final String prefix,
+            @PathVariable("suffix") final String suffix,
+            @RequestBody final DataResource newResource,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        return put(prefix + "/" + suffix, newResource, request, response);
+    }
+
+    @Override
     public ResponseEntity delete(@PathVariable("id") final String identifier,
             final WebRequest request,
             final HttpServletResponse response) {
@@ -279,9 +305,17 @@ public class DataResourceController implements IDataResourceController {
     }
 
     @Override
+    public ResponseEntity deletePid(@PathVariable("prefix") final String prefix,
+            @PathVariable("suffix") final String suffix,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        return delete(prefix + "/" + suffix, request, response);
+    }
+
+    @Override
     public ResponseEntity createContent(@PathVariable(value = "id") final String identifier,
             @RequestPart(name = "file", required = false) MultipartFile file,
-            @RequestPart(name = "metadata", required = false) final ContentInformation contentInformation,
+            @RequestPart(name = "metadata", required = false) final MultipartFile contentInformation,
             @RequestParam(name = "force", defaultValue = "false") boolean force,
             final WebRequest request,
             final HttpServletResponse response,
@@ -292,7 +326,18 @@ public class DataResourceController implements IDataResourceController {
         };
         DataResource resource = DataResourceUtils.getResourceByIdentifierOrRedirect(repositoryProperties, identifier, null, createContent);
         String path = ContentDataUtils.getContentPathFromRequest(request);
-        ContentInformation result = ContentDataUtils.addFile(repositoryProperties, resource, file, path, contentInformation, force, createContent);
+
+        ContentInformation info = null;
+        if (contentInformation != null) {
+            LOGGER.trace("Reading user-provided content information.");
+            try {
+                info = new ObjectMapper().readValue(contentInformation.getInputStream(), ContentInformation.class);
+            } catch (IOException ex) {
+                LOGGER.error("Unable to read content information metadata.", ex);
+                return ResponseEntity.badRequest().body("Invalid ContentInformation metadata provided.");
+            }
+        }
+        ContentInformation result = ContentDataUtils.addFile(repositoryProperties, resource, file, path, info, force, createContent);
 
         URI link = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(resource.getId(), null, 1l, null, request, response, uriBuilder)).toUri();
 
@@ -311,10 +356,22 @@ public class DataResourceController implements IDataResourceController {
 
         long currentVersion = contentAuditService.getCurrentVersion(Long.toString(result.getId()));
         if (currentVersion > 0) {
-            return ResponseEntity.created(resourceUri).header(VERSION_HEADER, Long.toString(currentVersion)).build();
+            return ResponseEntity.created(resourceUri).header(VERSION_HEADER, Long.toString(currentVersion)).eTag("\"" + result.getEtag() + "\"").build();
         } else {
-            return ResponseEntity.created(resourceUri).build();
+            return ResponseEntity.created(resourceUri).eTag("\"" + result.getEtag() + "\"").build();
         }
+    }
+
+    @Override
+    public ResponseEntity createContentPid(@PathVariable(value = "prefix") final String prefix,
+            @PathVariable(value = "suffix") final String suffix,
+            @RequestPart(name = "file", required = false) MultipartFile file,
+            @RequestPart(name = "metadata", required = false) final MultipartFile contentInformation,
+            @RequestParam(name = "force", defaultValue = "false") boolean force,
+            final WebRequest request,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        return createContent(prefix + "/" + suffix, file, contentInformation, force, request, response, uriBuilder);
     }
 
     @Override
@@ -342,14 +399,27 @@ public class DataResourceController implements IDataResourceController {
         } else {
             LOGGER.trace("Obtained single content information result.");
             ContentInformation contentInformation = result.get(0);
+            
             long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
             if (currentVersion > 0) {
-                return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
+                return ResponseEntity.ok().eTag("\"" + contentInformation.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
             } else {
-                return ResponseEntity.ok().eTag("\"" + resource.getEtag() + "\"").body(fixContentInformation(contentInformation, version));
+                return ResponseEntity.ok().eTag("\"" + contentInformation.getEtag() + "\"").body(fixContentInformation(contentInformation, version));
             }
         }
 
+    }
+
+    @Override
+    public ResponseEntity getContentMetadataPid(@PathVariable(value = "prefix") final String prefix,
+            @PathVariable(value = "suffix") final String suffix,
+            @RequestParam(name = "tag", required = false) final String tag,
+            @RequestParam(name = "version", required = false) final Long version,
+            final Pageable pgbl,
+            final WebRequest request,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        return getContentMetadata(prefix + "/" + suffix, tag, version, pgbl, request, response, uriBuilder);
     }
 
     @Override
@@ -390,6 +460,15 @@ public class DataResourceController implements IDataResourceController {
     }
 
     @Override
+    public ResponseEntity patchContentMetadataPid(@PathVariable(value = "prefix") final String prefix,
+            @PathVariable(value = "suffix") final String suffix,
+            final @RequestBody JsonPatch patch,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        return patchContentMetadata(prefix + "/" + suffix, patch, request, response);
+    }
+
+    @Override
     public void getContent(@PathVariable(value = "id") final String identifier,
             @RequestParam(value = "version", required = false) Long version,
             final WebRequest request,
@@ -405,6 +484,16 @@ public class DataResourceController implements IDataResourceController {
         DataResourceUtils.performPermissionCheck(resource, PERMISSION.READ);
         LOGGER.debug("Access to resource with identifier {} granted. Continue with content access.", resource.getId());
         contentInformationService.read(resource, path, version, acceptHeader, response);
+    }
+
+    @Override
+    public void getContentPid(@PathVariable(value = "prefix") final String prefix,
+            @PathVariable(value = "suffix") final String suffix,
+            @RequestParam(value = "version", required = false) Long version,
+            final WebRequest request,
+            final HttpServletResponse response,
+            final UriComponentsBuilder uriBuilder) {
+        getContent(prefix + "/" + suffix, version, request, response, uriBuilder);
     }
 
     @Override
@@ -424,12 +513,20 @@ public class DataResourceController implements IDataResourceController {
         return ResponseEntity.noContent().build();
     }
 
+    @Override
+    public ResponseEntity deleteContentPid(@PathVariable(value = "prefix") final String prefix,
+            @PathVariable(value = "suffix") final String suffix,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        return deleteContent(prefix + "/" + suffix, request, response);
+    }
+
     private ContentInformation fixContentInformation(ContentInformation resource, Long version) {
         //hide all attributes but the id from the parent data resource in the content information entity
         String id = resource.getParentResource().getId();
         resource.setParentResource(DataResource.factoryNewDataResource(id));
         // fix content URI if URI points to a local file
-        if (resource.getContentUri() != null && resource.getContentUri().startsWith("file://")) {
+        if (resource.getContentUri() != null && resource.getContentUri().startsWith("file:/")) {
             Long fileVersion = version != null ? version : 1l;
             String contentUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getContentMetadata(id, null, fileVersion, null, null, null, null)).toString();
             contentUri = contentUri.replaceAll("\\*\\*", resource.getRelativePath());

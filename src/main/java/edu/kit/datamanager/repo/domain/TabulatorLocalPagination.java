@@ -21,7 +21,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * Helper object for local pagination using the Tabulator.js library.
+ * Helper object for local pagination using the Tabulator library.
  *
  * @author jejkal
  */

@@ -15,6 +15,37 @@ Changed
 
 Fixed
 
+## [1.4.0] - 2023-03-17
+
+Added
+- Creating resources from Zenodo JSON metadata has been added and is triggered by providing Content-Type 'application/vnd.zenodo.org+json' at POST /api/v1/dataresources/.
+- Added support for using PIDs (prefix/suffix) as resource id without escaping while accessing them, e.g., GET /api/v1/dataresources/<prefix>/<suffix> 
+
+Changed
+
+- ContentInformation metadata now returns own ETags different from the ETag of the parent resource.
+- Creating resources from DataCite JSON metadata is now triggered by providing Content-Type 'application/vnd.datacite.org+json' at POST /api/v1/dataresources/.
+- The allowed size of description content has been changed from 255 to 10240 characters (see 'Migration Remarks'). 
+
+Fixed
+
+- Creating resource from DataCite JSON metadata has been fixed.
+- MediaType detection and providing mediaType by user now finally works for ContentInformation.
+
+Security
+
+* Bump service-base from 1.1.0 to 1.1.1
+* Bump repo-core from 1.1.1 to 1.1.2
+
+### Migration Remarks
+
+For existing databases, a manual update is required to adjust the column size. 
+The query may depend on the used database system, for PostgreSQL this would be: 
+
+```
+alter table description alter column description type character varying(10240);
+``` 
+
 ## [1.3.0] - 2023-02-03
 
 Security
@@ -118,7 +149,8 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/kit-data-manager/base-repo/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/kit-data-manager/base-repo/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/kit-data-manager/base-repo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/kit-data-manager/base-repo/compare/v1.0...v1.1.0

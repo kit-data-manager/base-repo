@@ -15,7 +15,7 @@ data resource management, e.g. register DataCite-oriented metadata and upload/do
 
 In order to build this microservice you'll need:
 
-* Java SE Development Kit 8 or higher
+* Java SE Development Kit 11 or higher
 
 After obtaining the sources change to the folder where the sources are located perform the following steps:
 
@@ -58,7 +58,7 @@ user@localhost:/home/user/base-repo$ ./build/libs/base-repo.jar
  \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
   '  |____| .__|_| |_|_| |_\__, | / / / /
  =========|_|==============|___/=/_/_/_/
- :: Spring Boot ::        (v2.0.5.RELEASE)
+ :: Spring Boot ::        (v2.7.5)
 [...]
 1970-01-01 00:00:00.000  INFO 56918 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
 

@@ -30,10 +30,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
@@ -48,7 +48,7 @@ import org.springframework.web.filter.CorsFilter;
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class WebSecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
 
@@ -65,17 +65,16 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //    public void configure(AuthenticationManagerBuilder auth) throws Exception {
 //        auth.authenticationEventPublisher(new NoopAuthenticationEventPublisher()).authenticationProvider(new JwtAuthenticationProvider(applicationProperties.getJwtSecret(), logger));
 //    }
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         HttpSecurity httpSecurity = http.authorizeRequests().
+                antMatchers(HttpMethod.OPTIONS, "/**").permitAll().
                 requestMatchers(EndpointRequest.to(
                         InfoEndpoint.class,
                         HealthEndpoint.class
                 )).permitAll().
                 requestMatchers(EndpointRequest.toAnyEndpoint()). //
-                hasAnyRole("ADMIN", "ACTUATOR"). //
-                antMatchers(HttpMethod.OPTIONS, "/**").
-                permitAll().and().
+                hasAnyRole("ADMIN", "ACTUATOR").and().
                 sessionManagement().
                 sessionCreationPolicy(SessionCreationPolicy.STATELESS).
                 and()
@@ -98,6 +97,23 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 antMatchers("/api/v1").authenticated();
 
         http.headers().cacheControl().disable();
+        return http.build();
+    }
+
+    /*@Override
+    protected void configure(HttpSecurity http) throws Exception {
+       
+    }*/
+    @Bean
+    public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
+        DefaultHttpFirewall firewall = new DefaultHttpFirewall();
+        firewall.setAllowUrlEncodedSlash(true);
+        return firewall;
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.httpFirewall(allowUrlEncodedSlashHttpFirewall());
     }
 
     @Bean
@@ -107,20 +123,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return firewall;
     }
 
-    @Override
-    public void configure(WebSecurity web) throws Exception {
-        web.httpFirewall(allowUrlEncodedSlashHttpFirewall());
-    }
-
-//  @Bean
-//  CorsConfigurationSource corsConfigurationSource(){
-//    final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//    CorsConfiguration config = new CorsConfiguration();
-//    config.addAllowedOrigin("http://localhost:3000");
-//
-//    source.registerCorsConfiguration("/**", config);
-//    return source;
-//  }
     @Bean
     public FilterRegistrationBean corsFilter() {
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

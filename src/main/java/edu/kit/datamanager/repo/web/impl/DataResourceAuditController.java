@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,7 +125,7 @@ public class DataResourceAuditController implements IDataResourceAuditController
 
         return ResponseEntity.ok().header(VERSION_HEADER, Long.toString(currentVersion)).body(auditInformation.get());
     }
-
+ 
     @Override
     public ResponseEntity getAuditInformation(
             @Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") final String resourceIdentifier,

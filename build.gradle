@@ -61,7 +61,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation 'org.springframework.data:spring-data-elasticsearch:5.1.0'
 
-    implementation("org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.5"){
+    implementation("org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.11"){
         exclude group: "commons-logging", module: "commons-logging" 
     }
 

@@ -46,18 +46,15 @@ import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.http.client.utils.URIBuilder;
-import org.javers.common.collections.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,8 +83,9 @@ public class DataResourceController implements IDataResourceController {
     private final Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
 
     private final IContentInformationService contentInformationService;
+
     @Autowired
-    private ApplicationProperties applicationProperties;
+    private final ApplicationProperties applicationProperties;
 
     @Autowired
     private IDataResourceDao dataResourceDao;
@@ -399,7 +397,7 @@ public class DataResourceController implements IDataResourceController {
         } else {
             LOGGER.trace("Obtained single content information result.");
             ContentInformation contentInformation = result.get(0);
-            
+
             long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
             if (currentVersion > 0) {
                 return ResponseEntity.ok().eTag("\"" + contentInformation.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
@@ -577,6 +575,8 @@ public class DataResourceController implements IDataResourceController {
             }
             LOGGER.trace("Indexing Elastic wrapper.");
             dataResourceRepository.get().save(wrapper);
+        } else {
+            LOGGER.trace("No Elastic repository found. Skipping indexing of resource.");
         }
     }
 

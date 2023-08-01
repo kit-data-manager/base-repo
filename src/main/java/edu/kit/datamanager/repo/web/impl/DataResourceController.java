@@ -40,6 +40,7 @@ import edu.kit.datamanager.repo.elastic.ElasticWrapper;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.ContentDataUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
+import edu.kit.datamanager.repo.util.EntityUtils;
 import edu.kit.datamanager.repo.web.IDataResourceController;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.util.AuthenticationHelper;
@@ -124,6 +125,9 @@ public class DataResourceController implements IDataResourceController {
         getById = (t) -> {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
         };
+
+        LOGGER.trace("Removing user-provided @Ids from resource.");
+        EntityUtils.removeIds(resource);
 
         DataResource result = DataResourceUtils.createResource(repositoryProperties, resource);
         try {
@@ -330,6 +334,8 @@ public class DataResourceController implements IDataResourceController {
             LOGGER.trace("Reading user-provided content information.");
             try {
                 info = new ObjectMapper().readValue(contentInformation.getInputStream(), ContentInformation.class);
+                LOGGER.trace("Removing user-provided @Ids from content information.");
+                EntityUtils.removeIds(info);
             } catch (IOException ex) {
                 LOGGER.error("Unable to read content information metadata.", ex);
                 return ResponseEntity.badRequest().body("Invalid ContentInformation metadata provided.");

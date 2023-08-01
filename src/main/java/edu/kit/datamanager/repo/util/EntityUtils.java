@@ -19,20 +19,32 @@ import jakarta.persistence.Id;
 import java.lang.reflect.Field;
 import java.lang.reflect.InaccessibleObjectException;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
+ * Helper class for generic entity operations, e.g., for cleanup.
  *
  * @author jejkal
  */
 public class EntityUtils {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(EntityUtils.class);
+
+    /**
+     * Remove user-provided ids from the provided object. This is required at
+     * creation time as fields annotated as jakarta.persistence.Id are assigned
+     * by the database and conflicts with existing entities is not checked at
+     * inititial persisting. This method will check the provided object
+     * recursively, such that also child entities are processed.
+     *
+     * @param originalObj The object to check.
+     */
     public static void removeIds(Object originalObj) {
         if (originalObj == null) {
-            System.out.println("NULL!");
             return;
         }
         for (Field field : originalObj.getClass().getDeclaredFields()) {
-            System.out.println("NEW FIELD " + field);
             Id idField = field.getAnnotation(Id.class);
             if (idField != null) {
                 //field is id field
@@ -40,12 +52,12 @@ public class EntityUtils {
                 try {
                     if (field.get(originalObj) != null) {
                         //id field is set
-                        System.out.println("REMOVE ID " + field);
+                        LOGGER.trace("Removing user-provided id from field {}.", field);
                         field.set(originalObj, null);
                     }
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
                     //update failed
-                    System.out.println("NO ACCESS");
+                    LOGGER.error("Failed to enable access to field " + field + ".", ex);
                 }
             } else if (Set.class.isAssignableFrom(field.getType())) {
                 field.setAccessible(true);
@@ -58,7 +70,7 @@ public class EntityUtils {
                     }
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
                     //update failed
-                    System.out.println("NO ACCESS");
+                    LOGGER.error("Failed to enable access to field " + field + ".", ex);
                 }
             } else if (!field.getType().isPrimitive() && !field.getType().isEnum() && field.getType().getPackageName().startsWith("edu.kit.datamanager")) {
                 try {
@@ -69,7 +81,7 @@ public class EntityUtils {
                     }
                 } catch (IllegalArgumentException | IllegalAccessException | InaccessibleObjectException ex) {
                     //update failed
-                    System.out.println("NO ACCESS");
+                    LOGGER.error("Failed to enable access to field " + field + ".", ex);
                 }
             }
         }

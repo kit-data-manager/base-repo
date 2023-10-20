@@ -11,7 +11,7 @@ It is meant to be used for getting an overview and guidance in addition to the o
 - [Interfaces Overview for base-repo](#interfaces-overview-for-base-repo)
    * [External Dependencies](#external-dependencies) 📤
       + [Relational Database (mandatory)](#relational-database-mandatory) ⛁
-      + [Local Filesystem (mandatory)](#local-filesystem-mandatory) 📁
+      + [Local Filesystem (mandatory)](#local-filesystem-mandatory) 📂
       + [Messaging (optional)](#messaging-optional) 💬
       + [Enhanced Search (optional)](#enhanced-search-optional) 🔍
       + [Access Control (optional)](#access-control-optional) 🔐
@@ -40,7 +40,7 @@ A relational database is required by base-repo to store administrative metadata 
 > and base-repo has be be compiled. Proper JDBC drivers are typically provided on the database's Web page. Afterwards, the database can be configured in `application.properties` similar to PostgreSQL but with database-specific property naming. Please refer
 > to the driver documentation for details.
 
-### Local Filesystem (mandatory) 📁
+### Local Filesystem (mandatory) 📂
 Access to the local filesystem is required by base-repo to store and manage uploaded data. base-repo only needs access to a single folder, which can be located on the local hard drive or mounted, e.g., via NFS. 
 
 #### Configuration ⚙️

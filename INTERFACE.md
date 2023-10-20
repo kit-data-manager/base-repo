@@ -1,7 +1,7 @@
 # Interfaces Overview for base-repo
 
 This document aims to answer questions on how to configure external dependencies and which public interfaces are offered by base-repo in a comprehensive way. 
-It is meant to be used for getting an overview and guidance in addition to the official documentation, which is available at the official [base-repo Web page](https://kit-data-manager.github.io/webpage/base-repo/).
+It is meant to be used for getting an overview and guidance in addition to the official documentation, which is available at the official [base-repo web page](https://kit-data-manager.github.io/webpage/base-repo/).
 
 > **Note:**
 > This document applies to the base-repo version it is shipped with. If you have a specific version running, please refer to `INTERFACE.md` of this particular release.
@@ -49,8 +49,8 @@ A relational database is required by base-repo to store administrative metadata 
  - PostgreSQL (driver included, requires a running PostgreSQL server, used for production) [PostgreSQL](https://www.postgresql.org/), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L38-L45)
   
 > **Note**:
-> Other relational databases, e.g., MariaDB, SQLite, or Oracle, may also work but require additional actions. To allow base-repo to connect, the source code repository must be cloned, an appropriate JDBC driver has to be added to `build.gradle`
-> and base-repo has be be compiled. Proper JDBC drivers are typically provided on the database's Web page. Afterwards, the database can be configured in `application.properties` similar to PostgreSQL but with database-specific property naming. Please refer
+> Other relational databases, such as MariaDB, SQLite, or Oracle, may also work, but require additional steps. To allow base-repo to connect, the source code repository must be cloned, an appropriate JDBC driver has to be added to `build.gradle`
+> and base-repo has to be compiled. Proper JDBC drivers are typically provided on the database's web page. Afterwards, the database can be configured in `application.properties` similar to PostgreSQL but with database-specific property naming. Please refer
 > to the driver documentation for details.
 
 ### Local Filesystem (mandatory)

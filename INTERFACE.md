@@ -64,7 +64,7 @@ The default way to access base-repo is via RESTful interfaces. They allow to cre
  - Graphical frontends ([frontend-collection/repo-management.html](https://github.com/kit-data-manager/frontend-collection))
     
 ### Elasticsearch Proxy
-If 'Enhanced Search' is enabled, an additional REST endpoint becomes available, which allows to tunnel search queries to the underlying Elasticsearch instance. The advantage for proxying Elasticsearch access is, that access restrictions enabled via 'Access Control' are included in the query such that only results accessible by the caller are returned.
+If [Enhanced Search](#enhanced-search-optional) is enabled, an additional REST endpoint becomes available, which allows to tunnel search queries to the underlying Elasticsearch instance. The advantage for proxying Elasticsearch access is, that access restrictions enabled via [Access Control](#access-control-optional) are included in the query such that only results accessible by the caller are returned.
 
 #### Documentation
  - [Search Configuration](https://kit-data-manager.github.io/webpage/base-repo/documentation/search-configuration.html)

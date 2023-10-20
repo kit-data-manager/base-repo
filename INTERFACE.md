@@ -14,7 +14,7 @@ additional software to be installed and configured, before they can be included 
 ### Relational Database (mandatory)
 A relational database is required by base-repo to store administrative metadata for resources and content information. If not configured properly, base-repo will fail to start.
 
-#### Configuration:
+#### Configuration
  - H2 In-Memory (driver included, used for testing, not recommended for production) [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/src/test/resources/test-config/application-test.properties#L31-L34)
  - H2 File-Based (driver included, used for basic Docker setup, not recommended for production) [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-docker.properties#L17C1-L24)
  - PostgreSQL (driver included, requires a running PostgreSQL server, used for production) [PostgreSQL](https://www.postgresql.org/), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L38-L45)
@@ -27,25 +27,25 @@ A relational database is required by base-repo to store administrative metadata 
 ### Local Filesystem (mandatory)
 Access to the local filesystem is required by base-repo to store and manage uploaded data. base-repo only needs access to a single folder, which can be located on the local hard drive or mounted, e.g., via NFS. 
 
-#### Configuration:
+#### Configuration
  - see `application.properties` [Documentation1](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L137-L139), [Documentation2](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L154-L165)
    
 ### Messaging (optional)
 AMQP-based messaging is an optional feature of base-repo, which allows base-repo to emit messages about creation, modification, and deletion events related to resources and content information. These messages can be received by registered consumers and processed in an asynchronous way.
 
-#### Configuration:
+#### Configuration
  - RabbitMQ (dependencies included, serves as messaging distributor, requires a running RabbitMQ server) [RabbitMQ](https://www.rabbitmq.com/), [Documentation](https://kit-data-manager.github.io/webpage/base-repo/documentation/messaging-configuration.html)
 
 ### Enhanced Search (optional)
 By default, base-repo offers basic search via RESTful API by example document or certain query parameters. Optionally, enhanced search via a search index can be enabled and used for fine-grained and facetted search operations.
 
-#### Configuration:
+#### Configuration
  - Elasticsearch (dependencies included, serves as seach index, requires a running Elasticsearch server) [Elasticsearch] (https://www.elastic.co/de/elasticsearch/), [Documentation](https://kit-data-manager.github.io/webpage/base-repo/documentation/search-configuration.html), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L104-L107)
     
 ### Access Control (optional)
 By default, base-repo itself is open for all kinds of operations, i.e., read and write, where write access should be restricted on the user interface level, e.g., by a password-protected area for critical operations. Optionally, authentication and authorization via JSON Web Tokens (JWT) issued by a Keycloak instance, can be configured.
 
-#### Configuration:
+#### Configuration
  - Keycloak (dependencies included, serves as identity provider, requires a running Keycloak server) [Keycloak](https://www.keycloak.org/), [Documentation (TODO)](), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L192-L201)
    
 ## Public Interfaces

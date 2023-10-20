@@ -3,7 +3,7 @@
 This document aims to answer questions on how to configure external dependencies and which public interfaces are offered by base-repo in a comprehensive way. 
 It is meant to be used for getting an overview and guidance in addition to the official documentation, which is available at the official [base-repo Web page](https://kit-data-manager.github.io/webpage/base-repo/).
 
-> **Note:**
+> ℹ️ **Note:** 
 > This document applies to the base-repo version it is shipped with. If you have a specific version running, please refer to `INTERFACE.md` of this particular release.
 
 ## TOC
@@ -24,7 +24,7 @@ It is meant to be used for getting an overview and guidance in addition to the o
 
 ## External Dependencies 📤
 
-External dependencies are third-party services that Qare required for base-repo to work properly or that can be added optionally to provide additional functionality. Typically, external dependencies require
+External dependencies are third-party services that are required for base-repo to work properly or that can be added optionally to provide additional functionality. Typically, external dependencies require
 additional software to be installed and configured, before they can be included in the base-repo configuration, which is typically done via the main configuration file `application.properties`.
 
 ### Relational Database (mandatory) ⛁
@@ -35,7 +35,7 @@ A relational database is required by base-repo to store administrative metadata 
  - H2 File-Based (driver included, used for basic Docker setup, not recommended for production) [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-docker.properties#L17C1-L24)
  - PostgreSQL (driver included, requires a running PostgreSQL server, used for production) [PostgreSQL](https://www.postgresql.org/), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L38-L45)
   
-> **Note**: ℹ️
+> ℹ️ **Note:** 
 > Other relational databases, e.g., MariaDB, SQLite, or Oracle, may also work but require additional actions. To allow base-repo to connect, the source code repository must be cloned, an appropriate JDBC driver has to be added to `build.gradle`
 > and base-repo has be be compiled. Proper JDBC drivers are typically provided on the database's Web page. Afterwards, the database can be configured in `application.properties` similar to PostgreSQL but with database-specific property naming. Please refer
 > to the driver documentation for details.
@@ -55,13 +55,13 @@ AMQP-based messaging is an optional feature of base-repo, which allows base-repo
 ### Enhanced Search (optional) 🔍
 By default, base-repo offers basic search via RESTful API by example document or certain query parameters. Optionally, enhanced search via a search index can be enabled and used for fine-grained and facetted search operations.
 
-#### Configuration 🔧
+#### Configuration ⚙️
  - Elasticsearch (dependencies included, serves as seach index, requires a running Elasticsearch server) [Elasticsearch] (https://www.elastic.co/de/elasticsearch/), [Documentation](https://kit-data-manager.github.io/webpage/base-repo/documentation/search-configuration.html), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L104-L107)
     
 ### Access Control (optional) 🔐
 By default, base-repo itself is open for all kinds of operations, i.e., read and write, where write access should be restricted on the user interface level, e.g., by a password-protected area for critical operations. Optionally, authentication and authorization via JSON Web Tokens (JWT) issued by a Keycloak instance, can be configured.
 
-#### Configuration 🔧
+#### Configuration ⚙️
  - Keycloak (dependencies included, serves as identity provider, requires a running Keycloak server) [Keycloak](https://www.keycloak.org/), [Documentation (TODO)](), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L192-L201)
    
 ## Public Interfaces 📥
@@ -85,7 +85,7 @@ If [Enhanced Search](#enhanced-search-optional) is enabled, an additional REST e
 #### Documentation 📖
  - [Search Configuration](https://kit-data-manager.github.io/webpage/base-repo/documentation/search-configuration.html)
     
-#### Application Examples
+#### Application Examples 📋
  - Scripts
  - Graphical frontends ([frontend-collection/elastic-search-base-repo.html](https://github.com/kit-data-manager/frontend-collection))
     
@@ -99,7 +99,7 @@ If [Enhanced Search](#enhanced-search-optional) is enabled, an additional REST e
  - [Plugin Configuration](https://git.scc.kit.edu/kitdatamanager/2.0/oai-pmh-controller-plugin)
  - [base-repo Integration](https://github.com/kit-data-manager/base-repo#enhanced-startup)
 
-> **Note:** ℹ️
+> ℹ️ **Note:** 
 > Currently, the plugin is only available from an internal repository, which will change in near future. Furthermore, the plugin might not work with the current version of base-repo, but will be revised as soon as it becomes publicly available.
     
 ### Digital Object Interface Protocol (DOIP)
@@ -112,5 +112,5 @@ If [Enhanced Search](#enhanced-search-optional) is enabled, an additional REST e
  - [Plugin Configuration](https://git.scc.kit.edu/kitdatamanager/2.0/doip-plugin)
  - [base-repo Integration](https://github.com/kit-data-manager/base-repo#enhanced-startup)
 
-> **Note:** ℹ️
+> ℹ️ **Note:** 
 > Currently, the plugin is only available from an internal repository, which will change in near future. Furthermore, the plugin might not work with the current version of base-repo, but will be revised as soon as it becomes publicly available.

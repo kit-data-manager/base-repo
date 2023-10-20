@@ -6,9 +6,38 @@ It is meant to be used for getting an overview and guidance in addition to the o
 > **Note:**
 > This document applies to the base-repo version it is shipped with. If you have a specific version running, please refer to `INTERFACE.md` of this particular release.
 
+## TOC
+
+- [Interfaces Overview for base-repo](#interfaces-overview-for-base-repo)
+   * [External Dependencies](#external-dependencies)
+      + [Relational Database (mandatory)](#relational-database-mandatory)
+         - [Configuration](#configuration)
+      + [Local Filesystem (mandatory)](#local-filesystem-mandatory)
+         - [Configuration](#configuration-1)
+      + [Messaging (optional)](#messaging-optional)
+         - [Configuration](#configuration-2)
+      + [Enhanced Search (optional)](#enhanced-search-optional)
+         - [Configuration](#configuration-3)
+      + [Access Control (optional)](#access-control-optional)
+         - [Configuration](#configuration-4)
+   * [Public Interfaces](#public-interfaces)
+      + [HTTP / REST](#http--rest)
+         - [Documentation](#documentation)
+         - [Application Examples    ](#application-examples)
+      + [Elasticsearch Proxy](#elasticsearch-proxy)
+         - [Documentation](#documentation-1)
+         - [Application Examples](#application-examples-1)
+      + [OAI-PMH](#oai-pmh)
+         - [Source Code](#source-code)
+         - [Documentation](#documentation-2)
+      + [Digital Object Interface Protocol (DOIP)](#digital-object-interface-protocol-doip)
+         - [Source Code](#source-code-1)
+         - [Documentation](#documentation-3)
+
+
 ## External Dependencies
 
-External dependencies are third-party services that are required for base-repo to work properly or that can be added optionally to provide additional functionality. Typically, external dependencies require
+External dependencies are third-party services that Qare required for base-repo to work properly or that can be added optionally to provide additional functionality. Typically, external dependencies require
 additional software to be installed and configured, before they can be included in the base-repo configuration, which is typically done via the main configuration file `application.properties`.
 
 ### Relational Database (mandatory)

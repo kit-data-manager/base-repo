@@ -69,7 +69,7 @@ AMQP-based messaging is an optional feature of base-repo, which allows base-repo
 By default, base-repo offers basic search via RESTful API by example document or certain query parameters. Optionally, enhanced search via a search index can be enabled and used for fine-grained and facetted search operations.
 
 #### Configuration
- - Elasticsearch (dependencies included, serves as seach index, requires a running Elasticsearch server) [Elasticsearch] (https://www.elastic.co/de/elasticsearch/), [Documentation](https://kit-data-manager.github.io/webpage/base-repo/documentation/search-configuration.html), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L104-L107)
+ - Elasticsearch (dependencies included, serves as seach index, requires a running Elasticsearch server) [Elasticsearch](https://www.elastic.co/de/elasticsearch/), [Documentation](https://kit-data-manager.github.io/webpage/base-repo/documentation/search-configuration.html), [Example](https://github.com/kit-data-manager/base-repo/blob/4e90c6aeaced4715d419482f3cb127cddc85bd37/config/application-default.properties#L104-L107)
     
 ### Access Control (optional)
 By default, base-repo itself is open for all kinds of operations, i.e., read and write, where write access should be restricted on the user interface level, e.g., by a password-protected area for critical operations. Optionally, authentication and authorization via JSON Web Tokens (JWT) issued by a Keycloak instance, can be configured.

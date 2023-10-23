@@ -9,15 +9,15 @@ It is meant to be used for getting an overview and guidance in addition to the o
 ## TOC
 
 - [Interfaces Overview for base-repo](#interfaces-overview-for-base-repo)
-   * [External Dependencies](#external-dependencies) 📤
-      + [Relational Database (mandatory)](#relational-database-mandatory) ⛁
-      + [Local Filesystem (mandatory)](#local-filesystem-mandatory) 📂
-      + [Messaging (optional)](#messaging-optional) 💬
-      + [Enhanced Search (optional)](#enhanced-search-optional) 🔍
-      + [Access Control (optional)](#access-control-optional) 🔐
-   * [Public Interfaces](#public-interfaces) 📥
+   * [External Dependencies](#external-dependencies-) 📤
+      + [Relational Database (mandatory)](#relational-database-mandatory-) ⛁
+      + [Local Filesystem (mandatory)](#local-filesystem-mandatory-) 📂
+      + [Messaging (optional)](#messaging-optional-) 💬
+      + [Enhanced Search (optional)](#enhanced-search-optional-) 🔍
+      + [Access Control (optional)](#access-control-optional-) 🔐
+   * [Public Interfaces](#public-interfaces-) 📥
       + [HTTP / REST](#http--rest)
-      + [Elasticsearch Proxy](#elasticsearch-proxy) 🔍
+      + [Elasticsearch Proxy](#elasticsearch-proxy-) 🔍
       + [OAI-PMH](#oai-pmh)
       + [Digital Object Interface Protocol (DOIP)](#digital-object-interface-protocol-doip)
 

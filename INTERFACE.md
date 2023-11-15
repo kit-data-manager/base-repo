@@ -38,7 +38,6 @@ A relational database is required by base-repo to store administrative metadata 
 > ℹ️ **Note:** 
 > Other relational databases, e.g., MariaDB, SQLite, or Oracle, may also work but require additional actions. To allow base-repo to connect, the source code repository must be cloned, an appropriate JDBC driver has to be added to `build.gradle`
 > and base-repo has be be compiled. Proper JDBC drivers are typically provided on the database's Web page. Afterwards, the database can be configured in `application.properties` similar to PostgreSQL but with database-specific property naming. Please refer
-
 > to the driver documentation for details.
 
 ### Local Filesystem (mandatory) 📂

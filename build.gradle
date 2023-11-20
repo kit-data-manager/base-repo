@@ -63,7 +63,7 @@ dependencies {
 
     implementation "org.springframework:spring-messaging:6.0.13"
     implementation "org.springframework.security:spring-security-web:6.1.1"
-    implementation "org.springframework.security:spring-security-config:6.1.1"
+    implementation "org.springframework.security:spring-security-config:6.1.5"
     
     // cloud support
     implementation "org.springframework.cloud:spring-cloud-starter-config:4.0.3"

@@ -15,30 +15,16 @@
  */
 package edu.kit.datamanager.repo.configuration;
 
-import edu.kit.datamanager.configuration.SearchConfiguration;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.elasticsearch.client.ClientConfiguration;
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchClients;
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
-import org.springframework.data.elasticsearch.support.HttpHeaders;
-
 /**
  *
  * @author jejkal
  */
-@Configuration
-@ConditionalOnProperty(prefix = "repo.search", name="enabled", havingValue = "true", matchIfMissing = false)
-public class ElasticConfiguration extends ElasticsearchConfiguration {
+//@Configuration
+//@ConditionalOnProperty(prefix = "repo.search", name="enabled", havingValue = "true", matchIfMissing = false)
+public class ElasticConfiguration{// extends ElasticsearchConfiguration {
 
-    @Autowired
-    private SearchConfiguration searchConfiguration;
 
-    @Override
+ /*   @Override
     public ClientConfiguration clientConfiguration() {
         //  HttpHeaders httpHeaders = new HttpHeaders();
         // httpHeaders.add("some-header", "on every request");
@@ -61,5 +47,5 @@ public class ElasticConfiguration extends ElasticsearchConfiguration {
                         }))
                 .build();
         return clientConfiguration;
-    }
+    }*/
 }

@@ -37,7 +37,7 @@ public class OpenApiDefinitions{
             .components(new Components())
             .info(new Info().title("Repository Microservice - RESTful API").
                     description("This webpage describes the RESTful interface of the KIT Data Manager Repository Microservice.").
-                    version("0.1").
+                    version("1.5.0").
                     contact(
                             new Contact().
                                     name("KIT Data Manager Support").

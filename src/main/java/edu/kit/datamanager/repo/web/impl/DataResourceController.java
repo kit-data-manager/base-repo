@@ -24,7 +24,7 @@ import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -40,24 +40,22 @@ import edu.kit.datamanager.repo.elastic.ElasticWrapper;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.ContentDataUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
+import edu.kit.datamanager.repo.util.EntityUtils;
 import edu.kit.datamanager.repo.web.IDataResourceController;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.http.client.utils.URIBuilder;
-import org.javers.common.collections.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,8 +84,9 @@ public class DataResourceController implements IDataResourceController {
     private final Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
 
     private final IContentInformationService contentInformationService;
+
     @Autowired
-    private ApplicationProperties applicationProperties;
+    private final ApplicationProperties applicationProperties;
 
     @Autowired
     private IDataResourceDao dataResourceDao;
@@ -126,6 +125,9 @@ public class DataResourceController implements IDataResourceController {
         getById = (t) -> {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, 1l, request, response)).toString();
         };
+
+        LOGGER.trace("Removing user-provided @Ids from resource.");
+        EntityUtils.removeIds(resource);
 
         DataResource result = DataResourceUtils.createResource(repositoryProperties, resource);
         try {
@@ -332,6 +334,8 @@ public class DataResourceController implements IDataResourceController {
             LOGGER.trace("Reading user-provided content information.");
             try {
                 info = new ObjectMapper().readValue(contentInformation.getInputStream(), ContentInformation.class);
+                LOGGER.trace("Removing user-provided @Ids from content information.");
+                EntityUtils.removeIds(info);
             } catch (IOException ex) {
                 LOGGER.error("Unable to read content information metadata.", ex);
                 return ResponseEntity.badRequest().body("Invalid ContentInformation metadata provided.");
@@ -399,7 +403,7 @@ public class DataResourceController implements IDataResourceController {
         } else {
             LOGGER.trace("Obtained single content information result.");
             ContentInformation contentInformation = result.get(0);
-            
+
             long currentVersion = contentAuditService.getCurrentVersion(Long.toString(contentInformation.getId()));
             if (currentVersion > 0) {
                 return ResponseEntity.ok().eTag("\"" + contentInformation.getEtag() + "\"").header(VERSION_HEADER, Long.toString(currentVersion)).body(fixContentInformation(contentInformation, version));
@@ -577,6 +581,8 @@ public class DataResourceController implements IDataResourceController {
             }
             LOGGER.trace("Indexing Elastic wrapper.");
             dataResourceRepository.get().save(wrapper);
+        } else {
+            LOGGER.trace("No Elastic repository found. Skipping indexing of resource.");
         }
     }
 

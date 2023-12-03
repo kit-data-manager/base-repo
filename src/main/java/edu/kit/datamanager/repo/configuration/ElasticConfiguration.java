@@ -15,55 +15,37 @@
  */
 package edu.kit.datamanager.repo.configuration;
 
-import edu.kit.datamanager.configuration.SearchConfiguration;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.elasticsearch.client.ClientConfiguration;
-import org.springframework.data.elasticsearch.client.RestClients;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
-import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
-import org.springframework.http.HttpHeaders;
-
 /**
  *
  * @author jejkal
  */
-@Configuration
-@EnableElasticsearchRepositories(basePackages = "edu.kit.datamanager.repo")
-@ComponentScan(basePackages = {"edu.kit.datamanager"})
-@ConditionalOnProperty(prefix = "repo.search", name = "enabled", havingValue = "true")
-public class ElasticConfiguration {
+//@Configuration
+//@ConditionalOnProperty(prefix = "repo.search", name="enabled", havingValue = "true", matchIfMissing = false)
+public class ElasticConfiguration{// extends ElasticsearchConfiguration {
 
-    @Autowired
-    private SearchConfiguration searchConfiguration;
 
-    @Bean
-    public RestHighLevelClient client() {
-        //required for compatibility to Elastic 8.X ... might not work and should be removed with spring-boot 3.X
-        HttpHeaders compatibilityHeaders = new HttpHeaders();
-        compatibilityHeaders.add("Accept", "application/vnd.elasticsearch+json;compatible-with=7");
-        compatibilityHeaders.add("Content-Type", "application/vnd.elasticsearch+json;compatible-with=7");
-
-        String indexUrl = searchConfiguration.getUrl().toString();
-        String hostnamePort = indexUrl.substring(indexUrl.indexOf("//") + 2);
-
-        ClientConfiguration clientConfiguration
-                = ClientConfiguration.builder()
-                        .connectedTo(hostnamePort)
-                        .withDefaultHeaders(compatibilityHeaders)
-                        .build();
-
-        return RestClients.create(clientConfiguration).rest();
-    }
-
-    @Bean
-    public ElasticsearchOperations elasticsearchTemplate() {
-        return new ElasticsearchRestTemplate(client());
-    }
-
+ /*   @Override
+    public ClientConfiguration clientConfiguration() {
+        //  HttpHeaders httpHeaders = new HttpHeaders();
+        // httpHeaders.add("some-header", "on every request");
+        ClientConfiguration clientConfiguration = ClientConfiguration.builder()
+                .connectedTo("localhost:9200", "localhost:9291")
+                //.usingSsl()
+                //.withProxy("localhost:8888")
+                .withConnectTimeout(Duration.ofSeconds(5))
+                .withSocketTimeout(Duration.ofSeconds(3))
+                //.withDefaultHeaders(defaultHeaders)                                   
+                //.withBasicAuth(username, password)                                    
+                .withHeaders(() -> {
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.add("currentTime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                    return headers;
+                })
+                .withClientConfigurer(
+                        ElasticsearchClients.ElasticsearchRestClientConfigurationCallback.from(clientBuilder -> {
+                            return clientBuilder;
+                        }))
+                .build();
+        return clientConfiguration;
+    }*/
 }

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.configuration.SearchConfiguration;
 import edu.kit.datamanager.repo.configuration.ApplicationProperties;
+import edu.kit.datamanager.repo.configuration.ElasticConfiguration;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
 import edu.kit.datamanager.repo.configuration.StorageServiceProperties;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -47,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.ApplicationContext;
@@ -58,6 +60,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 /**
  *
@@ -66,6 +69,8 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 @EnableScheduling
 @ComponentScan({"edu.kit.datamanager"})
+@EnableElasticsearchRepositories(basePackages = "edu.kit.datamanager.repo.elastic")
+@EntityScan("edu.kit.datamanager") // if you have it
 public class Application {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
@@ -91,13 +96,12 @@ public class Application {
     private IContentInformationService contentInformationService;*/
 //  @Autowired
 //  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;  
-    @Bean
-    @Scope("prototype")
-    public Logger logger(InjectionPoint injectionPoint) {
-        Class<?> targetClass = injectionPoint.getMember().getDeclaringClass();
-        return LoggerFactory.getLogger(targetClass.getCanonicalName());
-    }
-
+//    @Bean
+//    @Scope("prototype")
+//    public Logger logger(InjectionPoint injectionPoint) {
+//        Class<?> targetClass = injectionPoint.getMember().getDeclaringClass();
+//        return LoggerFactory.getLogger(targetClass.getCanonicalName());
+//    }
     @Bean
     public IDataResourceService dataResourceService() {
         return new DataResourceService();
@@ -166,7 +170,7 @@ public class Application {
     public StorageServiceProperties storageServiceProperties() {
         return new StorageServiceProperties();
     }
-    
+
     @Bean
     @ConfigurationProperties("repo")
     @ConditionalOnProperty(prefix = "repo.messaging", name = "enabled", havingValue = "true")
@@ -174,22 +178,6 @@ public class Application {
         return Optional.of(new RabbitMQMessagingService());
     }
 
-//    @Bean
-//    @ConditionalOnProperty(name = "spring.config.location", matchIfMissing = true)
-//    public PropertiesConfiguration applicationProperties(@Value("${spring.config.location}") String path) throws Exception {
-//        String filePath = new File(path.substring("file:".length())).getCanonicalPath();
-//       LOG.info("READING applicationProperties FROM {}", filePath);
-//        PropertiesConfiguration configuration = new PropertiesConfiguration(new File(filePath));
-//        configuration.setReloadingStrategy(new FileChangedReloadingStrategy() {
-//            @Override
-//            protected boolean hasChanged() {
-//                System.out.println("RELOADING BASE " + repositoryConfig());
-//                return super.hasChanged(); //To change body of generated methods, choose Tools | Templates.
-//            }
-//
-//        });
-//        return configuration;
-//    }
     @Bean
     public KeycloakJwtProperties keycloakProperties() {
         return new KeycloakJwtProperties();
@@ -263,6 +251,7 @@ public class Application {
     }
 
     public static void main(String[] args) {
+        System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
         ApplicationContext ctx = SpringApplication.run(Application.class, args);
         System.out.println("Spring is running!");
 

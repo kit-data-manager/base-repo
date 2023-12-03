@@ -6,14 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
-Security
-
-Added
-
 Changed
+* Java 17 is now mandatory
+* Indexing support now requires Elastic 8+
 
 Fixed
+* Correctly ignore user-provided primary keys (https://github.com/kit-data-manager/base-repo/pull/131)
+
+Security
+* Bump spring-boot to 3.1.0
+* Bump spring-cloud-starter-config to 4.0.3
+* Bump spring-cloud-starter-netflix-eureka-client to 4.0.2
+* Bump spring-cloud-gateway-mvc to 4.0.6
+* Bump spring-data-elasticsearch to 5.1.2
+* Bump spring-messaging to 6.0.2
+* Bump spring-security-web to 6.1.1
+* Bump spring-security-config to 6.1.1
+* Bump spring-boot-admin-starter-client to 3.1.0
+* Bump io.spring.dependency-management to 1.1.0
+* Bump io.freefair.lombok to 8.0.1
+* Bump io.freefair.maven-publish-java to 8.0.1
+* Bump org.owasp.dependencycheck to 8.3.1
+* Bump net.researchgate.release to 3.0.2
+* Bump com.gorylenko.gradle-git-properties to 2.4.1
+* Bump javers-core to 7.0.0
+* Bump httpclient to 4.5.14
+* Bump postgresql to 42.6.0
+* Bump spring-restdocs-mockmvc to 3.0.0
+* Bump mockito-inline to 5.2.0
+* Bump repo-core to 1.2.1
+* Bump service-base to 1.2.0
 
 ## [1.4.0] - 2023-03-17
 

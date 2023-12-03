@@ -15,7 +15,8 @@
  */
 package edu.kit.datamanager.repo.elastic;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import edu.kit.datamanager.repo.configuration.ElasticConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Repository;
  * @author jejkal
  */
 @Repository
-@ConditionalOnProperty(prefix = "repo.search", name = "enabled", havingValue = "true")
+@ConditionalOnBean(ElasticConfiguration.class)
 public interface DataResourceRepository extends ElasticsearchRepository<ElasticWrapper, String> {
 
     Page<ElasticWrapper> findById(String id, Pageable pageable);

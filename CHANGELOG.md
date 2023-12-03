@@ -7,33 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 Changed
+
+Fixed
+
+Security
+
+## [1.5.0] - 2023-12-03
+Changed
+* Upgrade to Spring Boot 3
 * Java 17 is now mandatory
 * Indexing support now requires Elastic 8+
 
 Fixed
 * Correctly ignore user-provided primary keys (https://github.com/kit-data-manager/base-repo/pull/131)
+* Fixed issues while providing escaped slashes in request URL
 
 Security
-* Bump spring-boot to 3.1.0
-* Bump spring-cloud-starter-config to 4.0.3
-* Bump spring-cloud-starter-netflix-eureka-client to 4.0.2
+* Bump spring-boot to 3.1.5
+* Bump spring-cloud-starter-config to 4.0.4
+* Bump spring-cloud-starter-netflix-eureka-client to 4.0.3
 * Bump spring-cloud-gateway-mvc to 4.0.6
-* Bump spring-data-elasticsearch to 5.1.2
-* Bump spring-messaging to 6.0.2
-* Bump spring-security-web to 6.1.1
-* Bump spring-security-config to 6.1.1
-* Bump spring-boot-admin-starter-client to 3.1.0
+* Bump spring-data-elasticsearch to 5.2.0
+* Bump spring-messaging to 6.0.13
+* Bump spring-security-web to 6.2.0
+* Bump spring-security-config to 6.2.0
+* Bump spring-boot-admin-starter-client to 3.1.8
 * Bump io.spring.dependency-management to 1.1.0
-* Bump io.freefair.lombok to 8.0.1
-* Bump io.freefair.maven-publish-java to 8.0.1
-* Bump org.owasp.dependencycheck to 8.3.1
+* Bump io.freefair.lombok to 8.4.0
+* Bump io.freefair.maven-publish-java to 8.4.0
+* Bump org.owasp.dependencycheck to 9.0.2
 * Bump net.researchgate.release to 3.0.2
 * Bump com.gorylenko.gradle-git-properties to 2.4.1
 * Bump javers-core to 7.0.0
 * Bump httpclient to 4.5.14
 * Bump postgresql to 42.6.0
+* Bump nimbus-jose-jwt to 9.37
+* Bump h2 to 2.2.224
+* Bump postgresql to 42.7.0
 * Bump spring-restdocs-mockmvc to 3.0.0
 * Bump mockito-inline to 5.2.0
+* Bump json-utils to 0.1.8
 * Bump repo-core to 1.2.1
 * Bump service-base to 1.2.0
 
@@ -171,7 +184,8 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/kit-data-manager/base-repo/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/kit-data-manager/base-repo/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/kit-data-manager/base-repo/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/kit-data-manager/base-repo/compare/v1.1.0...v1.2.0

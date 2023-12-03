@@ -15,7 +15,7 @@ data resource management, e.g. register DataCite-oriented metadata and upload/do
 
 In order to build this microservice you'll need:
 
-* Java SE Development Kit 11 or higher
+* Java SE Development Kit 17 or higher
 
 After obtaining the sources change to the folder where the sources are located perform the following steps:
 
@@ -39,7 +39,7 @@ libraries and finally build the base-repo microservice itself. As a result, a fa
 
 * PostgreSQL 9.1 or higher
 * RabbitMQ 3.7.3 or higher (in case you want to use the messaging feature, which is recommended)
-* Elastic 7.X or higher (in case you want to use the search feature)
+* Elastic 8.X or higher (in case you want to use the search feature)
 
 ### Setup
 

@@ -89,14 +89,4 @@ public class EntityUtils {
             }
         }
     }
-    
-    public static void main(String[] args) throws Exception{
-          TabulatorLocalPagination tabulatorLocalPagination = TabulatorLocalPagination.builder()
-                .lastPage(0)
-                .data(new LinkedList<>())
-                .build();
-          System.out.println(new LinkedList<>());
-          ObjectMapper m = new ObjectMapper();
-          System.out.println(m.writeValueAsString(tabulatorLocalPagination));
-    }
 }

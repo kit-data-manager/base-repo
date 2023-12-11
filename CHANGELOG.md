@@ -11,6 +11,12 @@ Changed
 Fixed
 
 Security
+
+## [1.5.1] - 2023-12-11
+Fixed
+* Added ElasticConfiguration again to support indexing and search
+
+Security
 * Bump spring-cloud-gateway-mvc to 4.0.8
 * Bump spring-restdocs-mockmvc to 3.0.1
 * Bump nimbus-jose-jwt to 9.37.2
@@ -189,7 +195,8 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/kit-data-manager/base-repo/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/kit-data-manager/base-repo/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/kit-data-manager/base-repo/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/kit-data-manager/base-repo/compare/v1.2.0...v1.3.0

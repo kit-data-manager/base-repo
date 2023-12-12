@@ -19,9 +19,10 @@ Fixed
 Security
 * Bump spring-cloud-gateway-mvc to 4.0.8
 * Bump spring-restdocs-mockmvc to 3.0.1
-* Bump nimbus-jose-jwt to 9.37.2
+* Bump nimbus-jose-jwt to 9.37.3
 * Bump dependency-management to 1.1.4
 * Bump spring-messaging to 6.1.1
+* Bump postgresql to 42.7.1
 
 ## [1.5.0] - 2023-12-03
 Changed

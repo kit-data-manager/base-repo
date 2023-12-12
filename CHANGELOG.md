@@ -11,6 +11,10 @@ Changed
 Fixed
 
 Security
+* Bump spring-boot to 3.2.0
+* Bump spring-cloud-starter-config to 4.1.0
+* Bump spring-cloud-starter-netflix-eureka-client to 4.1.0
+* Bump spring-cloud-gateway-mvc to 4.1.0
 
 ## [1.5.1] - 2023-12-11
 Fixed

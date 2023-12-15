@@ -72,6 +72,7 @@ RUN apt-get -y update && \
 
 # Copy service from build container
 RUN mkdir -p ${SERVICE_DIRECTORY}
+RUN mkdir -p /var/repository/
 WORKDIR ${SERVICE_DIRECTORY}
 COPY --from=build-service-base-repo ${SERVICE_DIRECTORY} ./
 

@@ -141,7 +141,7 @@ bootJar {
     archiveFileName = "${archiveBaseName.get()}.${archiveExtension.get()}"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes 'Main-Class': 'org.springframework.boot.loader.PropertiesLauncher'
+        attributes 'Main-Class': 'org.springframework.boot.loader.launch.PropertiesLauncher'
     }
     launchScript()
 }

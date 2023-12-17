@@ -16,10 +16,12 @@
 package edu.kit.datamanager.repo.configuration;
 
 import edu.kit.datamanager.configuration.GenericApplicationProperties;
+import jakarta.validation.Valid;
 import java.net.URL;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -33,6 +35,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @RefreshScope
 @EqualsAndHashCode(callSuper = true)
+@ConfigurationProperties("repo")
 public class ApplicationProperties extends GenericApplicationProperties {
 
     @edu.kit.datamanager.annotations.LocalFolderURL
@@ -54,4 +57,4 @@ public class ApplicationProperties extends GenericApplicationProperties {
     private boolean enableCsrf;
     @Value("${repo.security.allowedOriginPattern:http://localhost:*}")
     private String allowedOriginPattern;
-}
+    }

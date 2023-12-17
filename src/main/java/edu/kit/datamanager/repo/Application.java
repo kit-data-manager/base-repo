@@ -59,6 +59,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
@@ -71,6 +72,7 @@ import org.springframework.data.elasticsearch.repository.config.EnableElasticsea
 @ComponentScan({"edu.kit.datamanager"})
 @EnableElasticsearchRepositories(basePackages = "edu.kit.datamanager.repo.elastic")
 @EntityScan("edu.kit.datamanager") // if you have it
+//@EnableConfigurationProperties(ApplicationProperties.class)
 public class Application {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
@@ -79,29 +81,11 @@ public class Application {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
-    //private ApplicationProperties applicationProperties;
     @Autowired
     private IRepoVersioningService[] versioningServices;
     @Autowired
     private IRepoStorageService[] storageServices;
 
-//    @Autowired
-//    private IDataResourceDao dataResourceDao;
-//    @Autowired
-//    private ApplicationProperties applicationProperties;
-
-    /* @Autowired
-    private IDataResourceService dataResourceService;
-    @Autowired
-    private IContentInformationService contentInformationService;*/
-//  @Autowired
-//  private RequestMappingHandlerAdapter requestMappingHandlerAdapter;  
-//    @Bean
-//    @Scope("prototype")
-//    public Logger logger(InjectionPoint injectionPoint) {
-//        Class<?> targetClass = injectionPoint.getMember().getDeclaringClass();
-//        return LoggerFactory.getLogger(targetClass.getCanonicalName());
-//    }
     @Bean
     public IDataResourceService dataResourceService() {
         return new DataResourceService();
@@ -145,9 +129,8 @@ public class Application {
 //  }
 
     @Bean
-    @ConfigurationProperties("repo")
     public ApplicationProperties applicationProperties() {
-        return new ApplicationProperties();
+        return  new ApplicationProperties();
     }
 
     @Bean

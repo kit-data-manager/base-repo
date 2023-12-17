@@ -57,8 +57,8 @@ public class DataResourceAuditController implements IDataResourceAuditController
     private Logger LOGGER = LoggerFactory.getLogger(DataResourceController.class);
 
     private final IContentInformationService contentInformationService;
-    @Autowired
-    private ApplicationProperties applicationProperties;
+   
+    private final ApplicationProperties applicationProperties;
 
     private final IAuditService<DataResource> auditService;
     private final IAuditService<ContentInformation> contentAuditService;
@@ -70,6 +70,7 @@ public class DataResourceAuditController implements IDataResourceAuditController
      * @param applicationProperties The application properties.
      * @param repositoryConfig The repository config.
      */
+    @Autowired
     public DataResourceAuditController(ApplicationProperties applicationProperties,
             RepoBaseConfiguration repositoryConfig
     ) {

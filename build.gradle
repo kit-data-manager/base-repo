@@ -59,7 +59,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-rest"
     implementation "org.springframework.boot:spring-boot-starter-mail"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
-    implementation 'org.springframework.data:spring-data-elasticsearch:5.2.0'
+    implementation 'org.springframework.data:spring-data-elasticsearch:5.2.1'
 
     implementation "org.springframework:spring-messaging:6.1.2"
     implementation "org.springframework.security:spring-security-web:6.2.1"

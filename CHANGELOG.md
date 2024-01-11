@@ -13,6 +13,10 @@ Changed
 Fixed
 
 Security
+* Bump spring-security-web to 6.2.1
+* Bump spring-messaging to 6.1.2
+* Bump org.owasp.dependencycheck to 9.0.7
+* Bump spring-data-elasticsearch to 5.2.1
 
 ## [1.5.3] - 2023-12-17
 Fixed

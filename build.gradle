@@ -28,9 +28,9 @@ repositories {
 //}
 
 ext {
-    set('javersVersion', "7.0.0")
-    set('springBootVersion', "3.2.0")
-    set('springDocVersion', "2.1.0")
+    set('javersVersion', "7.3.7")
+    set('springBootVersion', "3.2.1")
+    set('springDocVersion', "2.3.0")
     set('keycloakVersion', "19.0.0")
 
     // directory for generated code snippets during tests
@@ -41,8 +41,8 @@ println "Running gradle version: $gradle.gradleVersion"
 println "Building ${name} version: ${version}"
 println "JDK version: ${JavaVersion.current()}"
 
-sourceCompatibility = 1.17
-targetCompatibility = 1.17
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 if (System.getProperty('profile') == 'minimal') {
     println 'Using minimal profile for building ' + project.getName()
@@ -58,12 +58,11 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-jpa"
     implementation "org.springframework.boot:spring-boot-starter-data-rest"
     implementation "org.springframework.boot:spring-boot-starter-mail"
+    implementation "org.springframework.boot:spring-boot-starter-security"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation 'org.springframework.data:spring-data-elasticsearch:5.2.1'
 
     implementation "org.springframework:spring-messaging:6.1.2"
-    implementation "org.springframework.security:spring-security-web:6.2.1"
-    implementation "org.springframework.security:spring-security-config:6.2.1"
     
     // cloud support
     implementation "org.springframework.cloud:spring-cloud-starter-config:4.1.0"

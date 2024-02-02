@@ -18,7 +18,6 @@ package edu.kit.datamanager.repo.configuration;
 import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
 import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
 import edu.kit.datamanager.security.filter.PublicAuthenticationFilter;
-import java.util.Arrays;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,14 +33,15 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 /**
  *
@@ -80,40 +80,45 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        HttpSecurity httpSecurity = http.authorizeHttpRequests(
-                authorize -> authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll().
-                        requestMatchers("/oaipmh").permitAll().
-                        requestMatchers("/static/**").permitAll().
-                        requestMatchers(AUTH_WHITELIST_SWAGGER_UI).permitAll().
-                        requestMatchers(EndpointRequest.to(
-                                InfoEndpoint.class,
-                                HealthEndpoint.class
-                        )).permitAll().
-                        requestMatchers(EndpointRequest.toAnyEndpoint()).hasAnyRole("ANONYMOUS", "ADMIN", "ACTUATOR", "SERVICE_WRITE").
-                        requestMatchers("/**").authenticated()).
-                sessionManagement(
-                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        logger.info("Disable CSRF");
-        httpSecurity = httpSecurity.csrf(csrf -> csrf.disable());
+       HttpSecurity httpSecurity = http.authorizeHttpRequests(
+            authorize -> authorize.
+                     requestMatchers(EndpointRequest.to(
+                            InfoEndpoint.class,
+                            HealthEndpoint.class
+                    )).permitAll().
+                    requestMatchers(EndpointRequest.toAnyEndpoint()).hasAnyRole("ANONYMOUS", "ADMIN", "ACTUATOR", "SERVICE_WRITE").
+                    requestMatchers(HttpMethod.OPTIONS, "/**").permitAll().
+                    requestMatchers("/oaipmh").permitAll().
+                    requestMatchers("/static/**").permitAll().
+                    requestMatchers(AUTH_WHITELIST_SWAGGER_UI).permitAll().
+                    requestMatchers("/**").authenticated()
+       ).
+            sessionManagement(
+                    session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+   // if (!enableCsrf) {
+      logger.info("CSRF disabled!");
+     // httpSecurity = httpSecurity.csrf(AbstractHttpConfigurer::disable);
 
-        logger.info("Adding 'NoAuthenticationFilter' to authentication chain.");
-        if (keycloaktokenFilterBean.isPresent()) {
-            logger.info("Add keycloak filter!");
-            httpSecurity.addFilterAfter(keycloaktokenFilterBean.get(), BasicAuthenticationFilter.class);
-            logger.info("Add public authentication filter!");
-            httpSecurity = httpSecurity.addFilterAfter(new PublicAuthenticationFilter(applicationProperties.getJwtSecret()), BasicAuthenticationFilter.class);
-        }
-        if (!applicationProperties.isAuthEnabled()) {
-            logger.info("Authentication is DISABLED. Adding 'NoAuthenticationFilter' to authentication chain.");
-            AuthenticationManager defaultAuthenticationManager = http.getSharedObject(AuthenticationManager.class);
-            httpSecurity = httpSecurity.addFilterAfter(new NoAuthenticationFilter(applicationProperties.getJwtSecret(), defaultAuthenticationManager), BasicAuthenticationFilter.class);
-        } else {
-            logger.info("Authentication is ENABLED.");
-        }
+      httpSecurity = httpSecurity.csrf(csrf -> csrf.disable());
+   // }
+    logger.info("Adding 'NoAuthenticationFilter' to authentication chain.");
+    if (keycloaktokenFilterBean.isPresent()) {
+      logger.info("Add keycloak filter!");
+      httpSecurity.addFilterAfter(keycloaktokenFilterBean.get(), BasicAuthenticationFilter.class);
+      logger.info("Add public authentication filter!");
+      httpSecurity = httpSecurity.addFilterAfter(new PublicAuthenticationFilter(applicationProperties.getJwtSecret()), BasicAuthenticationFilter.class);
+    }
+    if (!applicationProperties.isAuthEnabled()) {
+      logger.info("Authentication is DISABLED. Adding 'NoAuthenticationFilter' to authentication chain.");
+      AuthenticationManager defaultAuthenticationManager = http.getSharedObject(AuthenticationManager.class);
+      httpSecurity = httpSecurity.addFilterAfter(new NoAuthenticationFilter(applicationProperties.getJwtSecret(), defaultAuthenticationManager), BasicAuthenticationFilter.class);
+    } else {
+      logger.info("Authentication is ENABLED.");
+    }
 
-        httpSecurity.headers(headers -> headers.cacheControl(cache -> cache.disable()));
+    httpSecurity.headers(headers -> headers.cacheControl(cache -> cache.disable()));
 
-        return httpSecurity.build();
+    return httpSecurity.build();
     }
 
     @Bean
@@ -129,17 +134,23 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-        "*"));
-	configuration.setAllowedMethods(Arrays.asList("*"));
-        configuration.addAllowedHeader("*");
-        configuration.addExposedHeader("Content-Range");
-        configuration.addExposedHeader("ETag");
+    public CorsFilter corsFilter() {
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        String[] allOrigins = new String[]{"*"};
+        for (String origin : allOrigins) {
+            logger.info("Add origin pattern: '{}'", origin);
+            config.addAllowedOriginPattern(origin); // @Value: http://localhost:8080
+        }
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        config.addExposedHeader("Content-Range");
+        config.addExposedHeader("ETag");
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+        source.registerCorsConfiguration("/**", config);
+        CorsFilter bean;
+        bean = new CorsFilter(source);
+        return bean;
     }
 }

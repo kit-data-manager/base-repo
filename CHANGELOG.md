@@ -13,10 +13,16 @@ Changed
 Fixed
 
 Security
+* Bump org.owasp.dependencycheck to 9.0.9
+* Bump org.springframework.boot to 3.2.2
 * Bump spring-security-web to 6.2.1
-* Bump spring-messaging to 6.1.2
-* Bump org.owasp.dependencycheck to 9.0.7
-* Bump spring-data-elasticsearch to 5.2.1
+* Bump spring-security-config to 6.2.1
+* Bump spring-messaging to 6.1.3
+* Bump spring-cloud-gateway-mvc to 4.1.1
+* Bump spring-boot-admin-starter-client to 3.2.0
+* Bump spring-boot-admin-starter-client to 3.2.1 
+* Bump spring-data-elasticsearch to 5.2.2
+* Bump org.asciidoctor.jvm.convert to 4.0.2 
 
 ## [1.5.3] - 2023-12-17
 Fixed

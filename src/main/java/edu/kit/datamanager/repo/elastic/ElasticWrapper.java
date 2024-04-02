@@ -43,6 +43,7 @@ public class ElasticWrapper {
     @Id
     private String id;
 
+    @Field(type = FieldType.Text)
     private String pid;
 
     @Field(type = FieldType.Object, name = "metadata")

@@ -3,8 +3,7 @@
 [![Build Status](https://github.com/kit-data-manager/base-repo/actions/workflows/gradle.yml/badge.svg)](https://github.com/kit-data-manager/base-repo/actions/workflows/gradle.yml)
 [![Codecov](https://codecov.io/gh/kit-data-manager/base-repo/branch/master/graph/badge.svg)](https://codecov.io/gh/kit-data-manager/base-repo)
 ![License](https://img.shields.io/github/license/kit-data-manager/base-repo.svg)
-[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/kitdm/base-repo)](https://hub.docker.com/r/kitdm/base-repo/tags)
-![Docker Image Version (latest semver)](https://img.shields.io/docker/v/kitdm/base-repo)
+[![SQAaaS badge shields.io](https://img.shields.io/badge/Docker-white?logo=docker)](https://github.com/kit-data-manager/base-repo/pkgs/container/base-repo)
 [![SQAaaS badge shields.io](https://img.shields.io/badge/sqaaas%20software-silver-lightgrey)](https://api.eu.badgr.io/public/assertions/onNKx_lhTn68bPKnMAg-eQ "SQAaaS silver badge achieved")
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7660036.svg)](https://doi.org/10.5281/zenodo.7660036)
 

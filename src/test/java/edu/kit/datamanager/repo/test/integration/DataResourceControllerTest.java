@@ -358,7 +358,7 @@ public class DataResourceControllerTest {
         ObjectMapper mapper = createObjectMapper();
 
         this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "10").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-                "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$").isEmpty());
+                "Bearer " + userToken)).andDo(print()).andExpect(status().is(416));
     }
 
     @Test

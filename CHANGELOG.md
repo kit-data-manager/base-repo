@@ -9,10 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Added
 
 Changed
+
+Fixed
+
+Security
+
+## [1.5.4] - 2024-04-03
+Added
+* Allow builds outside Git repository, e.g., when building from release packages
+
+Changed
 * Pagination now returns HTTP 416 (RangeNotSatisfiable) if page number exceeds total pages
 
 Fixed
 * Added fix in default application.properties to make Elastic proxy work again
+* Fixed issue disallowing OPTIONS requests outside browser
 
 Security
 * Bump gradle to 8.5
@@ -232,7 +243,8 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.3...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.4...HEAD
+[1.5.4]: https://github.com/kit-data-manager/base-repo/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/kit-data-manager/base-repo/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/kit-data-manager/base-repo/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/kit-data-manager/base-repo/compare/v1.5.0...v1.5.1

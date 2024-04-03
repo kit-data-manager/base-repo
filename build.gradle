@@ -134,6 +134,10 @@ springBoot {
     buildInfo()
 }
 
+gitProperties {
+    failOnNoGitDirectory = false
+}
+
 bootJar {
     println 'Create bootable jar...'
     archiveFileName = "${archiveBaseName.get()}.${archiveExtension.get()}"

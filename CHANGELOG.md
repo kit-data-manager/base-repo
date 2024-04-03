@@ -9,11 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Added
 
 Changed
+* Pagination now returns HTTP 416 (RangeNotSatisfiable) if page number exceeds total pages
 
 Fixed
 * Added fix in default application.properties to make Elastic proxy work again
 
 Security
+* Bump gradle to 8.5
+* Bump jacoco to 0.8.11
 * Bump org.owasp.dependencycheck to 9.0.10
 * Bump io.freefair.maven-publish-java to 8.6
 * Bump org.springframework.boot to 3.2.4

@@ -144,6 +144,10 @@ bootJar {
     launchScript()
 }
 
+jacoco {
+    toolVersion = "0.8.11"
+}
+
 // task for printing project name.
 task printProjectName {
     doLast {

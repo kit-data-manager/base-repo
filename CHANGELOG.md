@@ -14,17 +14,22 @@ Fixed
 * Added fix in default application.properties to make Elastic proxy work again
 
 Security
-* Bump org.owasp.dependencycheck to 9.0.9
+* Bump org.owasp.dependencycheck to 9.0.10
 * Bump io.freefair.maven-publish-java to 8.6
-* Bump org.springframework.boot to 3.2.2
+* Bump org.springframework.boot to 3.2.4
 * Bump spring-security-web to 6.2.1
 * Bump spring-security-config to 6.2.1
 * Bump spring-messaging to 6.1.4
-* Bump spring-cloud-gateway-mvc to 4.1.1
-* Bump spring-boot-admin-starter-client to 3.2.2
-* Bump spring-data-elasticsearch to 5.2.3
+* Bump spring-cloud-gateway-mvc to 4.1.2
+* Bump spring-boot-admin-starter-client to 3.2.3
+* Bump spring-cloud-starter-netflix-eureka-client to 4.1.1
+* Bump spring-cloud-starter-config to 4.1.1
+* Bump spring-data-elasticsearch to 5.2.4
 * Bump io.freefair.lombok to 8.6
 * Bump org.asciidoctor.jvm.convert to 4.0.2 
+* Bump postgresql to 42.7.3
+* Bump service-base to 1.2.1
+* Bump repo-core to 1.2.2
 
 ## [1.5.3] - 2023-12-17
 Fixed

@@ -30,7 +30,7 @@ repositories {
 ext {
     set('javersVersion', "7.3.7")
     set('springBootVersion', "3.2.1")
-    set('springDocVersion', "2.3.0")
+    set('springDocVersion', "2.5.0")
     set('keycloakVersion', "19.0.0")
 
     // directory for generated code snippets during tests

@@ -11,6 +11,7 @@ Added
 Changed
 
 Fixed
+* Fixed accessibility of Swagger-UI ([#229](https://github.com/kit-data-manager/base-repo/issues/229))
 
 Security
 

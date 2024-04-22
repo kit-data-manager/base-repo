@@ -30,7 +30,7 @@ repositories {
 ext {
     set('javersVersion', "7.3.7")
     set('springBootVersion', "3.2.1")
-    set('springDocVersion', "2.3.0")
+    set('springDocVersion', "2.5.0")
     set('keycloakVersion', "19.0.0")
 
     // directory for generated code snippets during tests
@@ -60,9 +60,9 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-mail"
     implementation "org.springframework.boot:spring-boot-starter-security"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
-    implementation 'org.springframework.data:spring-data-elasticsearch:5.2.4'
+    implementation 'org.springframework.data:spring-data-elasticsearch:5.2.5'
 
-    implementation "org.springframework:spring-messaging:6.1.5"
+    implementation "org.springframework:spring-messaging:6.1.6"
     
     // cloud support
     implementation "org.springframework.cloud:spring-cloud-starter-config:4.1.1"
@@ -76,7 +76,7 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-api:${springDocVersion}"
 
     implementation "edu.kit.datamanager:repo-core:1.2.2"
-    implementation "edu.kit.datamanager:service-base:1.2.1"
+    implementation "edu.kit.datamanager:service-base:1.3.1"
 
     //implementation "com.github.victools:jsonschema-generator:4.23.0"
 

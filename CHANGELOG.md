@@ -11,7 +11,16 @@ Added
 Changed
 
 Fixed
+
+Security
+
+## [1.5.5] - 2024-04-22
+Added
+* Added new search endpoint '/api/v1/{index}/_search' to match default Elastic endpoints
+
+Fixed
 * Fixed accessibility of Swagger-UI ([#229](https://github.com/kit-data-manager/base-repo/issues/229))
+* Fixed issue with internal authentication using JWT ([#261](https://github.com/kit-data-manager/service-base/pull/261))
 
 Security
 * Bump org.springframework.boot to 3.2.4

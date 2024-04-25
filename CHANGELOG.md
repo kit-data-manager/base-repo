@@ -14,6 +14,8 @@ Changed
 Fixed
 
 Security
+* Bump org.springframework.boot to 3.2.5
+* Bump spring-cloud-gateway-mvc to 4.1.3
 
 ## [1.5.5] - 2024-04-22
 Added

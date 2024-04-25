@@ -16,7 +16,6 @@
 package edu.kit.datamanager.repo.configuration;
 
 import edu.kit.datamanager.configuration.GenericApplicationProperties;
-import jakarta.validation.Valid;
 import java.net.URL;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -55,6 +54,13 @@ public class ApplicationProperties extends GenericApplicationProperties {
     private String defaultStorageService;
     @Value("${repo.security.enable-csrf:false}")
     private boolean enableCsrf;
-    @Value("${repo.security.allowedOriginPattern:http://localhost:*}")
+    @Value("${repo.security.allowedOriginPattern:*}")
     private String allowedOriginPattern;
+    @Value("${repo.security.allowedMethods:GET,POST,PUT,PATCH,DELETE,OPTIONS}")
+    private String[] allowedMethods;
+    @Value("${repo.security.exposedHeaders:Content-Range,ETag,Link}")
+    private String[] exposedHeaders;
+    @Value("${repo.security.allowedHeaders:*}")
+    private String[] allowedHeaders;
+    
     }

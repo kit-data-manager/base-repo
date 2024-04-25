@@ -81,9 +81,6 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        
-        
-        
         HttpSecurity httpSecurity = http.authorizeHttpRequests(
                 authorize -> authorize.
                         requestMatchers(HttpMethod.OPTIONS).permitAll().
@@ -140,11 +137,16 @@ public class WebSecurityConfig {
     public CorsConfigurationSource  corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOriginPattern("*");
+        config.addAllowedOriginPattern(applicationProperties.getAllowedOriginPattern());
+        config.setAllowedHeaders(Arrays.asList(applicationProperties.getAllowedHeaders()));
+        config.setAllowedMethods(Arrays.asList(applicationProperties.getAllowedMethods()));
+        config.setExposedHeaders(Arrays.asList(applicationProperties.getExposedHeaders()));
+        /*config.addAllowedOriginPattern("*");
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.addExposedHeader("Content-Range");
         config.addExposedHeader("ETag");
+        config.addExposedHeader("Link");*/
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", config);

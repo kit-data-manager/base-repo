@@ -99,7 +99,7 @@ dependencies {
      // driver for postgres
     implementation "org.postgresql:postgresql:42.7.3"
     //driver for h2
-    implementation "com.h2database:h2:2.2.224"
+    implementation "com.h2database:h2:2.3.232"
 
     testImplementation "org.springframework.restdocs:spring-restdocs-mockmvc:3.0.1"
     testImplementation "org.springframework.boot:spring-boot-starter-test"

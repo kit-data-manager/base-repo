@@ -89,7 +89,7 @@ dependencies {
 
     implementation "org.javers:javers-core:${javersVersion}"
     implementation "com.github.fge:json-patch:1.9"
-    implementation "com.bazaarvoice.jolt:jolt-core:0.1.7"    
+    implementation "com.bazaarvoice.jolt:jolt-core:0.1.8"    
     implementation "com.bazaarvoice.jolt:json-utils:0.1.8"    
 
    // implementation "javax.xml.bind:jaxb-api:2.3.1"

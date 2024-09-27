@@ -28,7 +28,7 @@ repositories {
 //}
 
 ext {
-    set('javersVersion', "7.3.7")
+    set('javersVersion', "7.6.2")
     set('springBootVersion', "3.2.1")
     set('springDocVersion', "2.6.0")
     set('keycloakVersion', "19.0.0")

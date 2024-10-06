@@ -57,10 +57,10 @@ public class ElasticWrapper {
 
     private Map<String, String> links = new HashMap<>();
 
-    @Field(type = FieldType.Date, format = DateFormat.basic_date_time)
+    @Field(type = FieldType.Date, format = DateFormat.date_time_no_millis)
     private Date created;
 
-    @Field(type = FieldType.Date, format = DateFormat.basic_date_time)
+    @Field(type = FieldType.Date, format = DateFormat.date_time_no_millis)
     private Date lastUpdate;
 
     public ElasticWrapper(DataResource resource) {

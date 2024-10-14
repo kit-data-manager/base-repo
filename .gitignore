@@ -7,3 +7,4 @@
 /lib/
 /bin/
 **/application.properties
+**/.DS_Store

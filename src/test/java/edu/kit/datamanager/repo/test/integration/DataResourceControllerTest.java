@@ -68,19 +68,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.RestDocsMockMvcConfigurationCustomizer;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.restdocs.mockmvc.MockMvcRestDocumentationConfigurer;
-import org.springframework.restdocs.templates.TemplateFormats;
 import org.springframework.security.test.context.support.WithSecurityContextTestExecutionListener;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
@@ -146,7 +141,7 @@ public class DataResourceControllerTest {
     private DataResource otherResource;
     private DataResource revokedResource;
     private DataResource fixedResource;
-    
+
     @Before
     public void setUp() throws JsonProcessingException {
         contentInformationAuditService = repositoryConfig.getContentInformationAuditService();
@@ -358,7 +353,7 @@ public class DataResourceControllerTest {
         ObjectMapper mapper = createObjectMapper();
 
         this.mockMvc.perform(post("/api/v1/dataresources/search").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(example)).param("page", "10").param("size", "10").header(HttpHeaders.AUTHORIZATION,
-                "Bearer " + userToken)).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$").isEmpty());
+                "Bearer " + userToken)).andDo(print()).andExpect(status().is(416));
     }
 
     @Test
@@ -1793,10 +1788,10 @@ public class DataResourceControllerTest {
         this.mockMvc.perform(get("/api/v1/audit/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.audit+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.header().exists("Resource-Version")).andExpect(MockMvcResultMatchers.header().string("Resource-Version", "2"));
 
-         //get ETag
+        //get ETag
         etag = this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$.tags[0]").value("success")).andReturn().getResponse().getHeader("ETag");
-  
+
         //delete content
         this.mockMvc.perform(delete("/api/v1/dataresources/" + resourceId + "/data/file.txt").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken).header("If-Match", etag).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNoContent());
@@ -1806,6 +1801,16 @@ public class DataResourceControllerTest {
                 "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
         this.mockMvc.perform(get("/api/v1/dataresources/" + resourceId + "/data/file.txt").param("version", "1").header(HttpHeaders.AUTHORIZATION,
                 "Bearer " + userToken).header(HttpHeaders.ACCEPT, "application/vnd.datamanager.content-information+json")).andDo(print()).andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void testSwaggerUI() throws Exception {
+
+        // Test for swagger definition
+        this.mockMvc.perform(get("/v3/api-docs"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.info.title", Matchers.startsWith("Repository")));
     }
 
 //  @Test

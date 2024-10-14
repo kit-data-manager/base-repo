@@ -6,11 +6,81 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+Added
+* Added configuration support for CORS
+
 Changed
 
 Fixed
 
 Security
+* Bump org.springframework.boot to 3.2.5
+* Bump spring-cloud-gateway-mvc to 4.1.3
+
+## [1.5.5] - 2024-04-22
+Added
+* Added new search endpoint '/api/v1/{index}/_search' to match default Elastic endpoints
+
+Fixed
+* Fixed accessibility of Swagger-UI ([#229](https://github.com/kit-data-manager/base-repo/issues/229))
+* Fixed issue with internal authentication using JWT ([#261](https://github.com/kit-data-manager/service-base/pull/261))
+
+Security
+* Bump org.springframework.boot to 3.2.4
+* Bump org.owasp.dependencycheck to 9.1.0
+* Bump postgresql to 42.7.3
+* Bump spring-messaging to 6.1.6
+* Bump spring-data-elasticsearch to 5.2.5
+* Bump spring-boot-admin-starter-client to 3.2.3
+* Bump spring-cloud-gateway-mvc to 4.1.2
+* Bump spring-cloud-starter-config to 4.1.1
+* Bump spring-cloud-starter-netflix-eureka-client to 4.1.1
+* Bump service-base to 1.3.1
+
+## [1.5.4] - 2024-04-03
+Added
+* Allow builds outside Git repository, e.g., when building from release packages
+
+Changed
+* Pagination now returns HTTP 416 (RangeNotSatisfiable) if page number exceeds total pages
+
+Fixed
+* Added fix in default application.properties to make Elastic proxy work again
+* Fixed issue disallowing OPTIONS requests outside browser
+
+Security
+* Bump gradle to 8.5
+* Bump jacoco to 0.8.11
+* Bump org.owasp.dependencycheck to 9.0.10
+* Bump io.freefair.maven-publish-java to 8.6
+* Bump org.springframework.boot to 3.2.4
+* Bump spring-security-web to 6.2.1
+* Bump spring-security-config to 6.2.1
+* Bump spring-messaging to 6.1.4
+* Bump spring-cloud-gateway-mvc to 4.1.2
+* Bump spring-boot-admin-starter-client to 3.2.3
+* Bump spring-cloud-starter-netflix-eureka-client to 4.1.1
+* Bump spring-cloud-starter-config to 4.1.1
+* Bump spring-data-elasticsearch to 5.2.4
+* Bump io.freefair.lombok to 8.6
+* Bump org.asciidoctor.jvm.convert to 4.0.2 
+* Bump postgresql to 42.7.3
+* Bump service-base to 1.2.1
+* Bump repo-core to 1.2.2
+
+## [1.5.3] - 2023-12-17
+Fixed
+* Added data folder creation to Docker build as workaround
+
+## [1.5.2] - 2023-12-15
+Fixed
+* Fixed Docker build
+
+Security
+* Bump spring-boot to 3.2.0
+* Bump spring-cloud-starter-config to 4.1.0
+* Bump spring-cloud-starter-netflix-eureka-client to 4.1.0
+* Bump spring-cloud-gateway-mvc to 4.1.0
 
 ## [1.5.1] - 2023-12-11
 Fixed
@@ -196,7 +266,11 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.5...HEAD
+[1.5.5]: https://github.com/kit-data-manager/base-repo/compare/v1.5.4...v1.5.5
+[1.5.4]: https://github.com/kit-data-manager/base-repo/compare/v1.5.3...v1.5.4
+[1.5.3]: https://github.com/kit-data-manager/base-repo/compare/v1.5.2...v1.5.3
+[1.5.2]: https://github.com/kit-data-manager/base-repo/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/kit-data-manager/base-repo/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/kit-data-manager/base-repo/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/kit-data-manager/base-repo/compare/v1.3.0...v1.4.0

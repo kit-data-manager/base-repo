@@ -39,6 +39,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -81,21 +82,26 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         HttpSecurity httpSecurity = http.authorizeHttpRequests(
-                authorize -> authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll().
-                        requestMatchers("/oaipmh").permitAll().
-                        requestMatchers("/static/**").permitAll().
-                        requestMatchers(AUTH_WHITELIST_SWAGGER_UI).permitAll().
+                authorize -> authorize.
+                        requestMatchers(HttpMethod.OPTIONS).permitAll().
                         requestMatchers(EndpointRequest.to(
                                 InfoEndpoint.class,
                                 HealthEndpoint.class
                         )).permitAll().
                         requestMatchers(EndpointRequest.toAnyEndpoint()).hasAnyRole("ANONYMOUS", "ADMIN", "ACTUATOR", "SERVICE_WRITE").
-                        requestMatchers("/**").authenticated()).
+                        requestMatchers(new AntPathRequestMatcher("/oaipmh")).permitAll().
+                        requestMatchers(new AntPathRequestMatcher("/static/**")).permitAll().
+                        requestMatchers(new AntPathRequestMatcher("/api/v1/search")).permitAll().
+                        requestMatchers(AUTH_WHITELIST_SWAGGER_UI).permitAll().
+                        anyRequest().authenticated()
+        ).
+                cors(cors -> cors.configurationSource(corsConfigurationSource())).
                 sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        logger.info("Disable CSRF");
+        
+        logger.info("CSRF disabled!");
         httpSecurity = httpSecurity.csrf(csrf -> csrf.disable());
-
+       
         logger.info("Adding 'NoAuthenticationFilter' to authentication chain.");
         if (keycloaktokenFilterBean.isPresent()) {
             logger.info("Add keycloak filter!");
@@ -128,18 +134,22 @@ public class WebSecurityConfig {
         return firewall;
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-        "*"));
-	configuration.setAllowedMethods(Arrays.asList("*"));
-        configuration.addAllowedHeader("*");
-        configuration.addExposedHeader("Content-Range");
-        configuration.addExposedHeader("ETag");
+    public CorsConfigurationSource  corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.addAllowedOriginPattern(applicationProperties.getAllowedOriginPattern());
+        config.setAllowedHeaders(Arrays.asList(applicationProperties.getAllowedHeaders()));
+        config.setAllowedMethods(Arrays.asList(applicationProperties.getAllowedMethods()));
+        config.setExposedHeaders(Arrays.asList(applicationProperties.getExposedHeaders()));
+        /*config.addAllowedOriginPattern("*");
+        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.addExposedHeader("Content-Range");
+        config.addExposedHeader("ETag");
+        config.addExposedHeader("Link");*/
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 }

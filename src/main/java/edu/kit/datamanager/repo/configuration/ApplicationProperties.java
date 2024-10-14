@@ -20,6 +20,7 @@ import java.net.URL;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -33,6 +34,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @RefreshScope
 @EqualsAndHashCode(callSuper = true)
+@ConfigurationProperties("repo")
 public class ApplicationProperties extends GenericApplicationProperties {
 
     @edu.kit.datamanager.annotations.LocalFolderURL
@@ -52,6 +54,13 @@ public class ApplicationProperties extends GenericApplicationProperties {
     private String defaultStorageService;
     @Value("${repo.security.enable-csrf:false}")
     private boolean enableCsrf;
-    @Value("${repo.security.allowedOriginPattern:http://localhost:*}")
+    @Value("${repo.security.allowedOriginPattern:*}")
     private String allowedOriginPattern;
-}
+    @Value("${repo.security.allowedMethods:GET,POST,PUT,PATCH,DELETE,OPTIONS}")
+    private String[] allowedMethods;
+    @Value("${repo.security.exposedHeaders:Content-Range,ETag,Link}")
+    private String[] exposedHeaders;
+    @Value("${repo.security.allowedHeaders:*}")
+    private String[] allowedHeaders;
+    
+    }

@@ -43,6 +43,7 @@ public class ElasticWrapper {
     @Id
     private String id;
 
+    @Field(type = FieldType.Text)
     private String pid;
 
     @Field(type = FieldType.Object, name = "metadata")
@@ -56,10 +57,10 @@ public class ElasticWrapper {
 
     private Map<String, String> links = new HashMap<>();
 
-    @Field(type = FieldType.Date, format = DateFormat.basic_date_time)
+    @Field(type = FieldType.Date, format = DateFormat.date_time_no_millis)
     private Date created;
 
-    @Field(type = FieldType.Date, format = DateFormat.basic_date_time)
+    @Field(type = FieldType.Date, format = DateFormat.date_time_no_millis)
     private Date lastUpdate;
 
     public ElasticWrapper(DataResource resource) {

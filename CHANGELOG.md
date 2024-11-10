@@ -7,15 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 Added
-* Added configuration support for CORS
 
 Changed
 
 Fixed
 
 Security
-* Bump org.springframework.boot to 3.2.5
-* Bump spring-cloud-gateway-mvc to 4.1.3
+
+## [1.5.6] - 2024-11-10
+Added
+* Added configuration support for CORS, enhancing security and request handling.
+
+Fixed
+* Addressed specific issues related to Spring Cloud Gateway configuration.
+* Improved error handling and logging in the Gradle wrapper scripts.
+
+Security
+* Updated various GitHub Actions in workflows for improved performance and functionality.
+* Enhanced Gradle build configurations with updated plugin versions for better compatibility.
+* Updated Spring Boot and related dependencies for enhanced stability and performance.
+* Updated Gradle distribution and wrapper properties for better performance.
 
 ## [1.5.5] - 2024-04-22
 Added
@@ -266,7 +277,8 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.5...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.6...HEAD
+[1.5.6]: https://github.com/kit-data-manager/base-repo/compare/v1.5.5...v1.5.6
 [1.5.5]: https://github.com/kit-data-manager/base-repo/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/kit-data-manager/base-repo/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/kit-data-manager/base-repo/compare/v1.5.2...v1.5.3

@@ -1,5 +1,5 @@
 plugins { 
-    id 'org.springframework.boot' version '3.4.0'
+    id 'org.springframework.boot' version '3.3.5'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'io.freefair.lombok' version '8.11'
     id 'io.freefair.maven-publish-java' version '8.11'
@@ -30,7 +30,7 @@ repositories {
 ext {
     set('javersVersion', "7.7.0")
     set('springBootVersion', "3.2.1")
-    set('springDocVersion', "2.7.0")
+    set('springDocVersion', "2.6.0")
     set('keycloakVersion', "19.0.0")
 
     // directory for generated code snippets during tests

@@ -14,7 +14,7 @@ Fixed
 
 Security
 
-## [1.5.7] - 2025-01-16
+## [1.5.7] - 2025-01-17
 Fixed
 * Fixed ignored Elastic configuration in https://github.com/kit-data-manager/base-repo/pull/367
 
@@ -24,7 +24,6 @@ Security
 * Update plugin io.freefair.maven-publish-java to v8.11 by @renovate in https://github.com/kit-data-manager/base-repo/pull/331
 * Update dependency org.javers:javers-core to v7.7.0 by @renovate in https://github.com/kit-data-manager/base-repo/pull/335
 * Update dependency org.springframework.restdocs:spring-restdocs-mockmvc to v3.0.3 by @renovate in https://github.com/kit-data-manager/base-repo/pull/338
-* Update plugin org.owasp.dependencycheck to v11.1.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/356
 * Update plugin io.spring.dependency-management to v1.1.7 by @renovate in https://github.com/kit-data-manager/base-repo/pull/359
 * Update plugin org.asciidoctor.jvm.convert to v4.0.4 by @renovate in https://github.com/kit-data-manager/base-repo/pull/362
 * Update dependency gradle to v8.12 by @renovate in https://github.com/kit-data-manager/base-repo/pull/361
@@ -41,6 +40,8 @@ Security
 * Update springDocVersion to v2.8.3 by @renovate in https://github.com/kit-data-manager/base-repo/pull/344
 * Update plugin org.springframework.boot to v3.4.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/343
 * Update dependency org.springframework.data:spring-data-elasticsearch to v5.4.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/336
+* Update dependency org.postgresql:postgresql to v42.7.5 by @renovate in https://github.com/kit-data-manager/base-repo/pull/370
+* Update plugin org.owasp.dependencycheck to v12 by @renovate in https://github.com/kit-data-manager/base-repo/pull/371
 * Update dependency edu.kit.datamanager:service-base to v1.3.3
 * Update dependency edu.kit.datamanager:repo-core to v1.2.4
 

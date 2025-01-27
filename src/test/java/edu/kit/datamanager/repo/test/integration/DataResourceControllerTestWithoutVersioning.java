@@ -800,9 +800,9 @@ public class DataResourceControllerTestWithoutVersioning {
 
     this.mockMvc.perform(delete("/api/v1/dataresources/" + sampleResource.getId()).header("If-Match", etag).header(HttpHeaders.AUTHORIZATION,
             "Bearer " + adminToken).contentType("application/json")).andExpect(status().isNoContent());
-    //from now on, the resource should be in state GONE...HTTP GET should fail
+    //from now on, the resource should be in state GONE...HTTP GET still succeeds as admin (since repo-core 1.2.5)
     this.mockMvc.perform(get("/api/v1/dataresources/" + sampleResource.getId()).header(HttpHeaders.AUTHORIZATION,
-            "Bearer " + adminToken)).andDo(print()).andExpect(status().isNotFound());
+            "Bearer " + adminToken)).andDo(print()).andExpect(status().isOk());
 
   }
 

@@ -14,6 +14,25 @@ Fixed
 
 Security
 
+## [1.5.8] - 2025-01-27
+Changed
+* ACL information no longer removed for Non-Administrator Users by @github-actions in https://github.com/kit-data-manager/base-repo/pull/381
+* Resources with state GONE are now visible to owners and administrators (introduced in repo-core v1.2.5)
+
+Fixed
+
+Security
+* Update dependency org.springframework.data:spring-data-elasticsearch to v5.4.2 by @renovate in https://github.com/kit-data-manager/base-repo/pull/372
+* Update plugin org.owasp.dependencycheck to v12.0.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/374
+* Update docker/build-push-action digest to ca877d9 by @renovate in https://github.com/kit-data-manager/base-repo/pull/378
+* Update plugin io.freefair.maven-publish-java to v8.12 by @renovate in https://github.com/kit-data-manager/base-repo/pull/377
+* Update plugin io.freefair.lombok to v8.12 by @renovate in https://github.com/kit-data-manager/base-repo/pull/376
+* Update dependency gradle to v8.12.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/379
+* Update plugin org.springframework.boot to v3.4.2 by @renovate in https://github.com/kit-data-manager/base-repo/pull/375
+* Update springDocVersion to v2.8.4 by @renovate in https://github.com/kit-data-manager/base-repo/pull/382
+* Update repo-core to v1.2.5
+
+
 ## [1.5.7] - 2025-01-17
 Fixed
 * Fixed ignored Elastic configuration in https://github.com/kit-data-manager/base-repo/pull/367
@@ -308,7 +327,8 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.7...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.8...HEAD
+[1.5.8]: https://github.com/kit-data-manager/base-repo/compare/v1.5.7...v1.5.8
 [1.5.7]: https://github.com/kit-data-manager/base-repo/compare/v1.5.6...v1.5.7
 [1.5.6]: https://github.com/kit-data-manager/base-repo/compare/v1.5.5...v1.5.6
 [1.5.5]: https://github.com/kit-data-manager/base-repo/compare/v1.5.4...v1.5.5

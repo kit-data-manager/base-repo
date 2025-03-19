@@ -7,15 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 Added
-* Added configuration support for CORS
 
 Changed
 
 Fixed
 
 Security
-* Bump org.springframework.boot to 3.2.5
-* Bump spring-cloud-gateway-mvc to 4.1.3
+
+## [1.5.8] - 2025-01-27
+Changed
+* ACL information no longer removed for Non-Administrator Users by @github-actions in https://github.com/kit-data-manager/base-repo/pull/381
+* Resources with state GONE are now visible to owners and administrators (introduced in repo-core v1.2.5)
+
+Fixed
+
+Security
+* Update dependency org.springframework.data:spring-data-elasticsearch to v5.4.2 by @renovate in https://github.com/kit-data-manager/base-repo/pull/372
+* Update plugin org.owasp.dependencycheck to v12.0.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/374
+* Update docker/build-push-action digest to ca877d9 by @renovate in https://github.com/kit-data-manager/base-repo/pull/378
+* Update plugin io.freefair.maven-publish-java to v8.12 by @renovate in https://github.com/kit-data-manager/base-repo/pull/377
+* Update plugin io.freefair.lombok to v8.12 by @renovate in https://github.com/kit-data-manager/base-repo/pull/376
+* Update dependency gradle to v8.12.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/379
+* Update plugin org.springframework.boot to v3.4.2 by @renovate in https://github.com/kit-data-manager/base-repo/pull/375
+* Update springDocVersion to v2.8.4 by @renovate in https://github.com/kit-data-manager/base-repo/pull/382
+* Update repo-core to v1.2.5
+
+
+## [1.5.7] - 2025-01-17
+Fixed
+* Fixed ignored Elastic configuration in https://github.com/kit-data-manager/base-repo/pull/367
+
+Security
+* Update plugin io.freefair.lombok to v8.11 by @renovate in https://github.com/kit-data-manager/base-repo/pull/332
+* Update codecov/codecov-action action to v5 by @renovate in https://github.com/kit-data-manager/base-repo/pull/326
+* Update plugin io.freefair.maven-publish-java to v8.11 by @renovate in https://github.com/kit-data-manager/base-repo/pull/331
+* Update dependency org.javers:javers-core to v7.7.0 by @renovate in https://github.com/kit-data-manager/base-repo/pull/335
+* Update dependency org.springframework.restdocs:spring-restdocs-mockmvc to v3.0.3 by @renovate in https://github.com/kit-data-manager/base-repo/pull/338
+* Update plugin io.spring.dependency-management to v1.1.7 by @renovate in https://github.com/kit-data-manager/base-repo/pull/359
+* Update plugin org.asciidoctor.jvm.convert to v4.0.4 by @renovate in https://github.com/kit-data-manager/base-repo/pull/362
+* Update dependency gradle to v8.12 by @renovate in https://github.com/kit-data-manager/base-repo/pull/361
+* Update plugin net.researchgate.release to v3.1.0 by @renovate in https://github.com/kit-data-manager/base-repo/pull/364
+* Update docker/build-push-action digest to 67a2d40 by @renovate in https://github.com/kit-data-manager/base-repo/pull/366
+* Update dependency com.nimbusds:nimbus-jose-jwt to v10 by @renovate in https://github.com/kit-data-manager/base-repo/pull/365
+* Update dependency org.springframework:spring-messaging to v6.2.2 by @renovate in https://github.com/kit-data-manager/base-repo/pull/357
+* Update dependency org.springframework.cloud:spring-cloud-starter-netflix-eureka-client to v4.2.0 by @renovate in https://github.com/kit-data-manager/base-repo/pull/354
+* Update docker/metadata-action digest to 8e1d546 by @renovate in https://github.com/kit-data-manager/base-repo/pull/369
+* Update docker/login-action digest to 327cd5a by @renovate in https://github.com/kit-data-manager/base-repo/pull/368
+* Update dependency de.codecentric:spring-boot-admin-starter-client to v3.4.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/347
+* Update dependency org.springframework.cloud:spring-cloud-starter-config to v4.2.0 by @renovate in https://github.com/kit-data-manager/base-repo/pull/353
+* Update dependency org.springframework.cloud:spring-cloud-gateway-mvc to v4.2.0 by @renovate in https://github.com/kit-data-manager/base-repo/pull/352
+* Update springDocVersion to v2.8.3 by @renovate in https://github.com/kit-data-manager/base-repo/pull/344
+* Update plugin org.springframework.boot to v3.4.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/343
+* Update dependency org.springframework.data:spring-data-elasticsearch to v5.4.1 by @renovate in https://github.com/kit-data-manager/base-repo/pull/336
+* Update dependency org.postgresql:postgresql to v42.7.5 by @renovate in https://github.com/kit-data-manager/base-repo/pull/370
+* Update plugin org.owasp.dependencycheck to v12 by @renovate in https://github.com/kit-data-manager/base-repo/pull/371
+* Update dependency edu.kit.datamanager:service-base to v1.3.3
+* Update dependency edu.kit.datamanager:repo-core to v1.2.4
+
+## [1.5.6] - 2024-11-10
+Added
+* Added configuration support for CORS, enhancing security and request handling.
+
+Fixed
+* Addressed specific issues related to Spring Cloud Gateway configuration.
+* Improved error handling and logging in the Gradle wrapper scripts.
+
+Security
+* Updated various GitHub Actions in workflows for improved performance and functionality.
+* Enhanced Gradle build configurations with updated plugin versions for better compatibility.
+* Updated Spring Boot and related dependencies for enhanced stability and performance.
+* Updated Gradle distribution and wrapper properties for better performance.
 
 ## [1.5.5] - 2024-04-22
 Added
@@ -266,7 +327,10 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.5...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.8...HEAD
+[1.5.8]: https://github.com/kit-data-manager/base-repo/compare/v1.5.7...v1.5.8
+[1.5.7]: https://github.com/kit-data-manager/base-repo/compare/v1.5.6...v1.5.7
+[1.5.6]: https://github.com/kit-data-manager/base-repo/compare/v1.5.5...v1.5.6
 [1.5.5]: https://github.com/kit-data-manager/base-repo/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/kit-data-manager/base-repo/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/kit-data-manager/base-repo/compare/v1.5.2...v1.5.3

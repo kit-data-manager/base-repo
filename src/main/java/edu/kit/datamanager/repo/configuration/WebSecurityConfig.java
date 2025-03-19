@@ -141,12 +141,7 @@ public class WebSecurityConfig {
         config.setAllowedHeaders(Arrays.asList(applicationProperties.getAllowedHeaders()));
         config.setAllowedMethods(Arrays.asList(applicationProperties.getAllowedMethods()));
         config.setExposedHeaders(Arrays.asList(applicationProperties.getExposedHeaders()));
-        /*config.addAllowedOriginPattern("*");
-        config.setAllowedHeaders(Arrays.asList("*"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.addExposedHeader("Content-Range");
-        config.addExposedHeader("ETag");
-        config.addExposedHeader("Link");*/
+
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", config);

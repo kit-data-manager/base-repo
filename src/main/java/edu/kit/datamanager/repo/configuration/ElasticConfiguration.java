@@ -18,6 +18,8 @@ package edu.kit.datamanager.repo.configuration;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import edu.kit.datamanager.configuration.SearchConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
@@ -30,16 +32,22 @@ import org.springframework.data.elasticsearch.support.HttpHeaders;
  * @author jejkal
  */
 @Configuration
-@ConditionalOnProperty(prefix = "repo.search", name="enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(prefix = "repo.search", name = "enabled", havingValue = "true", matchIfMissing = false)
 public class ElasticConfiguration extends ElasticsearchConfiguration {
 
+    @Autowired
+    private SearchConfiguration searchConfiguration;
 
     @Override
     public ClientConfiguration clientConfiguration() {
         //  HttpHeaders httpHeaders = new HttpHeaders();
         // httpHeaders.add("some-header", "on every request");
+        String connectTo = searchConfiguration.getUrl().toString();
+        connectTo = connectTo.substring(connectTo.lastIndexOf("://") + 3);
+        
         ClientConfiguration clientConfiguration = ClientConfiguration.builder()
-                .connectedTo("localhost:9200", "localhost:9291")
+               // .connectedTo("localhost:9200", "localhost:9291")
+                .connectedTo(connectTo)
                 //.usingSsl()
                 //.withProxy("localhost:8888")
                 .withConnectTimeout(Duration.ofSeconds(5))

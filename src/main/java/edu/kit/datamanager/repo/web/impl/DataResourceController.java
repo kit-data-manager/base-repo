@@ -34,6 +34,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.context.request.WebRequest;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
+import edu.kit.datamanager.repo.domain.Date;
+import edu.kit.datamanager.repo.domain.Description;
+import edu.kit.datamanager.repo.domain.Scheme;
 import edu.kit.datamanager.repo.domain.TabulatorLocalPagination;
 import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.elastic.DataResourceRepository;
@@ -55,7 +58,11 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.text.DateFormat;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -172,7 +179,7 @@ public class DataResourceController implements IDataResourceController {
         };
         return DataResourceUtils.readResource(repositoryProperties, identifier, version, getById);
     }
-  
+
     @Override
     public ResponseEntity<DataResource> getByPid(@PathVariable("prefix") final String prefix,
             @PathVariable("suffix") final String suffix,
@@ -181,7 +188,7 @@ public class DataResourceController implements IDataResourceController {
             final HttpServletResponse response) {
         return getById(prefix + "/" + suffix, version, request, response);
     }
-    
+
     @Override
     public ResponseEntity getRoCrateById(@PathVariable("id") final String identifier,
             @RequestParam(name = "version", required = false) final Long version,
@@ -194,22 +201,58 @@ public class DataResourceController implements IDataResourceController {
         DataResource res = DataResourceUtils.readResource(repositoryProperties, identifier, version, getById).getBody();
         Set<Title> titles = res.getTitles();
         String crateName = identifier + " v " + version;
-        if(!titles.isEmpty()){
+        if (!titles.isEmpty()) {
             crateName = titles.iterator().next().getValue();
         }
+
+        Set<Description> descriptions = res.getDescriptions();
+        String crateDescription = "RO-Crate for resource " + res.getId();
+        if (!descriptions.isEmpty()) {
+            crateDescription = descriptions.iterator().next().getDescription();
+        }
+
+        Set<Scheme> rights = res.getRights();
+        if (rights.isEmpty()) {
+            //throw exception as license is mandatory
+        }
+
+        String crateLicense = rights.iterator().next().getSchemeUri();
+
+        String crateCreationDate = OffsetDateTime.now().toString();
+
+        Set<Date> dates = res.getDates();
+        if (!dates.isEmpty()) {
+            Iterator<Date> iterator = dates.iterator();
+            while (iterator.hasNext()) {
+                Date current = iterator.next();
+                if (Date.DATE_TYPE.CREATED.equals(current.getType())) {
+                    crateCreationDate = OffsetDateTime.ofInstant(current.getValue(), ZoneId.systemDefault()).toString();
+                    break;
+                }
+            }
+        }
+
+        RoCrate roCrate = new RoCrateBuilder(crateName,
+                crateDescription,
+                crateCreationDate,
+                crateLicense).build();
         
-        RoCrate roCrate = new RoCrateBuilder(crateName, "RO-Crate for resource " + WebMvcLinkBuilder.methodOn(this.getClass()).getById(identifier, version, request, response)).build();
-       // roCrate.addContextualEntity(new ContextualEntity());
+        //roCrate.addContextualEntity(new ContextualEntity());
+        
         return ResponseEntity.ok("OK");
-        
-        //create temp folder
-        //obtain resoure metadata
-        //obtain files
-        //use RO-Crate Builder to merge all
-        //Zip and return
-        
-        
-        
+
+        //check if anonymousAccess possible (if so, allow crate using references, otherwise integrate data only)
+        //if integrate data:
+            //create temp folder
+            //obtain resoure metadata
+            //obtain files
+            //use RO-Crate Builder to merge all
+            //Zip and return
+        //else
+            //add resource metadata as reference (possible?)
+            //iterate though content information and add metadata + content url
+            //use RO-Crate Builder to merge all
+            //Zip and return/return only metadata via content negotiation?
     }
 
     @Override
@@ -221,7 +264,6 @@ public class DataResourceController implements IDataResourceController {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
-    
     @Override
     public ResponseEntity<List<DataResource>> findAll(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
             @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
@@ -268,7 +310,7 @@ public class DataResourceController implements IDataResourceController {
         //set content-range header for react-admin (index_start-index_end/total
         PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
         response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
-       // return ResponseEntity.ok().body(DataResourceUtils.filterResources(page.getContent()));
+        // return ResponseEntity.ok().body(DataResourceUtils.filterResources(page.getContent()));
         return ResponseEntity.ok().body(page.getContent());
     }
 

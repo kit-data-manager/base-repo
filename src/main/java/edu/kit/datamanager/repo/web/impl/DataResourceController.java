@@ -199,60 +199,8 @@ public class DataResourceController implements IDataResourceController {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
         };
         DataResource res = DataResourceUtils.readResource(repositoryProperties, identifier, version, getById).getBody();
-        Set<Title> titles = res.getTitles();
-        String crateName = identifier + " v " + version;
-        if (!titles.isEmpty()) {
-            crateName = titles.iterator().next().getValue();
-        }
-
-        Set<Description> descriptions = res.getDescriptions();
-        String crateDescription = "RO-Crate for resource " + res.getId();
-        if (!descriptions.isEmpty()) {
-            crateDescription = descriptions.iterator().next().getDescription();
-        }
-
-        Set<Scheme> rights = res.getRights();
-        if (rights.isEmpty()) {
-            //throw exception as license is mandatory
-        }
-
-        String crateLicense = rights.iterator().next().getSchemeUri();
-
-        String crateCreationDate = OffsetDateTime.now().toString();
-
-        Set<Date> dates = res.getDates();
-        if (!dates.isEmpty()) {
-            Iterator<Date> iterator = dates.iterator();
-            while (iterator.hasNext()) {
-                Date current = iterator.next();
-                if (Date.DATE_TYPE.CREATED.equals(current.getType())) {
-                    crateCreationDate = OffsetDateTime.ofInstant(current.getValue(), ZoneId.systemDefault()).toString();
-                    break;
-                }
-            }
-        }
-
-        RoCrate roCrate = new RoCrateBuilder(crateName,
-                crateDescription,
-                crateCreationDate,
-                crateLicense).build();
-        
-        //roCrate.addContextualEntity(new ContextualEntity());
-        
+       
         return ResponseEntity.ok("OK");
-
-        //check if anonymousAccess possible (if so, allow crate using references, otherwise integrate data only)
-        //if integrate data:
-            //create temp folder
-            //obtain resoure metadata
-            //obtain files
-            //use RO-Crate Builder to merge all
-            //Zip and return
-        //else
-            //add resource metadata as reference (possible?)
-            //iterate though content information and add metadata + content url
-            //use RO-Crate Builder to merge all
-            //Zip and return/return only metadata via content negotiation?
     }
 
     @Override

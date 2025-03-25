@@ -62,7 +62,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation 'org.springframework.data:spring-data-elasticsearch:5.4.4'
 
-    implementation "org.springframework:spring-messaging:6.2.4"
+    implementation "org.springframework:spring-messaging:6.2.5"
     
     // cloud support
     implementation "org.springframework.cloud:spring-cloud-starter-config:4.2.0"

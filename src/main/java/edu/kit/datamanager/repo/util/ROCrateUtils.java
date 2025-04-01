@@ -24,15 +24,23 @@ import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.Description;
 import edu.kit.datamanager.repo.domain.Scheme;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
+import edu.kit.datamanager.repo.web.impl.DataResourceController;
 import edu.kit.datamanager.ro_crate.RoCrate;
 import edu.kit.datamanager.ro_crate.RoCrate.RoCrateBuilder;
 import edu.kit.datamanager.ro_crate.entities.contextual.ContextualEntity;
 import edu.kit.datamanager.ro_crate.entities.contextual.PersonEntity;
+import edu.kit.datamanager.ro_crate.entities.data.DataEntity;
+import edu.kit.datamanager.ro_crate.entities.data.DataSetEntity;
+import edu.kit.datamanager.ro_crate.entities.data.FileEntity;
+import edu.kit.datamanager.ro_crate.entities.data.FileEntity.FileEntityBuilder;
 import edu.kit.datamanager.util.AuthenticationHelper;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
 /**
  *
@@ -40,7 +48,7 @@ import java.util.Set;
  */
 public class ROCrateUtils {
 
-    public static RoCrate fromDataResource(DataResource resource, List<ContentInformation> contentInformation) {
+    public static RoCrate fromDataResource(DataResource resource, List<ContentInformation> contentInformation, String baseUrl) {
         ContextualEntity license = getCrateLicenseForResource(resource);
 
         RoCrate.RoCrateBuilder roCrateBuilder = new RoCrate.RoCrateBuilder(getCrateNameForResource(resource),
@@ -48,28 +56,21 @@ public class ROCrateUtils {
                 getCrateCreationDateForResource(resource),
                 license);
 
-        if(isOpen(resource)){
-            //add content as reference
-            
-        }else{
-            //add content as value
+        processPersons(resource, roCrateBuilder);
+        boolean useReference = isOpen(resource);
+        for (ContentInformation content : contentInformation) {
+            roCrateBuilder.addDataEntity(dataEntityFromContentInformation(content, baseUrl, useReference));
         }
-        //check if anonymousAccess possible (if so, allow crate using references, otherwise integrate data only)
-        //if integrate data:
-        //create temp folder
-        //obtain resoure metadata
-        //obtain files
-        //use RO-Crate Builder to merge all
-        //Zip and return
-        //else
-        //add resource metadata as reference (possible?)
-        //iterate though content information and add metadata + content url
-        //use RO-Crate Builder to merge all
-        //Zip and return/return only metadata via content negotiation?
         return roCrateBuilder.build();
-
     }
 
+    /**
+     * Get the name (title) for the provided resource.
+     *
+     * @param resource The resource.
+     *
+     * @return String The name value.
+     */
     private static String getCrateNameForResource(DataResource resource) {
         String crateName = resource.getId() + " v " + resource.getVersion();
         if (!resource.getTitles().isEmpty()) {
@@ -78,6 +79,13 @@ public class ROCrateUtils {
         return crateName;
     }
 
+    /**
+     * Get the description for the provided resource.
+     *
+     * @param resource The resource.
+     *
+     * @return String The description value.
+     */
     private static String getCrateDescriptionForResource(DataResource resource) {
         String description = "RO-Crate for resource " + resource.getId() + ", version " + resource.getVersion();
         if (!resource.getDescriptions().isEmpty()) {
@@ -87,6 +95,13 @@ public class ROCrateUtils {
         return description;
     }
 
+    /**
+     * Get the license contextual entity for the provided resource.
+     *
+     * @param resource The resource.
+     *
+     * @return ContextualEntity The license entity.
+     */
     private static ContextualEntity getCrateLicenseForResource(DataResource resource) {
         ContextualEntity license = null;
         if (!resource.getRights().isEmpty()) {
@@ -100,6 +115,13 @@ public class ROCrateUtils {
         return license;
     }
 
+    /**
+     * Obtain the creation data from the provided resource.
+     *
+     * @param resource The resource.
+     *
+     * @return String The creation date in ISO format.
+     */
     private static String getCrateCreationDateForResource(DataResource resource) {
         Set<Date> dates = resource.getDates();
         String crateCreationDate = OffsetDateTime.now().toString();
@@ -114,46 +136,65 @@ public class ROCrateUtils {
         return crateCreationDate;
     }
 
+    /**
+     * Process persons from resource, i.e., creators and contributor, and add
+     * them to the crate builder.
+     *
+     * @param resource The resource to process.
+     * @param builder The RO-Crate builder to use.
+     */
     private static void processPersons(DataResource resource, RoCrateBuilder builder) {
         if (!resource.getCreators().isEmpty()) {
             for (Agent creator : resource.getCreators()) {
-                String name = (creator.getGivenName() != null) ? creator.getGivenName() + " " : "";
-                name += (creator.getFamilyName() != null) ? creator.getFamilyName() : "";
-                PersonEntity.PersonEntityBuilder person = new PersonEntity.PersonEntityBuilder().setId("#" + creator.getFamilyName()).addProperty("name", name);
+                //only add creator if family name is set, i.e., not for SELF
+                if (creator.getFamilyName() != null) {
+                    String name = (creator.getGivenName() != null) ? creator.getGivenName() + " " : "";
+                    name += (creator.getFamilyName() != null) ? creator.getFamilyName() : "";
+                    PersonEntity.PersonEntityBuilder person = new PersonEntity.PersonEntityBuilder().setId("#" + creator.getFamilyName()).addProperty("name", name);
 
-                if (creator.getAffiliations() != null && !creator.getAffiliations().isEmpty()) {
-                    for (String affiliation : creator.getAffiliations()) {
-                        person.addProperty("affiliation", affiliation);
+                    if (creator.getAffiliations() != null && !creator.getAffiliations().isEmpty()) {
+                        for (String affiliation : creator.getAffiliations()) {
+                            person.addProperty("affiliation", affiliation);
+                        }
                     }
+                    builder.addContextualEntity(person.build());
                 }
-                builder.addContextualEntity(person.build());
-
             }
         }
 
         if (!resource.getContributors().isEmpty()) {
             for (Contributor contributor : resource.getContributors()) {
                 Agent user = contributor.getUser();
-                String name = (user.getGivenName() != null) ? user.getGivenName() + " " : "";
-                name += (user.getFamilyName() != null) ? user.getFamilyName() : "";
-                PersonEntity.PersonEntityBuilder person = new PersonEntity.PersonEntityBuilder().setId("#" + user.getFamilyName()).addProperty("name", name);
+                if (user.getFamilyName() != null) {
+                    String name = (user.getGivenName() != null) ? user.getGivenName() + " " : "";
+                    name += (user.getFamilyName() != null) ? user.getFamilyName() : "";
+                    PersonEntity.PersonEntityBuilder person = new PersonEntity.PersonEntityBuilder().setId("#" + user.getFamilyName()).addProperty("name", name);
 
-                if (user.getAffiliations() != null && !user.getAffiliations().isEmpty()) {
-                    for (String affiliation : user.getAffiliations()) {
-                        person.addProperty("affiliation", affiliation);
+                    if (user.getAffiliations() != null && !user.getAffiliations().isEmpty()) {
+                        for (String affiliation : user.getAffiliations()) {
+                            person.addProperty("affiliation", affiliation);
+                        }
                     }
-                }
 
-                if (contributor.getContributionType() != null) {
-                    person.addProperty("jobTitle", contributor.getContributionType().toString());
-                }
+                    if (contributor.getContributionType() != null) {
+                        person.addProperty("jobTitle", contributor.getContributionType().toString());
+                    }
 
-                builder.addContextualEntity(person.build());
+                    builder.addContextualEntity(person.build());
+                }
             }
         }
-
     }
 
+    /**
+     * Check if annonymousAccess is allowed or not. If resource is open, data
+     * entities can be added as reference, if resource is not open, data
+     * entities must be added by value.
+     *
+     * @param resource Resource to test.
+     *
+     * @return boolean TRUE = open, FALSE = closed
+     */
     private static boolean isOpen(DataResource resource) {
         for (AclEntry entry : resource.getAcls()) {
             if (AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL.equals(entry.getSid()) && entry.getPermission().atLeast(PERMISSION.READ)) {
@@ -161,6 +202,26 @@ public class ROCrateUtils {
             }
         }
         return false;
+    }
+
+    private static DataEntity dataEntityFromContentInformation(ContentInformation contentInformation, String baseUrl, boolean byReference) {
+        FileEntityBuilder file = new FileEntityBuilder();
+        if (byReference) {
+            file = file.setLocation(URI.create(baseUrl + "/data/" + contentInformation.getRelativePath()));
+        } else {
+            file = file.setLocation(Paths.get(URI.create(contentInformation.getContentUri())));
+        }
+
+        file = file.addProperty("name", contentInformation.getRelativePath())
+                .setEncodingFormat(contentInformation.getMediaType())
+                .addProperty("contentSize", Long.toString(contentInformation.getSize()))
+                .addProperty("version", contentInformation.getVersion());
+
+        if (contentInformation.getTags() != null && !contentInformation.getTags().isEmpty()) {
+            file = file.addProperty("keywords", String.join(",", contentInformation.getTags()));
+        }
+
+        return file.build();
     }
 
 }

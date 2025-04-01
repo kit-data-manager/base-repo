@@ -92,7 +92,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
                 @SecurityRequirement(name = "bearer-jwt")})
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/vnd.researchobject.org+zip")
     @ResponseBody
-    public ResponseEntity getRoCrateById(@Parameter(description = "The resource identifier.", required = true) @PathVariable("id") final String id,
+    public void getRoCrateById(@Parameter(description = "The resource identifier.", required = true) @PathVariable("id") final String id,
             @Parameter(description = "The version of the resource.", required = false) @RequestParam("version") final Long version,
             final WebRequest request,
             final HttpServletResponse response);
@@ -107,7 +107,7 @@ public interface IDataResourceController extends IGenericResourceController<Data
                 @SecurityRequirement(name = "bearer-jwt")})
     @RequestMapping(value = "/{prefix}/{suffix}", method = RequestMethod.GET, produces = "application/vnd.researchobject.org+zip")
     @ResponseBody
-    public ResponseEntity getRoCrateByPid(@Parameter(description = "The PID prefix.", required = true) @PathVariable("prefix") final String prefix,
+    public void getRoCrateByPid(@Parameter(description = "The PID prefix.", required = true) @PathVariable("prefix") final String prefix,
             @Parameter(description = "The PID suffix.", required = true) @PathVariable("prefix") final String suffix,
             @Parameter(description = "The version of the resource.", required = false) @RequestParam("version") final Long version,
             final WebRequest request,

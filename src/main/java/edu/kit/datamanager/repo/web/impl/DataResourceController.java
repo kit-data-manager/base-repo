@@ -45,10 +45,12 @@ import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.ContentDataUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.repo.util.EntityUtils;
+import edu.kit.datamanager.repo.util.ROCrateUtils;
 import edu.kit.datamanager.repo.web.IDataResourceController;
 import edu.kit.datamanager.ro_crate.RoCrate;
 import edu.kit.datamanager.ro_crate.RoCrate.RoCrateBuilder;
 import edu.kit.datamanager.ro_crate.entities.contextual.ContextualEntity;
+import edu.kit.datamanager.ro_crate.writer.ZipStreamWriter;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
@@ -190,7 +192,7 @@ public class DataResourceController implements IDataResourceController {
     }
 
     @Override
-    public ResponseEntity getRoCrateById(@PathVariable("id") final String identifier,
+    public void getRoCrateById(@PathVariable("id") final String identifier,
             @RequestParam(name = "version", required = false) final Long version,
             final WebRequest request,
             final HttpServletResponse response) {
@@ -199,17 +201,32 @@ public class DataResourceController implements IDataResourceController {
             return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
         };
         DataResource res = DataResourceUtils.readResource(repositoryProperties, identifier, version, getById).getBody();
-       
-        return ResponseEntity.ok("OK");
+
+        Page<ContentInformation> page = contentInformationDao.findByParentResource(res, PageRequest.of(0, Integer.MAX_VALUE));
+        List<ContentInformation> infoList = page.toList();
+        String baseUrl = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(res.getId(), 1l, request, response)).toString();
+        //skip version param
+        baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf("?"));
+
+        RoCrate crate = ROCrateUtils.fromDataResource(res, infoList, baseUrl);
+        try {
+            new ZipStreamWriter().save(crate, response.getOutputStream());
+        } catch (IOException ex) {
+            try {
+                response.sendError(500, ex.getMessage());
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }
     }
 
     @Override
-    public ResponseEntity getRoCrateByPid(@PathVariable("prefix") final String prefix,
+    public void getRoCrateByPid(@PathVariable("prefix") final String prefix,
             @PathVariable("suffix") final String suffix,
             @RequestParam(name = "version", required = false) final Long version,
             final WebRequest request,
             final HttpServletResponse response) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        getRoCrateById(prefix + "/" + suffix, version, request, response);
     }
 
     @Override

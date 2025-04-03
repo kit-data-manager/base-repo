@@ -209,6 +209,7 @@ public class DataResourceController implements IDataResourceController {
         baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf("?"));
 
         RoCrate crate = ROCrateUtils.fromDataResource(res, infoList, baseUrl);
+        response.setHeader("Content-Disposition", "attachment;filename=" + res.getId() + ".crate.zip");
         try {
             new ZipStreamWriter().save(crate, response.getOutputStream());
         } catch (IOException ex) {

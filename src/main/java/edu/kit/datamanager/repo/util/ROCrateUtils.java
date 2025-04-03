@@ -24,14 +24,11 @@ import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.Description;
 import edu.kit.datamanager.repo.domain.Scheme;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
-import edu.kit.datamanager.repo.web.impl.DataResourceController;
 import edu.kit.datamanager.ro_crate.RoCrate;
 import edu.kit.datamanager.ro_crate.RoCrate.RoCrateBuilder;
 import edu.kit.datamanager.ro_crate.entities.contextual.ContextualEntity;
 import edu.kit.datamanager.ro_crate.entities.contextual.PersonEntity;
 import edu.kit.datamanager.ro_crate.entities.data.DataEntity;
-import edu.kit.datamanager.ro_crate.entities.data.DataSetEntity;
-import edu.kit.datamanager.ro_crate.entities.data.FileEntity;
 import edu.kit.datamanager.ro_crate.entities.data.FileEntity.FileEntityBuilder;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import java.net.URI;
@@ -40,7 +37,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
 /**
  *
@@ -204,6 +200,18 @@ public class ROCrateUtils {
         return false;
     }
 
+    /**
+     * Create a data entity from the provided content information. There are two possible results: if byReference is true, a data entity pointing to 
+     * the API endpoint using baseUrl is set as @id for direct access. This is only possible for openAccess resources. If byReference is false, the 
+     * file will be included by value, i.e., it will be part of the crate.
+     * In any case, additional metadata will be extracted if available, e.g., mediaType, contentSize, version, and keywords (comma separated tags).
+     * 
+     * @param contentInformation The content information to extract metadata from.
+     * @param baseUrl The baseUrl of the baseRepo instance used for building the direct access URL to the content.
+     * @param byReference If true, the content will be added as URL for direct access, if false, the file is added by value.
+     * 
+     * @return DataEntity A new data entity.
+     */
     private static DataEntity dataEntityFromContentInformation(ContentInformation contentInformation, String baseUrl, boolean byReference) {
         FileEntityBuilder file = new FileEntityBuilder();
         if (byReference) {

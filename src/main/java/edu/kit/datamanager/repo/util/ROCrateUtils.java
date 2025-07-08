@@ -31,6 +31,10 @@ import edu.kit.datamanager.ro_crate.entities.contextual.PersonEntity;
 import edu.kit.datamanager.ro_crate.entities.data.DataEntity;
 import edu.kit.datamanager.ro_crate.entities.data.FileEntity.FileEntityBuilder;
 import edu.kit.datamanager.util.AuthenticationHelper;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.net.URI;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
@@ -39,7 +43,6 @@ import java.util.List;
 import java.util.Set;
 
 /**
- *
  * @author jejkal
  */
 public class ROCrateUtils {
@@ -64,7 +67,6 @@ public class ROCrateUtils {
      * Get the name (title) for the provided resource.
      *
      * @param resource The resource.
-     *
      * @return String The name value.
      */
     private static String getCrateNameForResource(DataResource resource) {
@@ -79,7 +81,6 @@ public class ROCrateUtils {
      * Get the description for the provided resource.
      *
      * @param resource The resource.
-     *
      * @return String The description value.
      */
     private static String getCrateDescriptionForResource(DataResource resource) {
@@ -95,7 +96,6 @@ public class ROCrateUtils {
      * Get the license contextual entity for the provided resource.
      *
      * @param resource The resource.
-     *
      * @return ContextualEntity The license entity.
      */
     private static ContextualEntity getCrateLicenseForResource(DataResource resource) {
@@ -107,6 +107,8 @@ public class ROCrateUtils {
                     setId(rightEntry.getSchemeUri()).
                     addProperty("name", rightEntry.getSchemeId())
                     .build();
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "RO Crate export not acceptable for resources without license.");
         }
         return license;
     }
@@ -115,7 +117,6 @@ public class ROCrateUtils {
      * Obtain the creation data from the provided resource.
      *
      * @param resource The resource.
-     *
      * @return String The creation date in ISO format.
      */
     private static String getCrateCreationDateForResource(DataResource resource) {
@@ -137,16 +138,14 @@ public class ROCrateUtils {
      * them to the crate builder.
      *
      * @param resource The resource to process.
-     * @param builder The RO-Crate builder to use.
+     * @param builder  The RO-Crate builder to use.
      */
     private static void processPersons(DataResource resource, RoCrateBuilder builder) {
         if (!resource.getCreators().isEmpty()) {
             for (Agent creator : resource.getCreators()) {
                 //only add creator if family name is set, i.e., not for SELF
                 if (creator.getFamilyName() != null) {
-                    String name = (creator.getGivenName() != null) ? creator.getGivenName() + " " : "";
-                    name += (creator.getFamilyName() != null) ? creator.getFamilyName() : "";
-                    PersonEntity.PersonEntityBuilder person = new PersonEntity.PersonEntityBuilder().setId("#" + creator.getFamilyName()).addProperty("name", name);
+                    PersonEntity.PersonEntityBuilder person = agentToPersonEntity(creator);
 
                     if (creator.getAffiliations() != null && !creator.getAffiliations().isEmpty()) {
                         for (String affiliation : creator.getAffiliations()) {
@@ -162,9 +161,7 @@ public class ROCrateUtils {
             for (Contributor contributor : resource.getContributors()) {
                 Agent user = contributor.getUser();
                 if (user.getFamilyName() != null) {
-                    String name = (user.getGivenName() != null) ? user.getGivenName() + " " : "";
-                    name += (user.getFamilyName() != null) ? user.getFamilyName() : "";
-                    PersonEntity.PersonEntityBuilder person = new PersonEntity.PersonEntityBuilder().setId("#" + user.getFamilyName()).addProperty("name", name);
+                    PersonEntity.PersonEntityBuilder person = agentToPersonEntity(user);
 
                     if (user.getAffiliations() != null && !user.getAffiliations().isEmpty()) {
                         for (String affiliation : user.getAffiliations()) {
@@ -182,13 +179,18 @@ public class ROCrateUtils {
         }
     }
 
+    private static PersonEntity.PersonEntityBuilder agentToPersonEntity(Agent agent) {
+        String name = (agent.getGivenName() != null) ? agent.getGivenName() + " " : "";
+        name += (agent.getFamilyName() != null) ? agent.getFamilyName() : "";
+        return new PersonEntity.PersonEntityBuilder().setId("#" + agent.getFamilyName()).addProperty("name", name);
+    }
+
     /**
-     * Check if annonymousAccess is allowed or not. If resource is open, data
+     * Check if annonymous access is allowed or not. If resource is open, data
      * entities can be added as reference, if resource is not open, data
      * entities must be added by value.
      *
      * @param resource Resource to test.
-     *
      * @return boolean TRUE = open, FALSE = closed
      */
     private static boolean isOpen(DataResource resource) {
@@ -201,15 +203,14 @@ public class ROCrateUtils {
     }
 
     /**
-     * Create a data entity from the provided content information. There are two possible results: if byReference is true, a data entity pointing to 
-     * the API endpoint using baseUrl is set as @id for direct access. This is only possible for openAccess resources. If byReference is false, the 
+     * Create a data entity from the provided content information. There are two possible results: if byReference is true, a data entity pointing to
+     * the API endpoint using baseUrl is set as @id for direct access. This is only possible for openAccess resources. If byReference is false, the
      * file will be included by value, i.e., it will be part of the crate.
      * In any case, additional metadata will be extracted if available, e.g., mediaType, contentSize, version, and keywords (comma separated tags).
-     * 
+     *
      * @param contentInformation The content information to extract metadata from.
-     * @param baseUrl The baseUrl of the baseRepo instance used for building the direct access URL to the content.
-     * @param byReference If true, the content will be added as URL for direct access, if false, the file is added by value.
-     * 
+     * @param baseUrl            The baseUrl of the baseRepo instance used for building the direct access URL to the content.
+     * @param byReference        If true, the content will be added as URL for direct access, if false, the file is added by value.
      * @return DataEntity A new data entity.
      */
     private static DataEntity dataEntityFromContentInformation(ContentInformation contentInformation, String baseUrl, boolean byReference) {

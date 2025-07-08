@@ -24,8 +24,10 @@ import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
+import edu.kit.datamanager.ro_crate.writer.Writers;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,7 +52,6 @@ import edu.kit.datamanager.repo.web.IDataResourceController;
 import edu.kit.datamanager.ro_crate.RoCrate;
 import edu.kit.datamanager.ro_crate.RoCrate.RoCrateBuilder;
 import edu.kit.datamanager.ro_crate.entities.contextual.ContextualEntity;
-import edu.kit.datamanager.ro_crate.writer.ZipStreamWriter;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
@@ -80,6 +81,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -211,13 +213,9 @@ public class DataResourceController implements IDataResourceController {
         RoCrate crate = ROCrateUtils.fromDataResource(res, infoList, baseUrl);
         response.setHeader("Content-Disposition", "attachment;filename=" + res.getId() + ".crate.zip");
         try {
-            new ZipStreamWriter().save(crate, response.getOutputStream());
+            Writers.newZipStreamWriter().withAutomaticProvenance(null).save(crate, response.getOutputStream());
         } catch (IOException ex) {
-            try {
-                response.sendError(500, ex.getMessage());
-            } catch (IOException e) {
-                throw new RuntimeException(e.getMessage());
-            }
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
         }
     }
 

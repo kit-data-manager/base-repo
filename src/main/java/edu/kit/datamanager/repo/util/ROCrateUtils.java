@@ -215,6 +215,7 @@ public class ROCrateUtils {
      */
     private static DataEntity dataEntityFromContentInformation(ContentInformation contentInformation, String baseUrl, boolean byReference) {
         FileEntityBuilder file = new FileEntityBuilder();
+        file.setId(contentInformation.getRelativePath());
         if (byReference) {
             file = file.setLocation(URI.create(baseUrl + "/data/" + contentInformation.getRelativePath()));
         } else {

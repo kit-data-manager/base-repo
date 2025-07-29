@@ -112,6 +112,7 @@ public class ActuatorPrometheusTest {
     this.mockMvc.perform(get("/actuator/prometheus")).andDo(print()).andExpect(status().isOk())
             .andExpect(content().string(Matchers.containsString("# TYPE base_repo_test_requests_served_total")))
             .andExpect(content().string(Matchers.containsString("# TYPE base_repo_test_unique_users")))
+            .andExpect(content().string(Matchers.containsString("# TYPE base_repo_test_registered_users")))
             .andReturn();
   }
 }

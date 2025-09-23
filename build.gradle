@@ -22,6 +22,10 @@ repositories {
     mavenCentral()
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
 
 //configurations {
  //   all*.exclude module : 'spring-boot-starter-logging'
@@ -40,9 +44,6 @@ ext {
 println "Running gradle version: $gradle.gradleVersion"
 println "Building ${name} version: ${version}"
 println "JDK version: ${JavaVersion.current()}"
-
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
 
 if (System.getProperty('profile') == 'minimal') {
     println 'Using minimal profile for building ' + project.getName()

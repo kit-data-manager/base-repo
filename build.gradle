@@ -32,7 +32,7 @@ java {
 //}
 
 ext {
-    set('javersVersion', "7.8.6")
+    set('javersVersion', "7.9.0")
     set('springBootVersion', "3.2.1")
     set('springDocVersion', "2.8.13")
     set('keycloakVersion', "19.0.0")

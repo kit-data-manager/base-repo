@@ -24,8 +24,10 @@ import edu.kit.datamanager.repo.configuration.ApplicationProperties;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
+import edu.kit.datamanager.ro_crate.writer.Writers;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,14 +36,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.context.request.WebRequest;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
+import edu.kit.datamanager.repo.domain.Date;
+import edu.kit.datamanager.repo.domain.Description;
+import edu.kit.datamanager.repo.domain.Scheme;
 import edu.kit.datamanager.repo.domain.TabulatorLocalPagination;
+import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.elastic.DataResourceRepository;
 import edu.kit.datamanager.repo.elastic.ElasticWrapper;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.ContentDataUtils;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.repo.util.EntityUtils;
+import edu.kit.datamanager.repo.util.ROCrateUtils;
 import edu.kit.datamanager.repo.web.IDataResourceController;
+import edu.kit.datamanager.ro_crate.RoCrate;
+import edu.kit.datamanager.ro_crate.RoCrate.RoCrateBuilder;
+import edu.kit.datamanager.ro_crate.entities.contextual.ContextualEntity;
 import edu.kit.datamanager.service.IAuditService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
@@ -51,9 +61,14 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.text.DateFormat;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -66,6 +81,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -178,6 +194,41 @@ public class DataResourceController implements IDataResourceController {
     }
 
     @Override
+    public void getRoCrateById(@PathVariable("id") final String identifier,
+            @RequestParam(name = "version", required = false) final Long version,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        LOGGER.trace("Get RO-Crate for resource with id '{}' and version '{}'.", identifier, version);
+        Function<String, String> getById = (t) -> {
+            return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(t, version, request, response)).toString();
+        };
+        DataResource res = DataResourceUtils.readResource(repositoryProperties, identifier, version, getById).getBody();
+
+        Page<ContentInformation> page = contentInformationDao.findByParentResource(res, PageRequest.of(0, Integer.MAX_VALUE));
+        List<ContentInformation> infoList = page.toList();
+        String baseUrl = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getById(res.getId(), 1l, request, response)).toString();
+        //skip version param
+        baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf("?"));
+
+        RoCrate crate = ROCrateUtils.fromDataResource(res, infoList, baseUrl);
+        response.setHeader("Content-Disposition", "attachment;filename=" + res.getId() + ".crate.zip");
+        try {
+            Writers.newZipStreamWriter().withAutomaticProvenance(null).save(crate, response.getOutputStream());
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public void getRoCrateByPid(@PathVariable("prefix") final String prefix,
+            @PathVariable("suffix") final String suffix,
+            @RequestParam(name = "version", required = false) final Long version,
+            final WebRequest request,
+            final HttpServletResponse response) {
+        getRoCrateById(prefix + "/" + suffix, version, request, response);
+    }
+
+    @Override
     public ResponseEntity<List<DataResource>> findAll(@RequestParam(name = "from", required = false) final Instant lastUpdateFrom,
             @RequestParam(name = "until", required = false) final Instant lastUpdateUntil,
             final Pageable pgbl,
@@ -223,7 +274,7 @@ public class DataResourceController implements IDataResourceController {
         //set content-range header for react-admin (index_start-index_end/total
         PageRequest request = ControllerUtils.checkPaginationInformation(pgbl);
         response.addHeader(CONTENT_RANGE_HEADER, ControllerUtils.getContentRangeHeader(page.getNumber(), request.getPageSize(), page.getTotalElements()));
-       // return ResponseEntity.ok().body(DataResourceUtils.filterResources(page.getContent()));
+        // return ResponseEntity.ok().body(DataResourceUtils.filterResources(page.getContent()));
         return ResponseEntity.ok().body(page.getContent());
     }
 

@@ -83,6 +83,37 @@ public interface IDataResourceController extends IGenericResourceController<Data
             final WebRequest request,
             final HttpServletResponse response);
 
+     @Operation(operationId = "getROCrateById",
+            summary = "Get an RO-Crate of a resource by id.",
+            description = "Obtain an RO-Crate of a single resource by its identifier. "
+            + "Older versions of a resource can be accessed by providing the `version` query parameter. By default, the most recent version "
+            + "is returned. Versions are numbered sequentially starting at 1 and are returned in the `Resource-Version` header field.<br/>"
+            + "Furthermore, if enabled, authentication and authorization may restrict access to resources.", security = {
+                @SecurityRequirement(name = "bearer-jwt")})
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/vnd.researchobject.org+zip")
+    @ResponseBody
+    public void getRoCrateById(@Parameter(description = "The resource identifier.", required = true) @PathVariable("id") final String id,
+            @Parameter(description = "The version of the resource.", required = false) @RequestParam("version") final Long version,
+            final WebRequest request,
+            final HttpServletResponse response);
+    
+     @Operation(operationId = "getROCrateByPid",
+            summary = "Get an RO-Crate of a resource by pid.",
+            description = "Obtain an RO-Crate of a single resource by one of its persistent identifier. This endpoint is used to access resources "
+            + "with a PID (prefix/suffix) as identifier. If enabled, "
+            + "older versions of a resource can be accessed by providing the `version` query parameter. By default, the most recent version "
+            + "is returned. Versions are numbered sequentially starting at 1 and are returned in the `Resource-Version` header field.<br/>"
+            + "Furthermore, if enabled, authentication and authorization may restrict access to resources.", security = {
+                @SecurityRequirement(name = "bearer-jwt")})
+    @RequestMapping(value = "/{prefix}/{suffix}", method = RequestMethod.GET, produces = "application/vnd.researchobject.org+zip")
+    @ResponseBody
+    public void getRoCrateByPid(@Parameter(description = "The PID prefix.", required = true) @PathVariable("prefix") final String prefix,
+            @Parameter(description = "The PID suffix.", required = true) @PathVariable("prefix") final String suffix,
+            @Parameter(description = "The version of the resource.", required = false) @RequestParam("version") final Long version,
+            final WebRequest request,
+            final HttpServletResponse response);
+
+    
     @Operation(operationId = "createResource",
             summary = "Create a new resource.",
             description = "Create a new resource with the given JSON representation."

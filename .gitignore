@@ -1,5 +1,6 @@
 /build/
 /.gradle/
+/.idea/
 /.nb-gradle/
 /.nb-gradle-properties
 /.settings/

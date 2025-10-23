@@ -101,7 +101,7 @@ What you now have to do before you start the microservice is to place additional
 
 * [Getting Started & Documentation](https://kit-data-manager.github.io/webpage/base-repo/index.html)
 * [API documentation](https://kit-data-manager.github.io/webpage/base-repo/documentation/api-docs.html)
-* [Docker container](https://github.com/kit-data-manager/base-repo/pkgs/container/base-repo%2Fbase-repo)
+* [Docker container](https://github.com/kit-data-manager/base-repo/pkgs/container/base-repo)
 * [Information about the DataCite metadata schema](https://schema.datacite.org/)
 
 ## License

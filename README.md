@@ -107,3 +107,7 @@ What you now have to do before you start the microservice is to place additional
 ## License
 
 The KIT Data Manager is licensed under the Apache License, Version 2.0.
+
+## Acknowledgements
+
+This work has been supported by the research program [‘Engineering Digital Futures’](https://www.helmholtz.de/en/research/research-fields/information/engineering-digital-futures/) of the [Helmholtz Association of German Research Centers](https://www.helmholtz.de/en) and the [Helmholtz Metadata Collaboration Platform (HMC)](https://helmholtz-metadaten.de/).

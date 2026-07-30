@@ -14,6 +14,13 @@ Fixed
 
 Security
 
+## [1.5.9] - 2026-07-30
+Changed
+* Added prometheus usage monitoring
+
+Security
+* Various dependency updates
+
 ## [1.5.8] - 2025-01-27
 Changed
 * ACL information no longer removed for Non-Administrator Users by @github-actions in https://github.com/kit-data-manager/base-repo/pull/381
@@ -327,7 +334,8 @@ Added
 
 - First public version
 
-[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.8...HEAD
+[Unreleased]: https://github.com/kit-data-manager/base-repo/compare/v1.5.9...HEAD
+[1.5.9]: https://github.com/kit-data-manager/base-repo/compare/v1.5.8...v1.5.9
 [1.5.8]: https://github.com/kit-data-manager/base-repo/compare/v1.5.7...v1.5.8
 [1.5.7]: https://github.com/kit-data-manager/base-repo/compare/v1.5.6...v1.5.7
 [1.5.6]: https://github.com/kit-data-manager/base-repo/compare/v1.5.5...v1.5.6

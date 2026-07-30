@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -88,13 +89,15 @@ public class WebSecurityConfig {
                                 InfoEndpoint.class,
                                 HealthEndpoint.class
                         )).permitAll().
-                        requestMatchers(EndpointRequest.toAnyEndpoint()).hasAnyRole("ANONYMOUS", "ADMIN", "ACTUATOR", "SERVICE_WRITE").
+                        requestMatchers(new AntPathRequestMatcher("/actuator/**")).hasAnyRole("ADMIN", "ACTUATOR").
+                        requestMatchers(EndpointRequest.toAnyEndpoint()).hasAnyRole("ADMIN", "SERVICE_WRITE").
                         requestMatchers(new AntPathRequestMatcher("/oaipmh")).permitAll().
                         requestMatchers(new AntPathRequestMatcher("/static/**")).permitAll().
                         requestMatchers(new AntPathRequestMatcher("/api/v1/search")).permitAll().
                         requestMatchers(AUTH_WHITELIST_SWAGGER_UI).permitAll().
                         anyRequest().authenticated()
         ).
+                httpBasic(Customizer.withDefaults()).
                 cors(cors -> cors.configurationSource(corsConfigurationSource())).
                 sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

@@ -20,10 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.configuration.SearchConfiguration;
-import edu.kit.datamanager.repo.configuration.ApplicationProperties;
-import edu.kit.datamanager.repo.configuration.ElasticConfiguration;
-import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
-import edu.kit.datamanager.repo.configuration.StorageServiceProperties;
+import edu.kit.datamanager.repo.configuration.*;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.service.impl.DataResourceService;
@@ -33,6 +30,7 @@ import edu.kit.datamanager.repo.service.IRepoVersioningService;
 import edu.kit.datamanager.repo.service.impl.ContentInformationAuditService;
 import edu.kit.datamanager.repo.service.impl.ContentInformationService;
 import edu.kit.datamanager.repo.service.impl.DataResourceAuditService;
+import edu.kit.datamanager.repo.util.MonitoringUtil;
 import edu.kit.datamanager.security.filter.KeycloakJwtProperties;
 import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
 import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
@@ -140,6 +138,15 @@ public class Application {
         return new SearchConfiguration();
     }
 
+    @Bean
+    public BaseRepoMonitoringConfiguration baseRepoMonitoringConfiguration() {
+        return new BaseRepoMonitoringConfiguration();
+    }
+
+    @Bean
+    public MonitoringConfiguration monitoringConfiguration() {
+        return new MonitoringConfiguration();
+    }
     /* @Bean
     public IdBasedStorageProperties idBasedStorageProperties() {
         return new IdBasedStorageProperties();
@@ -222,6 +229,7 @@ public class Application {
         contentInformationService().configure(rbc);
         rbc.setAuditService(auditServiceDataResource);
         rbc.setContentInformationAuditService(contentAuditService);
+        MonitoringUtil.setMonitoringConfiguration(monitoringConfiguration());
         LOG.trace("Show Config: {}", rbc);
         LOG.trace("getBasepath {}", rbc.getBasepath());
         LOG.trace("getJwtSecret {}", rbc.getJwtSecret());

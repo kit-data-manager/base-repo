@@ -15,12 +15,9 @@
  */
 package edu.kit.datamanager.repo.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.kit.datamanager.repo.domain.TabulatorLocalPagination;
 import jakarta.persistence.Id;
 import java.lang.reflect.Field;
 import java.lang.reflect.InaccessibleObjectException;
-import java.util.LinkedList;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
